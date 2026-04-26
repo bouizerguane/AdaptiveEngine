@@ -1,0 +1,209 @@
+networks:
+  adaptive-network:
+    driver: bridge
+
+services:
+  # ========================================== #
+  #          INFRASTRUCTURE SERVICES           #
+  # ========================================== #
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul-server
+    ports:
+      - "8500:8500"
+    command: "agent -dev -client 0.0.0.0"
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD", "consul", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-iam:
+    image: postgres:15
+    container_name: postgres-iam
+    environment:
+      POSTGRES_USER: ${POSTGRES_IAM_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_IAM_PASSWORD:-change_me_iam_password}
+      POSTGRES_DB: ${POSTGRES_IAM_DB:-iam_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j-graph:
+    image: neo4j:5
+    container_name: neo4j-graph
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-change_me_neo4j_password}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD-SHELL", "/var/lib/neo4j/bin/cypher-shell -u ${NEO4J_USER:-neo4j} -p ${NEO4J_PASSWORD:-change_me_neo4j_password} 'RETURN 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+
+  mongodb-content:
+    image: mongo:6
+    container_name: mongodb-content
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-change_me_mongo_password}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-content_db}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================== #
+  #            APPLICATION SERVICES            #
+  # ========================================== #
+  gateway-service:
+    build:
+      context: ./gateway-service
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+
+  iam-service:
+    build:
+      context: ./iam-service
+    container_name: iam-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-iam:5432/${POSTGRES_IAM_DB:-iam_db}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_IAM_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_IAM_PASSWORD:-change_me_iam_password}
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
+      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-change_me_admin_password}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      postgres-iam:
+        condition: service_healthy
+
+  knowledge-graph-service:
+    build:
+      context: ./knowledge-graph-service
+    container_name: knowledge-graph-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_NEO4J_URI=bolt://neo4j-graph:7687
+      - SPRING_NEO4J_AUTHENTICATION_USERNAME=${NEO4J_USER:-neo4j}
+      - SPRING_NEO4J_AUTHENTICATION_PASSWORD=${NEO4J_PASSWORD:-change_me_neo4j_password}
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      neo4j-graph:
+        condition: service_healthy
+
+  content-service:
+    build:
+      context: ./content-service
+    container_name: content-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_DATA_MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-change_me_mongo_password}@mongodb-content:27017/${MONGO_DB:-content_db}?authSource=admin
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      mongodb-content:
+        condition: service_healthy
+    volumes:
+      - ./content-service/uploads:/uploads
+
+  postgres-tracking:
+    image: postgres:15
+    container_name: postgres-tracking
+    environment:
+      POSTGRES_USER: ${POSTGRES_TRACKING_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_TRACKING_PASSWORD:-change_me_tracking_password}
+      POSTGRES_DB: ${POSTGRES_TRACKING_DB:-tracking_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432"
+    volumes:
+      - tracking_data:/var/lib/postgresql/data
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tracking-service:
+    build:
+      context: ./tracking-service
+    container_name: tracking-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-tracking:5432/${POSTGRES_TRACKING_DB:-tracking_db}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_TRACKING_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_TRACKING_PASSWORD:-change_me_tracking_password}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      postgres-tracking:
+        condition: service_healthy
+
+  frontend-app:
+    build:
+      context: ./frontend-app
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8080/api}
+    container_name: frontend-app
+    ports:
+      - "5173:5173"
+    networks:
+      - adaptive-network
+    depends_on:
+      gateway-service:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  mongo_data:
+  tracking_data:

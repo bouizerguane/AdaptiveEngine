@@ -1,0 +1,32 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Node / frontend artifacts
+node_modules/
+frontend-app/node_modules/
+teacher-dashboard/node_modules/
+dist/
+frontend-app/dist/
+
+# Java / Maven artifacts
+target/
+*/target/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and build outputs
+*.log
+build.log
+build*.log
+build*.txt
+
+# Local uploaded test media
+content-service/uploads/*
+!content-service/uploads/.gitkeep

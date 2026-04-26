@@ -1,0 +1,23 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: content-service
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://admin:change_me_mongo_password@localhost:27017/content_db?authSource=admin}
+
+jwt:
+  secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}

@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: knowledge-graph-service
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: ${SPRING_NEO4J_AUTHENTICATION_USERNAME:neo4j}
+      password: ${SPRING_NEO4J_AUTHENTICATION_PASSWORD:change_me_neo4j_password}
+
+jwt:
+  secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}

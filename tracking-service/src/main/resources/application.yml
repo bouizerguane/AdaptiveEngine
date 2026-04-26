@@ -1,0 +1,33 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: tracking-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tracking_db}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me_tracking_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  cloud:
+    consul:
+      host: consul
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

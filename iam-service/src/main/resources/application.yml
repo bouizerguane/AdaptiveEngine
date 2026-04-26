@@ -1,0 +1,27 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: iam-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/iam_db}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me_iam_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}
+  expirationMs: ${JWT_EXPIRATION_MS:86400000}
