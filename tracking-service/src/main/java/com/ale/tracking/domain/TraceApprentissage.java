@@ -31,11 +31,15 @@ public class TraceApprentissage {
 
     private String studentEmail;
 
+    private String learnerEmail;
+
     @Column(nullable = false)
     private String userId;
 
     @Column(nullable = false)
     private String evaluationId;
+
+    private String typeEvaluation;
 
     private double scoreObtenu;
 
@@ -70,4 +74,10 @@ public class TraceApprentissage {
      *                              (saut de niveau : tous les concepts du module sont marqués ACQUIS)
      */
     private String masterySource;
+
+    /**
+     * JSON optionnel contenant les rÃ©sultats agrÃ©gÃ©s par concept pour les diagnostics.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String conceptResults;
 }

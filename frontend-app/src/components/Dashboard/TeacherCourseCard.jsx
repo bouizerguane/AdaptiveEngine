@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
-import { courseApi } from '../../api/apiClient';
+import { courseApi, graphApi } from '../../api/apiClient';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TeacherCourseCard() {
@@ -16,8 +16,7 @@ export default function TeacherCourseCard() {
             if (!user?.email) return;
             try {
                 setLoading(true);
-                // GET /courses already filters by authenticated teacher via @AuthenticationPrincipal
-                const res = await courseApi.getCourses();
+                const res = await graphApi.getTeacherCourses(user.email);
                 const courses = res.data || [];
                 setMyCourses(courses);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { evaluationApi, trackingApi, masteryApi } from '../api/apiClient';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { contentApi, evaluationApi, trackingApi, masteryApi, adaptiveApi, courseApi, graphApi } from '../api/apiClient';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import CustomDialog from '../components/CustomDialog';
 import {
@@ -12,10 +13,25 @@ import {
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const pad = (n) => String(n).padStart(2, '0');
 const formatTime = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+const getConceptTitle = (concept) => concept?.labelPedagogique || concept?.title || concept?.name || concept?.libelle || concept?.label || '';
+const shortId = (id = '') => String(id).slice(0, 8);
+const collectConceptNames = (course) => {
+    const names = {};
+    (course?.modules || []).forEach(module => {
+        (module.chapitres || []).forEach(chapitre => {
+            (chapitre.concepts || []).forEach(concept => {
+                if (concept?.id) names[concept.id] = getConceptTitle(concept);
+            });
+        });
+    });
+    return names;
+};
 
 export default function StudentQuiz() {
     const { targetId } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { user } = useAuth();
 
     /* ─── State ─── */
     const [evaluation, setEvaluation] = useState(null);
@@ -27,6 +43,9 @@ export default function StudentQuiz() {
     const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState(null);
+    const [conceptNameMap, setConceptNameMap] = useState({});
+    const [context, setContext] = useState({ courseId: '', courseTitle: '', conceptTitle: '' });
+    const [diagnosticAlreadyPassed, setDiagnosticAlreadyPassed] = useState(false);
 
     /* ─── Tracking refs ─── */
     const startTimeRef = useRef(Date.now());
@@ -74,10 +93,42 @@ export default function StudentQuiz() {
                 setQuestions(drawn);
                 if (ev.tempsImparti > 0) setTimeLeft(ev.tempsImparti * 60);
                 startTimeRef.current = Date.now();
+                const isInitialDiagnostic = ['DIAGNOSTIC_ENTREE', 'DIAGNOSTIC_POSITIONNEMENT'].includes(ev.typeEvaluation);
+                const courseId = ev.courseId || (ev.targetType === 'COURSE' ? ev.targetId : null);
+                if (isInitialDiagnostic && user?.email && courseId && searchParams.get('retake') !== '1') {
+                    trackingApi.getLatestDiagnostic(user.email, courseId)
+                        .then(response => {
+                            setDiagnosticAlreadyPassed(!!response.data?.idTrace);
+                        })
+                        .catch(() => {
+                            setDiagnosticAlreadyPassed(false);
+                        });
+                } else {
+                    setDiagnosticAlreadyPassed(false);
+                }
+                if (courseId) {
+                    Promise.all([
+                        courseApi.getCourseTree(courseId).then(response => response.data).catch(() => null),
+                        graphApi.getCoursePrerequisiteConcepts(courseId).then(response => response.data || []).catch(() => []),
+                    ]).then(([courseTree, prerequisiteConcepts]) => {
+                        const names = collectConceptNames(courseTree);
+                        prerequisiteConcepts.forEach(concept => {
+                            if (concept?.id) names[concept.id] = getConceptTitle(concept);
+                        });
+                        setConceptNameMap(names);
+                        setContext({
+                            courseId,
+                            courseTitle: courseTree?.title || '',
+                            conceptTitle: names[ev.targetId] || names[drawn.find(question => question.conceptId)?.conceptId] || '',
+                        });
+                    });
+                } else if ((ev.targetType || 'CONCEPT') === 'CONCEPT') {
+                    setContext(previous => ({ ...previous, conceptTitle: conceptNameMap[ev.targetId] || '' }));
+                }
             })
             .catch(() => toast.error('Impossible de charger l\'évaluation.'))
             .finally(() => setLoading(false));
-    }, [targetId]);
+    }, [targetId, user?.email, searchParams]);
 
     /* ─── Anti-Triche: Blur Detection ─── */
     useEffect(() => {
@@ -123,11 +174,37 @@ export default function StudentQuiz() {
             ? `✅ Réussi ! Score : ${scoreObtenu}% (seuil : ${evaluation.seuilReussite}%).`
             : `❌ Insuffisant. Score : ${scoreObtenu}% (seuil : ${evaluation.seuilReussite}%). ${evaluation.remediationResourceId ? 'Une ressource de remédiation est disponible.' : 'Révisez et réessayez.'}`;
 
-        const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id || 'anonymous';
+        const userId = user?.email || 'anonymous';
+        const isDiagnostic = ['DIAGNOSTIC_ENTREE', 'DIAGNOSTIC_POSITIONNEMENT'].includes(evaluation.typeEvaluation);
+        const courseId = evaluation.courseId || (evaluation.targetType === 'COURSE' ? evaluation.targetId : null);
+        const conceptBuckets = questions.reduce((acc, question, index) => {
+            const conceptId = question.conceptId || ((evaluation.targetType || 'CONCEPT') === 'CONCEPT' ? evaluation.targetId : null);
+            if (!conceptId) return acc;
+            if (!acc[conceptId]) acc[conceptId] = { conceptId, totalQuestions: 0, correctAnswers: 0 };
+            acc[conceptId].totalQuestions += 1;
+            if (answers[index] === question.correctAnswer) acc[conceptId].correctAnswers += 1;
+            return acc;
+        }, {});
+        const conceptResults = Object.values(conceptBuckets).map(result => {
+            const score = result.totalQuestions > 0 ? Math.round((result.correctAnswers / result.totalQuestions) * 100) : 0;
+            return { ...result, score, mastered: score >= evaluation.seuilReussite };
+        });
+        const externalBuckets = questions.reduce((acc, question, index) => {
+            const label = question.externalPrerequisiteLabel?.trim() || (question.generalQuestion ? 'Question generale sans concept' : '');
+            if (!label || question.conceptId) return acc;
+            if (!acc[label]) acc[label] = { label, totalQuestions: 0, correctAnswers: 0 };
+            acc[label].totalQuestions += 1;
+            if (answers[index] === question.correctAnswer) acc[label].correctAnswers += 1;
+            return acc;
+        }, {});
+        const externalPrerequisiteResults = Object.values(externalBuckets).map(result => {
+            const score = result.totalQuestions > 0 ? Math.round((result.correctAnswers / result.totalQuestions) * 100) : 0;
+            return { ...result, score, mastered: score >= evaluation.seuilReussite };
+        });
 
         // Détermine la source de maîtrise pour l'Adaptive Engine (LSTM)
-        const masterySource = evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT' && passed
-            ? 'DIAGNOSTIC_MODULE_SKIP'
+        const masterySource = isDiagnostic
+            ? evaluation.typeEvaluation
             : (evaluation.typeEvaluation === 'FORMATIVE' || evaluation.typeEvaluation === 'VALIDATION') && passed
                 ? 'QUIZ_DIRECT'
                 : null;
@@ -135,7 +212,11 @@ export default function StudentQuiz() {
         try {
             await trackingApi.saveTrace({
                 userId,
+                learnerEmail: userId,
+                studentEmail: userId,
+                courseId,
                 evaluationId: evaluation.id,
+                typeEvaluation: evaluation.typeEvaluation,
                 targetId:     evaluation.targetId,
                 targetType:   evaluation.targetType || 'CONCEPT',
                 scoreObtenu,
@@ -144,25 +225,75 @@ export default function StudentQuiz() {
                 feedbackGenere,
                 tabSwitchesCount: tabSwitchesRef.current,
                 masterySource,
+                conceptResults: JSON.stringify({ concepts: conceptResults, externalPrerequisites: externalPrerequisiteResults }),
             });
         } catch { /* Non-bloquant */ }
 
         // ✨ Si diagnostic de module réussi → valider tous les concepts du module dans Neo4j
-        let moduleValidated = false;
-        if (passed && evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT' && evaluation.targetId) {
+        let adaptiveResult = null;
+        if (isDiagnostic && courseId) {
             try {
-                await masteryApi.validateModule(evaluation.targetId, userId);
+                const response = await adaptiveApi.submitDiagnostic({
+                    learnerEmail: userId,
+                    courseId,
+                    evaluationId: evaluation.id,
+                    typeEvaluation: evaluation.typeEvaluation,
+                    conceptResults,
+                });
+                adaptiveResult = response.data;
+            } catch (e) {
+                console.warn('Adaptive diagnostic failed (non-bloquant)', e);
+            }
+        }
+
+        let moduleValidated = false;
+        if (!isDiagnostic && passed && evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT' && evaluation.targetId) {
+            try {
+                await masteryApi.validateModule(evaluation.targetId);
                 moduleValidated = true;
             } catch (e) {
                 console.warn('Validation module mastery failed (non-bloquant)', e);
             }
         }
 
-        setResult({ scoreObtenu, correct, total, passed, feedbackGenere, autoSubmit, moduleValidated });
+        if (passed && (evaluation.typeEvaluation === 'FORMATIVE' || evaluation.typeEvaluation === 'VALIDATION') && (evaluation.targetType || 'CONCEPT') === 'CONCEPT' && evaluation.targetId) {
+            try {
+                await masteryApi.validateConcept(evaluation.targetId, 'QUIZ_DIRECT');
+            } catch (e) {
+                console.warn('Validation concept mastery failed (non-bloquant)', e);
+            }
+        }
+
+        const firstFailedConceptId = conceptResults.find(item => !item.mastered && item.conceptId)?.conceptId || '';
+        const firstFailedHasContent = firstFailedConceptId
+            ? await contentApi.getConceptContent(firstFailedConceptId).then(response => !!response.data?.htmlContent).catch(() => false)
+            : false;
+        const firstFailedContext = firstFailedConceptId
+            ? await graphApi.getConceptContext(firstFailedConceptId, courseId).then(response => response.data).catch(() => null)
+            : null;
+        const recommendationConceptId = adaptiveResult?.nextRecommendation?.conceptId || '';
+        const nextResult = {
+            scoreObtenu,
+            correct,
+            total,
+            passed,
+            feedbackGenere,
+            autoSubmit,
+            moduleValidated,
+            conceptResults,
+            externalPrerequisiteResults,
+            adaptiveResult,
+            firstFailedConceptId,
+            firstFailedHasContent,
+            firstFailedContext,
+            recommendationConceptId,
+            courseId,
+        };
+        setResult(nextResult);
         setSubmitted(true);
         setSubmitting(false);
         if (autoSubmit) setDialogConfig({ isOpen: true, type: 'warning', title: 'Temps écoulé', message: 'Le temps imparti est écoulé. Vos réponses ont été soumises automatiquement.' });
-    }, [submitted, submitting, evaluation, questions, answers]);
+    }, [submitted, submitting, evaluation, questions, answers, user?.email]);
 
     /* ─── Navigation ─── */
     const canGoBack = evaluation?.allowBacktrack !== false;
@@ -195,8 +326,27 @@ export default function StudentQuiz() {
     const q = questions[currentIdx];
     const isValidation = evaluation.typeEvaluation === 'VALIDATION';
     const isFormative = evaluation.typeEvaluation === 'FORMATIVE';
+    const isInitialDiagnostic = ['DIAGNOSTIC_ENTREE', 'DIAGNOSTIC_POSITIONNEMENT'].includes(evaluation.typeEvaluation);
     const currentAnswer = answers[currentIdx];
     const answeredCount = Object.keys(answers).length;
+    const displayConceptName = (conceptId) => conceptNameMap[conceptId] || `Concept inconnu (${shortId(conceptId)}...)`;
+
+    if (!submitted && diagnosticAlreadyPassed && isInitialDiagnostic) {
+        return (
+            <div className="max-w-2xl mx-auto py-12 px-4">
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-8 text-center text-indigo-800">
+                    <ClipboardList className="mx-auto mb-3 text-indigo-600" size={42} />
+                    <h1 className="text-xl font-bold">Diagnostic deja passe</h1>
+                    <p className="mx-auto mt-2 max-w-lg text-sm">
+                        Diagnostic deja passe. Le repassage sera disponible apres maitrise des concepts recommandes.
+                    </p>
+                    <button onClick={() => navigate(-1)} className="mt-5 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700">
+                        Retour au cours
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     /* ─── RESULT SCREEN ─── */
     if (submitted && result) {
@@ -217,20 +367,73 @@ export default function StudentQuiz() {
                             Saut de niveau validé ! Tous les concepts de ce module sont marqués comme acquis.
                         </div>
                     )}
-                    {!result.passed && evaluation.remediationResourceId && (
-                        <a href={`/student/learn/${evaluation.remediationResourceId}`}
+                    {result.adaptiveResult?.nextRecommendation?.conceptId && (
+                        <div className="mt-4 mx-auto max-w-sm px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-700 text-sm text-left">
+                            <p className="font-bold">Votre parcours personnalise</p>
+                            <p className="mt-1">{result.adaptiveResult.nextRecommendation.label}</p>
+                            <p className="mt-1 text-xs text-indigo-500">{result.adaptiveResult.nextRecommendation.reason}</p>
+                        </div>
+                    )}
+                    {(result.conceptResults?.length > 0 || result.externalPrerequisiteResults?.length > 0) && (
+                        <div className="mt-5 grid gap-3 text-left">
+                            {result.conceptResults?.length > 0 && (
+                                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                                    <p className="font-bold text-slate-800">Resultats par concept</p>
+                                    <div className="mt-2 space-y-1">
+                                        {result.conceptResults.map(item => (
+                                            <p key={item.conceptId} className={item.mastered ? 'text-emerald-700' : 'text-red-700'}>
+                                                {displayConceptName(item.conceptId)} : {item.score}% - {item.mastered ? 'maitrise' : 'non maitrise'}
+                                            </p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {result.externalPrerequisiteResults?.length > 0 && (
+                                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                                    <p className="font-bold text-slate-800">Prerequis externes</p>
+                                    <div className="mt-2 space-y-1">
+                                        {result.externalPrerequisiteResults.map(item => (
+                                            <p key={item.label} className={item.mastered ? 'text-emerald-700' : 'text-red-700'}>
+                                                {item.label} : {item.score}% - {item.mastered ? 'maitrise' : 'non maitrise'}
+                                            </p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {!result.passed && !isInitialDiagnostic && (
+                        <button onClick={() => navigate(-1)}
                             className="inline-block mt-4 px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition text-sm">
-                            📚 Voir la ressource de remédiation
-                        </a>
+                            Revoir le contenu du concept
+                        </button>
                     )}
                     <div className="flex justify-center gap-3 mt-6">
-                        {!result.passed && !isValidation && (
+                        {!result.passed && !isValidation && !isInitialDiagnostic && (
                             <button onClick={() => { setSubmitted(false); setAnswers({}); setResult(null); setCurrentIdx(0); startTimeRef.current = Date.now(); if (evaluation.tempsImparti > 0) setTimeLeft(evaluation.tempsImparti * 60); }}
                                 className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition text-sm">
                                 Réessayer
                             </button>
                         )}
-                        <button onClick={() => navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 transition text-sm">
+                        {isInitialDiagnostic && result.firstFailedConceptId && result.firstFailedHasContent && (
+                            <button
+                                onClick={() => navigate(result.firstFailedContext?.isInCurrentCourse === false
+                                    ? `/learner/external-concepts/${encodeURIComponent(result.firstFailedConceptId)}?sourceCourseId=${encodeURIComponent(result.courseId || '')}`
+                                    : `/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.firstFailedConceptId)}`)}
+                                className="px-5 py-2 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition text-sm"
+                            >
+                                Réviser ce concept
+                            </button>
+                        )}
+                        {isInitialDiagnostic && result.recommendationConceptId && (
+                            <button
+                                onClick={() => navigate(`/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.recommendationConceptId)}`)}
+                                className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition text-sm"
+                            >
+                                Voir la recommandation
+                            </button>
+                        )}
+                        <button onClick={() => result.courseId ? navigate(`/learner/courses/${result.courseId}`) : navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 transition text-sm">
                             Retour au cours
                         </button>
                     </div>
@@ -266,6 +469,21 @@ export default function StudentQuiz() {
     /* ─── QUIZ PLAYER ─── */
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
+            <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-500">
+                {context.courseId ? (
+                    <Link to={`/learner/courses/${context.courseId}`} className="font-semibold text-indigo-600 hover:text-indigo-700">
+                        {context.courseTitle || 'Retour au cours'}
+                    </Link>
+                ) : (
+                    <button onClick={() => navigate(-1)} className="font-semibold text-indigo-600 hover:text-indigo-700">
+                        Retour au cours
+                    </button>
+                )}
+                <span>/</span>
+                <span>{context.conceptTitle || 'Concept'}</span>
+                <span>/</span>
+                <span className="font-semibold text-slate-700">Quiz</span>
+            </div>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>

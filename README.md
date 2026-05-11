@@ -9,8 +9,11 @@ frontend-app -> gateway-service -> iam-service
                               -> knowledge-graph-service
                               -> content-service
                               -> tracking-service
+                              -> adaptive-engine-service
+                              -> tutoring-service
 
 Consul assure la decouverte des services pour la gateway et les appels internes load-balances.
+RabbitMQ est utilise comme canal evenementiel complementaire. Les appels REST restent le flux principal.
 ```
 
 ## Services
@@ -23,6 +26,8 @@ Consul assure la decouverte des services pour la gateway et les appels internes 
 | `knowledge-graph-service` | Graphe pedagogique, cours/modules/chapitres/concepts, maitrise | `8082` |
 | `content-service` | Contenus, evaluations, labs, uploads media | `8083` |
 | `tracking-service` | Traces d'apprentissage, soumissions de labs, dashboard enseignant | `8084` |
+| `adaptive-engine-service` | Orchestration du parcours adaptatif | `8085` |
+| `tutoring-service` | Feedbacks pedagogiques simples et consommation d'evenements | `8086` |
 
 ## Bases de donnees
 
@@ -33,6 +38,7 @@ Consul assure la decouverte des services pour la gateway et les appels internes 
 | `neo4j-graph` | Graphe pedagogique Neo4j | `7474`, `7687` |
 | `mongodb-content` | Contenus, evaluations, labs | interne Docker |
 | `consul` | Service discovery | `8500` |
+| `rabbitmq` | Broker evenementiel complementaire + management UI | `5672`, `15672` |
 
 ## Routes Gateway
 
@@ -47,6 +53,91 @@ La gateway expose les routes suivantes sur `http://localhost:8080` :
 /api/traces/**    -> tracking-service
 /api/labs/**      -> tracking-service
 /api/tracking/**  -> tracking-service
+/api/adaptive/**  -> adaptive-engine-service
+/api/tutoring/**  -> tutoring-service
+```
+
+## RabbitMQ V1
+
+RabbitMQ est ajoute comme canal evenementiel complementaire. Il ne remplace pas les appels REST existants : les soumissions de TP continuent a etre enregistrees par `tracking-service` via REST et l'evenement est publie ensuite.
+
+Interface de gestion :
+
+```text
+RabbitMQ Management UI: http://localhost:15672
+```
+
+Variables d'environnement :
+
+```text
+RABBITMQ_USER=admin
+RABBITMQ_PASSWORD=change_me_rabbitmq_password
+GATEWAY_STARTUP_DELAY_SECONDS=30
+```
+
+`GATEWAY_STARTUP_DELAY_SECONDS` laisse le temps aux services applicatifs de terminer leur enregistrement Consul avant que la gateway accepte du trafic. Cela reduit les erreurs `503 Service Unavailable` juste apres un `docker compose up --build`.
+
+Evenements publies :
+
+```text
+exchange: adaptive.events
+routingKey: lab.submitted
+queue consommateur: tutoring.lab-submitted
+queue consommateur: adaptive.lab-submitted
+
+routingKey: quiz.completed
+queue consommateur: tutoring.quiz-completed
+queue consommateur: adaptive.quiz-completed
+```
+
+Payload `lab.submitted` :
+
+```json
+{
+  "learnerEmail": "student@test.com",
+  "courseId": "course-id",
+  "conceptId": "concept-id",
+  "labId": "lab-id",
+  "status": "COMPLETED",
+  "timestamp": "2026-05-10T12:00:00"
+}
+```
+
+Payload `quiz.completed` :
+
+```json
+{
+  "learnerEmail": "student@test.com",
+  "courseId": "course-id",
+  "targetId": "concept-id",
+  "targetType": "CONCEPT",
+  "evaluationId": "evaluation-id",
+  "typeEvaluation": "FORMATIVE",
+  "score": 85.0,
+  "masterySource": "QUIZ_DIRECT",
+  "conceptResults": "[...]",
+  "timestamp": "2026-05-10T12:00:00"
+}
+```
+
+Si RabbitMQ est indisponible, la soumission TP reste valide. `tracking-service` journalise seulement un warning `event publish failed`.
+
+`adaptive-engine-service` ecoute aussi `lab.submitted` et `quiz.completed` en lecture seule. Cette ecoute prepare une future adaptation evenementielle, mais ne declenche pas encore de recalcul automatique et ne modifie aucune base.
+
+### Probleme RabbitMQ - cookie Erlang et volume Docker
+
+RabbitMQ stocke un fichier interne `.erlang.cookie` dans son volume de donnees. Si un ancien volume Docker a ete cree avec de mauvais droits, le conteneur peut sortir avec :
+
+```text
+Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces
+```
+
+En developpement, supprimer uniquement le volume RabbitMQ permet de repartir proprement. RabbitMQ reste un canal evenementiel complementaire : les donnees metier sont dans PostgreSQL, MongoDB et Neo4j.
+
+```bash
+docker compose down
+docker volume rm adaptiveengine_rabbitmq_data
+docker compose up --build
 ```
 
 ## Configuration locale
@@ -65,6 +156,29 @@ copy .env.example .env
 docker compose up --build
 ```
 
+## Probleme MongoDB - identifiants et volume Docker
+
+MongoDB cree ses utilisateurs uniquement lors de la premiere initialisation du volume Docker. Si les identifiants Mongo changent ensuite dans `.env`, le volume existant garde les anciens utilisateurs.
+
+Symptomes possibles dans `content-service` :
+
+```text
+POST /api/content/save        -> 500
+POST /api/content/evaluations -> 500
+POST /api/content/labs        -> 500
+Authentication failed
+```
+
+Solution en developpement : reinitialiser uniquement le volume MongoDB, puis relancer la stack.
+
+```bash
+docker compose down
+docker volume rm adaptiveengine_mongo_data
+docker compose up --build
+```
+
+Attention : cette commande supprime les donnees MongoDB existantes, donc les contenus, evaluations et labs deja enregistres. Elle ne supprime pas le code du projet.
+
 4. Acceder aux interfaces :
 
 ```text
@@ -72,6 +186,7 @@ Frontend:      http://localhost:5173
 API Gateway:   http://localhost:8080
 Consul UI:     http://localhost:8500
 Neo4j Browser: http://localhost:7474
+RabbitMQ UI:   http://localhost:15672
 ```
 
 ## Lancement local hors Docker
@@ -103,16 +218,59 @@ Mot de passe: valeur de ADMIN_DEFAULT_PASSWORD
 
 Ne pas utiliser la valeur de demonstration en production.
 
+Si le volume PostgreSQL IAM existe deja, le compte `admin@system.com` peut conserver un ancien mot de passe. Dans ce cas, trois options existent en developpement :
+
+1. Utiliser l'ancien mot de passe si vous le connaissez.
+2. Activer temporairement le reset au demarrage :
+
+```env
+ADMIN_RESET_ON_STARTUP=true
+```
+
+Puis redemarrer `iam-service` :
+
+```bash
+docker compose up --build -d iam-service
+```
+
+Le service met alors a jour le mot de passe avec `ADMIN_DEFAULT_PASSWORD`, force le role `ADMIN` et garde `estApprouve=true`. Le log attendu est :
+
+```text
+Default admin password reset because ADMIN_RESET_ON_STARTUP=true
+```
+
+Apres verification de la connexion, remettre :
+
+```env
+ADMIN_RESET_ON_STARTUP=false
+```
+
+3. En developpement uniquement, supprimer le volume PostgreSQL IAM pour repartir d'une base vide. Cette option supprime les utilisateurs IAM existants.
+
 ## Securite actuelle
 
-- Le JWT est emis et valide dans `iam-service`.
-- Les autres services restent largement ouverts pour l'instant.
-- La prochaine etape recommandee est de centraliser la validation JWT dans `gateway-service`, puis de propager les claims utilisateur vers les services internes.
+- Le JWT est emis par `iam-service`.
+- Le JWT est valide dans `gateway-service` par un filtre global.
+- La gateway extrait l'email et le role du token, puis propage les headers internes :
+
+```text
+X-User-Email
+X-User-Role
+```
+
+- Les routes critiques sont protegees par role au niveau gateway :
+  - `ADMIN` : `/api/admin/**`, `/api/graph/admin/**`, `/api/content/admin/**`
+  - `TEACHER` / `ADMIN` : dashboard enseignant, gestion des inscriptions, creation/modification cours/contenus/evaluations/TP
+  - `STUDENT` : inscription a un cours, traces, soumission TP, validation de sa propre maitrise
+- Les endpoints non explicitement autorises sont refuses par defaut par la gateway.
+- Les microservices gardent des controles simples sur les endpoints sensibles et utilisent `X-User-Email` en priorite lorsque le header est present.
 
 ## Limites connues
 
-- Pas encore de validation JWT centralisee dans la gateway.
-- Pas de broker de messages; les communications sont HTTP synchrones.
+- Les microservices restent accessibles sans authentification forte s'ils sont exposes directement hors reseau Docker. En usage normal, le point d'entree doit rester `gateway-service`.
+- Certains appels frontend conservent encore des parametres d'identite (`learnerEmail`, `teacherEmail`, `userId`) pour compatibilite, mais les backends privilegient les headers injectes par la gateway.
+- RabbitMQ V1 est complementaire uniquement; REST reste la source principale et aucun traitement metier ne depend encore du broker.
+- `adaptive-engine-service` et `tutoring-service` consomment les evenements RabbitMQ en lecture seule pour preparer l'evolution evenementielle.
 - Pas de moteur ML/LSTM implemente dans ce depot.
 - Pas de tests automatises detectes.
 - Pas de documentation OpenAPI/Swagger.

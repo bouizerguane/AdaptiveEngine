@@ -22,7 +22,10 @@ public class Course {
     private String id;
     private String title;
     private String description;
+    private String objectifs;
+    private String prerequisTextuels;
     private String authorEmail;
+    private String authorName;
     private LocalDateTime createdAt;
     private String status;
     private Double posX;

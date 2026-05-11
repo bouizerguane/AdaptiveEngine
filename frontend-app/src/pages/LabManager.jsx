@@ -35,9 +35,11 @@ import {
     Eye, Layout, Palette, Highlighter, Sigma, Quote, Minus, Combine, PanelTop,
     Subscript as SubscriptIcon, Superscript as SuperscriptIcon
 } from 'lucide-react';
-import { labApi, courseApi } from '../api/apiClient';
+import { labApi, courseApi, graphApi } from '../api/apiClient';
 import CustomDialog from '../components/CustomDialog';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { normalizeCourseTree } from '../utils/courseOrder';
 
 const lowlight = createLowlight(common);
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
@@ -48,7 +50,7 @@ const FontSize = Extension.create({
     name: 'fontSize',
     addOptions() { return { types: ['textStyle'] } },
     addGlobalAttributes() {
-        return [{ types: this.options.types, attributes: { fontSize: { default: null, parseHTML: element => element.style.fontSize.replace(/['"]+/g, ''), renderHTML: attributes => { if (!attributes.fontSize) return {}; return { style: `font-size: ${attributes.fontSize}` } } } } }]
+        return [{ types: this.options.types, attributes: { fontSize: { default: null, parseHTML: element => (element.style.fontSize || '').replace(/['"]+/g, ''), renderHTML: attributes => { if (!attributes.fontSize) return {}; return { style: `font-size: ${attributes.fontSize}` } } } } }]
     },
     addCommands() { return { setFontSize: fontSize => ({ chain }) => chain().setMark('textStyle', { fontSize }).run(), unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run() } }
 });
@@ -110,10 +112,10 @@ function SortableStep({ step, isActive, onSelect, onDelete }) {
 
 /* ─── Tiptap MenuBar ─────────────────────────────────────────────── */
 const MenuBar = ({ editor }) => {
-    if (!editor) return null;
-
     const [showChars, setShowChars] = useState(false);
     const SPECIAL_CHARS = ['α', 'β', 'γ', '∞', '∑', 'Δ', '≈', '≠', 'π', 'θ', 'μ', 'Ω', '±', '≤', '≥', '√'];
+
+    if (!editor) return null;
 
     const addLink = () => {
         const url = prompt('URL du lien (ex: https://...) :');
@@ -206,6 +208,7 @@ const MenuBar = ({ editor }) => {
 /* ─── Main Component ──────────────────────────────────────────────── */
 export default function LabManager() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [modules, setModules] = useState([]);
     const [chapters, setChapters] = useState([]);
@@ -256,11 +259,14 @@ export default function LabManager() {
         }
     }, [activeStepId, editor]);
 
-    useEffect(() => { courseApi.getCourses().then(r => setCourses(r.data)).catch(() => { }); }, []);
+    useEffect(() => {
+        if (!user?.email) return;
+        graphApi.getTeacherCourses(user.email).then(r => setCourses(r.data)).catch(() => { });
+    }, [user?.email]);
 
     useEffect(() => {
         if (!selectedCourse) { setModules([]); setSelectedModule(''); return; }
-        courseApi.getCourseTree(selectedCourse).then(r => setModules(r.data.modules || [])).catch(() => { });
+        courseApi.getCourseTree(selectedCourse).then(r => setModules(normalizeCourseTree(r.data)?.modules || [])).catch(() => { });
     }, [selectedCourse]);
 
     useEffect(() => {

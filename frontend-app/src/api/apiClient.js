@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -41,7 +41,6 @@ export const adminApi = {
     getSettings: () => apiClient.get('/admin/settings'),
     getSettingByKey: (key) => apiClient.get(`/admin/settings/${key}`),
     updateSettings: (data) => apiClient.put('/admin/settings', data),
-    getStats: () => apiClient.get('/admin/stats'),
 };
 
 export const userApi = {
@@ -59,6 +58,15 @@ export const courseApi = {
 
 export const graphApi = {
     getTeacherCourses: (email) => apiClient.get(`/graph/courses/teacher/${email}`),
+    getAdminCourses: () => apiClient.get('/graph/admin/courses'),
+    deleteCoursesBulk: (courseIds) => apiClient.delete('/graph/admin/courses/bulk', { data: { courseIds } }),
+    getCoursePrerequisiteConcepts: (courseId) => apiClient.get(`/graph/courses/${courseId}/prerequisite-concepts`),
+    getConceptContext: (conceptId, currentCourseId) =>
+        apiClient.get(`/graph/concepts/${conceptId}/context`, { params: { currentCourseId } }),
+    getCourseEnrollments: (courseId) =>
+        apiClient.get(`/graph/courses/${courseId}/enrollments`),
+    unenrollLearner: (courseId, learnerEmail) =>
+        apiClient.delete(`/graph/courses/${courseId}/enrollments/${encodeURIComponent(learnerEmail)}`),
     // --- MODULES ---
     getModules: () => apiClient.get('/graph/modules'),
     createModule: (courseId, data) => apiClient.post(`/graph/modules${courseId ? `?courseId=${courseId}` : ''}`, data),
@@ -100,6 +108,8 @@ export const contentApi = {
 
 export const evaluationApi = {
     getEvaluation: (targetId) => apiClient.get(`/content/evaluations/${targetId}`),
+    getCourseEvaluations: (courseId) => apiClient.get(`/content/evaluations/course/${courseId}`),
+    getCourseDiagnostics: (courseId) => apiClient.get(`/content/evaluations/course/${courseId}/diagnostics`),
     saveEvaluation: (data) => apiClient.post('/content/evaluations', data),
 };
 
@@ -108,26 +118,39 @@ export const trackingApi = {
     getTracesByUser: (userId) => apiClient.get(`/traces/user/${userId}`),
     getTracesByUserAndEvaluation: (userId, evaluationId) =>
         apiClient.get(`/traces/user/${userId}/evaluation/${evaluationId}`),
-    getDashboardSummary: (teacherEmail) => 
-        apiClient.get(`/tracking/dashboard/summary?teacherEmail=${teacherEmail}`)
+    getLatestDiagnostic: (learnerEmail, courseId) =>
+        apiClient.get('/traces/diagnostics/latest', { params: { learnerEmail, courseId } }),
+    getDashboardSummary: () =>
+        apiClient.get('/tracking/dashboard/summary')
 };
 
 export const masteryApi = {
     /** Valide tous les concepts d'un module (DIAGNOSTIC_POSITIONNEMENT réussi). */
-    validateModule: (moduleId, userId) =>
-        apiClient.post('/graph/mastery/validate-module', { moduleId, userId }),
+    validateModule: (moduleId) =>
+        apiClient.post('/graph/mastery/validate-module', { moduleId }),
 
     /**
      * Valide un concept unique avec un basis spécifique.
      *   basis='LAB'        → Capacité d'Application (TP + GitHub soumis)
      *   basis='QUIZ_DIRECT' → Connaissance (quiz réussi)
      */
-    validateConcept: (conceptId, userId, basis = 'QUIZ_DIRECT') =>
-        apiClient.post('/graph/mastery/validate-concept', { conceptId, userId, basis }),
+    validateConcept: (conceptId, basis = 'QUIZ_DIRECT') =>
+        apiClient.post('/graph/mastery/validate-concept', { conceptId, basis }),
+    isConceptMastered: (conceptId, learnerEmail) =>
+        apiClient.get(`/graph/mastery/concepts/${conceptId}`, { params: { learnerEmail } }),
+};
+
+export const adaptiveApi = {
+    submitDiagnostic: (data) => apiClient.post('/graph/adaptive/diagnostic', data),
+};
+
+export const tutoringApi = {
+    getFeedback: (data) => apiClient.post('/tutoring/feedback', data),
 };
 
 /** API Labs (Travaux Pratiques) — content-service */
 export const labApi = {
+    getLabById:      (id)       => apiClient.get(`/content/labs/id/${id}`),
     getLabByTarget:  (targetId) => apiClient.get(`/content/labs/${targetId}`),
     getLabsByCourse: (courseId) => apiClient.get(`/content/labs/course/${courseId}`),
     saveLab:         (data)     => apiClient.post('/content/labs', data),

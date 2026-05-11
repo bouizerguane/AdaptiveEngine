@@ -9,13 +9,35 @@ import java.util.Optional;
 
 public interface CourseRepository extends Neo4jRepository<Course, String> {
 
+    @Query("MATCH (c:Course) RETURN c")
+    List<Course> findAllCourses();
+
     @Query("MATCH (c:Course {authorEmail: $authorEmail}) RETURN c")
     List<Course> findByAuthorEmail(String authorEmail);
+
+    @Query("MATCH (c:Course) WHERE c.id IN $courseIds RETURN count(c)")
+    long countByIdIn(List<String> courseIds);
+
+    @Query("MATCH (c:Course) WHERE c.id IN $courseIds " +
+           "OPTIONAL MATCH (c)-[:CONTAINS_MODULE]->(:Module)-[:CONTAINS_CHAPITRE]->(:Chapitre)-[:CONTAINS_CONCEPT]->(co:Concept) " +
+           "WITH DISTINCT co WHERE co IS NOT NULL " +
+           "RETURN co.id")
+    List<String> findConceptIdsByCourseIds(List<String> courseIds);
 
     @Query("MATCH (c:Course {id: $courseId}) " +
            "OPTIONAL MATCH (c)-[:CONTAINS_MODULE|CONTAINS_CHAPITRE|CONTAINS_CONCEPT*0..3]->(node) " +
            "DETACH DELETE node")
     void deleteCourseCascade(String courseId);
+
+    @Query("MATCH (c:Course) WHERE c.id IN $courseIds " +
+           "OPTIONAL MATCH (c)-[:CONTAINS_MODULE]->(m:Module) " +
+           "OPTIONAL MATCH (m)-[:CONTAINS_CHAPITRE]->(ch:Chapitre) " +
+           "OPTIONAL MATCH (ch)-[:CONTAINS_CONCEPT]->(co:Concept) " +
+           "WITH collect(DISTINCT c) + collect(DISTINCT m) + collect(DISTINCT ch) + collect(DISTINCT co) AS nodes " +
+           "UNWIND nodes AS node " +
+           "WITH DISTINCT node WHERE node IS NOT NULL " +
+           "DETACH DELETE node")
+    void deleteCoursesByIdsCascade(List<String> courseIds);
 
     @Query("MATCH (c:Course {id: $courseId}) " +
            "OPTIONAL MATCH (c)-[r1:CONTAINS_MODULE]->(m:Module) " +

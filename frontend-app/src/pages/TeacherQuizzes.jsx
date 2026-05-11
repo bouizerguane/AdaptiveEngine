@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { graphApi, evaluationApi, courseApi } from '../api/apiClient';
 import CustomDialog from '../components/CustomDialog';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { flattenConcepts, normalizeCourseTree } from '../utils/courseOrder';
 import {
     ChevronRight, Plus, Trash2, Save, HelpCircle,
     ClipboardList, Settings, Zap, BookOpen, Shield,
@@ -18,7 +20,7 @@ const DIFFICULTY_COLORS = { EASY: 'text-emerald-600 bg-emerald-50 border-emerald
 const DIFFICULTY_LABELS = { EASY: 'Facile', MEDIUM: 'Moyen', HARD: 'Difficile' };
 
 const TYPES_BY_LEVEL = {
-    COURSE:   ['DIAGNOSTIC_ENTREE'],
+    COURSE:   ['DIAGNOSTIC_ENTREE', 'VALIDATION'],
     MODULE:   ['DIAGNOSTIC_POSITIONNEMENT'],
     CONCEPT:  ['FORMATIVE', 'VALIDATION'],
     '':       [],
@@ -31,7 +33,7 @@ const TYPE_META = {
     VALIDATION:                { color: 'red',     icon: <Shield size={16}/>,         label: 'Validation (Examen)',           desc: 'Évaluation stricte : chronomètre, tentatives limitées et anti-triche actif.' },
 };
 
-const emptyQuestion = () => ({ text: '', type: 'QCM', options: ['', '', '', ''], correctAnswer: '', difficulty: 'MEDIUM', hintText: '' });
+const emptyQuestion = () => ({ conceptId: '', associationType: 'COURSE_CONCEPT', externalPrerequisiteLabel: '', generalQuestion: false, text: '', type: 'QCM', options: ['', '', '', ''], correctAnswer: '', difficulty: 'MEDIUM', hintText: '' });
 
 const defaultEval = (type = 'FORMATIVE') => {
     const base = {
@@ -61,10 +63,12 @@ const Toggle = ({ value, onChange, label, disabled }) => (
 
 export default function TeacherQuizzes() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [modules, setModules] = useState([]);
     const [chapters, setChapters] = useState([]);
     const [concepts, setConcepts] = useState([]);
+    const [externalPrerequisiteConcepts, setExternalPrerequisiteConcepts] = useState([]);
 
     const [selectedCourse, setSelectedCourse] = useState('');
     const [selectedModule, setSelectedModule] = useState('');
@@ -80,17 +84,25 @@ export default function TeacherQuizzes() {
     const activeTargetType = selectedConcept ? 'CONCEPT' : selectedModule ? 'MODULE' : selectedCourse ? 'COURSE' : '';
 
     useEffect(() => {
-        courseApi.getCourses().then(r => setCourses(r.data)).catch(() => {});
-    }, []);
+        if (!user?.email) return;
+        graphApi.getTeacherCourses(user.email).then(r => setCourses(r.data)).catch(() => {});
+    }, [user?.email]);
 
 
 
     useEffect(() => {
-        if (!selectedCourse) { setModules([]); setSelectedModule(''); return; }
+        if (!selectedCourse) { setModules([]); setExternalPrerequisiteConcepts([]); setSelectedModule(''); return; }
         courseApi.getCourseTree(selectedCourse).then(r => {
-            setModules(r.data.modules || []);
-            setSelectedModule('');
-        }).catch(() => {});
+            setModules(normalizeCourseTree(r.data)?.modules || []);
+            setSelectedModule(''); setChapters([]); setSelectedChapter(''); setConcepts([]); setSelectedConcept('');
+        }).catch(error => {
+            console.error('[TeacherQuizzes] Impossible de charger le plan du cours:', error);
+            setModules([]); setSelectedModule(''); setChapters([]); setSelectedChapter(''); setConcepts([]); setSelectedConcept('');
+            toast.error("Impossible de charger le plan du cours.");
+        });
+        graphApi.getCoursePrerequisiteConcepts(selectedCourse)
+            .then(r => setExternalPrerequisiteConcepts(r.data || []))
+            .catch(() => setExternalPrerequisiteConcepts([]));
     }, [selectedCourse]);
 
     useEffect(() => {
@@ -128,6 +140,15 @@ export default function TeacherQuizzes() {
             });
     }, [activeTargetId]);
 
+    useEffect(() => {
+        const availableTypes = TYPES_BY_LEVEL[activeTargetType] || [];
+        if (!activeTargetType || availableTypes.length === 0) return;
+        if (!availableTypes.includes(evaluation.typeEvaluation)) {
+            setEvaluation(defaultEval(availableTypes[0]));
+            setIsDirty(false);
+        }
+    }, [activeTargetType, evaluation.typeEvaluation]);
+
     const setField = (field, value) => { setEvaluation(p => ({ ...p, [field]: value })); setIsDirty(true); };
     const changeType = (type) => { setEvaluation(prev => ({ ...defaultEval(type), id: prev.id, questions: prev.questions })); setIsDirty(true); };
 
@@ -145,25 +166,72 @@ export default function TeacherQuizzes() {
         return { ...p, questions: qs };
     });
 
+    const inferAssociationType = (question) => {
+        if (question.associationType) return question.associationType;
+        if (question.generalQuestion) return 'GENERAL';
+        if (question.externalPrerequisiteLabel?.trim()) return 'FREE_EXTERNAL';
+        if (question.conceptId && externalPrerequisiteConcepts.some(concept => concept.id === question.conceptId)) return 'EXTERNAL_CONCEPT';
+        return 'COURSE_CONCEPT';
+    };
+
+    const updateQuestionAssociationType = (idx, associationType) => setEvaluation(p => {
+        setIsDirty(true);
+        const qs = [...p.questions];
+        qs[idx] = {
+            ...qs[idx],
+            associationType,
+            conceptId: '',
+            externalPrerequisiteLabel: '',
+            generalQuestion: associationType === 'GENERAL',
+        };
+        return { ...p, questions: qs };
+    });
+
     const updateOption = (qIdx, oIdx, value) => setEvaluation(p => {
         setIsDirty(true);
         const qs = [...p.questions]; 
         const opts = [...qs[qIdx].options]; 
         opts[oIdx] = value; 
-        qs[qIdx] = { ...qs[qIdx], options: opts }; 
+        const previousAnswer = qs[qIdx].correctAnswer;
+        qs[qIdx] = {
+            ...qs[qIdx],
+            options: opts,
+            correctAnswer: opts.includes(previousAnswer) ? previousAnswer : ''
+        };
         return { ...p, questions: qs };
     });
 
     const handleSave = async () => {
         if (!activeTargetId) return;
-        if (evaluation.questions.some(q => !q.text || !q.correctAnswer || !q.difficulty)) {
+        if (evaluation.questions.some(q => !q.text || !q.correctAnswer || !q.difficulty || !(q.options || []).includes(q.correctAnswer))) {
             toast.error('Chaque question doit posséder un énoncé, une réponse correcte et un niveau de difficulté défini.');
+            return;
+        }
+        if (evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT'
+            && evaluation.questions.some(q => !q.conceptId)) {
+            toast.error('Chaque question doit etre associee a un concept.');
+            return;
+        }
+        if (evaluation.typeEvaluation === 'DIAGNOSTIC_ENTREE'
+            && evaluation.questions.some(q => !q.conceptId && !q.externalPrerequisiteLabel?.trim() && !q.generalQuestion)) {
+            toast.error("Chaque question de diagnostic d'entree doit avoir un concept, un prerequis libre ou etre marquee comme generale.");
             return;
         }
         setSaving(true);
         try {
+            const questions = evaluation.questions.map(question => ({
+                ...question,
+                conceptId: activeTargetType === 'CONCEPT' && evaluation.typeEvaluation === 'FORMATIVE'
+                    ? selectedConcept
+                    : question.generalQuestion || question.externalPrerequisiteLabel?.trim()
+                        ? ''
+                        : question.conceptId || '',
+                externalPrerequisiteLabel: question.generalQuestion ? '' : question.externalPrerequisiteLabel || '',
+                generalQuestion: !!question.generalQuestion,
+            }));
             await evaluationApi.saveEvaluation({
                 ...evaluation,
+                questions,
                 targetId: activeTargetId,
                 targetType: activeTargetType,
                 courseId: selectedCourse,
@@ -187,6 +255,14 @@ export default function TeacherQuizzes() {
     const activeBorderMap = { violet: 'border-violet-400 bg-violet-50', sky: 'border-sky-400 bg-sky-50', emerald: 'border-emerald-400 bg-emerald-50', red: 'border-red-400 bg-red-50' };
     const canSave = !!activeTargetId;
     const availableTypes = TYPES_BY_LEVEL[activeTargetType] || [];
+    const allCourseConcepts = flattenConcepts(modules);
+    const courseQuestionConcepts = allCourseConcepts.map(concept => ({ ...concept, sourceLabel: 'Concept du cours' }));
+    const externalQuestionConcepts = externalPrerequisiteConcepts.map(concept => ({ ...concept, sourceLabel: 'Prerequis conceptuel existant', moduleTitle: 'Autre cours', chapitreTitle: '' }));
+    const selectableQuestionConcepts = type === 'DIAGNOSTIC_ENTREE'
+        ? [...courseQuestionConcepts, ...externalQuestionConcepts]
+        : courseQuestionConcepts;
+    const requiresQuestionConcept = type === 'DIAGNOSTIC_POSITIONNEMENT';
+    const allowsQuestionConcept = requiresQuestionConcept || type === 'VALIDATION';
 
     const qs = evaluation.questions;
     const bankTotal = qs.length;
@@ -244,6 +320,22 @@ export default function TeacherQuizzes() {
                 </select>
             </div>
 
+            {selectedCourse && modules.length === 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Aucun module/chapitre/concept disponible pour ce cours.
+                </div>
+            )}
+            {selectedModule && chapters.length === 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Aucun chapitre/concept disponible pour ce module.
+                </div>
+            )}
+            {selectedChapter && concepts.length === 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Aucun concept disponible pour ce chapitre.
+                </div>
+            )}
+
             <AnimatePresence mode="wait">
                 {!activeTargetId ? (
                     <motion.div key="placeholder" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
@@ -269,7 +361,7 @@ export default function TeacherQuizzes() {
                             <h2 className="font-bold text-slate-700 mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">
                                 <span className="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span> Type d'Évaluation
                             </h2>
-                            {activeTargetType !== 'CONCEPT' ? (
+                            {activeTargetType !== 'CONCEPT' && availableTypes.length === 1 ? (
                                 <div className={`flex items-start gap-3 p-4 rounded-xl border-2 ${
                                     activeTargetType === 'COURSE' ? 'border-violet-400 bg-violet-50' : 'border-sky-400 bg-sky-50'
                                 }`}>
@@ -377,14 +469,106 @@ export default function TeacherQuizzes() {
                                             <button onClick={() => removeQuestion(qIdx)} className="text-slate-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
                                         </div>
                                         <div className="space-y-4">
+                                            {type === 'DIAGNOSTIC_ENTREE' && (
+                                                <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+                                                    <label className="block text-xs font-bold text-violet-700">Type d'association</label>
+                                                    <select
+                                                        value={inferAssociationType(q)}
+                                                        onChange={e => updateQuestionAssociationType(qIdx, e.target.value)}
+                                                        className="w-full border border-violet-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-violet-400"
+                                                    >
+                                                        <option value="COURSE_CONCEPT">Concept du cours</option>
+                                                        <option value="EXTERNAL_CONCEPT">Prerequis conceptuel existant</option>
+                                                        <option value="FREE_EXTERNAL">Prerequis externe libre</option>
+                                                        <option value="GENERAL">Question generale sans concept</option>
+                                                    </select>
+
+                                                    {inferAssociationType(q) === 'COURSE_CONCEPT' && (
+                                                        <select
+                                                            value={q.conceptId || ''}
+                                                            onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
+                                                            className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
+                                                        >
+                                                            <option value="">Selectionner un concept du cours</option>
+                                                            {courseQuestionConcepts.map(concept => (
+                                                                <option key={concept.id} value={concept.id}>
+                                                                    {concept.moduleTitle}{concept.chapitreTitle ? ` / ${concept.chapitreTitle}` : ''} / {concept.labelPedagogique || concept.title || concept.id}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+
+                                                    {inferAssociationType(q) === 'EXTERNAL_CONCEPT' && (
+                                                        <select
+                                                            value={q.conceptId || ''}
+                                                            onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
+                                                            className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
+                                                        >
+                                                            <option value="">Selectionner un prerequis existant</option>
+                                                            {externalQuestionConcepts.map(concept => (
+                                                                <option key={concept.id} value={concept.id}>
+                                                                    {concept.labelPedagogique || concept.title || concept.label || concept.id}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+
+                                                    {inferAssociationType(q) === 'FREE_EXTERNAL' && (
+                                                        <input
+                                                            value={q.externalPrerequisiteLabel || ''}
+                                                            onChange={e => updateQuestion(qIdx, 'externalPrerequisiteLabel', e.target.value)}
+                                                            placeholder="Exemple : logique mathematique"
+                                                            className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
+                                                        />
+                                                    )}
+
+                                                    {inferAssociationType(q) === 'GENERAL' && (
+                                                        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+                                                            Cette question restera generale : aucun conceptId ni prerequis libre ne sera envoye.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {allowsQuestionConcept && type !== 'DIAGNOSTIC_ENTREE' && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                                                        Concept associe {requiresQuestionConcept && <span className="text-red-500">*</span>}
+                                                    </label>
+                                                    <select
+                                                        value={q.conceptId || ''}
+                                                        onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
+                                                        className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
+                                                    >
+                                                        <option value="">Selectionner un concept</option>
+                                                        {selectableQuestionConcepts.map(concept => (
+                                                            <option key={concept.id} value={concept.id}>
+                                                                {concept.sourceLabel} / {concept.moduleTitle}{concept.chapitreTitle ? ` / ${concept.chapitreTitle}` : ''} / {concept.labelPedagogique || concept.id}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             <input value={q.text} onChange={e => updateQuestion(qIdx, 'text', e.target.value)} placeholder="Intitulé de la question..." className="w-full text-lg font-bold border-b border-transparent focus:border-indigo-500 outline-none p-1" />
                                             <div className="grid grid-cols-2 gap-4">
                                                 {q.options.map((opt, oIdx) => (
                                                     <div key={oIdx} className="flex items-center gap-2">
-                                                        <input type="radio" name={`correct-${qIdx}`} checked={q.correctAnswer === opt && !!opt} onChange={() => updateQuestion(qIdx, 'correctAnswer', opt)} disabled={!opt} />
                                                         <input value={opt} onChange={e => updateOption(qIdx, oIdx, e.target.value)} placeholder={`Option ${oIdx + 1}`} className="flex-1 border border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-indigo-300" />
                                                     </div>
                                                 ))}
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Bonne reponse</label>
+                                                <select
+                                                    value={q.correctAnswer || ''}
+                                                    onChange={e => updateQuestion(qIdx, 'correctAnswer', e.target.value)}
+                                                    className="w-full border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-lg p-2 text-sm font-semibold outline-none focus:border-emerald-400"
+                                                >
+                                                    <option value="">Selectionner la bonne reponse</option>
+                                                    {(q.options || []).filter(Boolean).map((opt, optIdx) => (
+                                                        <option key={`${optIdx}-${opt}`} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div className="flex items-center gap-3 pt-2 border-t border-slate-50">
                                                 <select value={q.difficulty} onChange={e => updateQuestion(qIdx, 'difficulty', e.target.value)} className={`text-xs font-bold px-2 py-1 rounded-full border outline-none ${DIFFICULTY_COLORS[q.difficulty]}`}>

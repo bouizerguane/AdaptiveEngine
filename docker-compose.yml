@@ -74,6 +74,26 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - adaptive-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   # ========================================== #
   #            APPLICATION SERVICES            #
   # ========================================== #
@@ -81,16 +101,30 @@ services:
     build:
       context: ./gateway-service
     container_name: gateway-service
+    entrypoint: ["sh", "-c", "sleep ${GATEWAY_STARTUP_DELAY_SECONDS:-30} && java -jar app.jar"]
     ports:
       - "8080:8080"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
     networks:
       - adaptive-network
     depends_on:
       consul:
         condition: service_healthy
+      iam-service:
+        condition: service_started
+      knowledge-graph-service:
+        condition: service_started
+      content-service:
+        condition: service_started
+      tracking-service:
+        condition: service_started
+      adaptive-engine-service:
+        condition: service_started
+      tutoring-service:
+        condition: service_started
 
   iam-service:
     build:
@@ -104,6 +138,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_IAM_PASSWORD:-change_me_iam_password}
       - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
       - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-change_me_admin_password}
+      - ADMIN_RESET_ON_STARTUP=${ADMIN_RESET_ON_STARTUP:-false}
     networks:
       - adaptive-network
     depends_on:
@@ -180,12 +215,62 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-tracking:5432/${POSTGRES_TRACKING_DB:-tracking_db}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_TRACKING_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_TRACKING_PASSWORD:-change_me_tracking_password}
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
     networks:
       - adaptive-network
     depends_on:
       consul:
         condition: service_healthy
       postgres-tracking:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  adaptive-engine-service:
+    build:
+      context: ./adaptive-engine-service
+    container_name: adaptive-engine-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - KNOWLEDGE_GRAPH_SERVICE_URL=http://knowledge-graph-service:8082
+      - TRACKING_SERVICE_URL=http://tracking-service:8084
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      knowledge-graph-service:
+        condition: service_started
+      tracking-service:
+        condition: service_started
+
+  tutoring-service:
+    build:
+      context: ./tutoring-service
+    container_name: tutoring-service
+    environment:
+      - SPRING_CLOUD_CONSUL_HOST=consul-server
+      - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
+    networks:
+      - adaptive-network
+    depends_on:
+      consul:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   frontend-app:
@@ -201,9 +286,14 @@ services:
     depends_on:
       gateway-service:
         condition: service_started
+      adaptive-engine-service:
+        condition: service_started
+      tutoring-service:
+        condition: service_started
 
 volumes:
   postgres_data:
   neo4j_data:
   mongo_data:
   tracking_data:
+  rabbitmq_data:

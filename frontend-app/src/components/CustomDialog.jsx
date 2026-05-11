@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
 
-export default function CustomDialog({ isOpen, onClose, onConfirm, title, message, type = 'info', confirmText = 'Confirmer', cancelText = 'Annuler' }) {
+export default function CustomDialog({ isOpen, onClose, onConfirm, title, message, type = 'info', confirmText = 'Confirmer', cancelText = 'Annuler', confirmVariant = 'primary' }) {
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && isOpen) onClose();
@@ -29,6 +29,9 @@ export default function CustomDialog({ isOpen, onClose, onConfirm, title, messag
 
     const { icon, color } = getIconAndColor();
     const isConfirm = type === 'confirm';
+    const confirmClass = confirmVariant === 'danger'
+        ? 'bg-red-600 hover:bg-red-700'
+        : 'bg-indigo-600 hover:bg-indigo-700';
 
     return (
         <AnimatePresence>
@@ -73,7 +76,7 @@ export default function CustomDialog({ isOpen, onClose, onConfirm, title, messag
                                 )}
                                 <button 
                                     onClick={isConfirm ? onConfirm : onClose} 
-                                    className="flex-1 py-2.5 px-4 rounded-xl font-bold text-white transition-colors bg-indigo-600 hover:bg-indigo-700"
+                                    className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-white transition-colors ${confirmClass}`}
                                 >
                                     {isConfirm ? confirmText : (type === 'success' ? 'Continuer' : 'Compris')}
                                 </button>

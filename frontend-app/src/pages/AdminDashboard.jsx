@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Users, Server, Cpu, CheckCircle, AlertTriangle, RefreshCw, GraduationCap, BookOpen, Layers } from 'lucide-react';
-import { adminApi, courseApi, graphApi } from '../api/apiClient';
+import { Users, Server, Cpu, CheckCircle, AlertTriangle, RefreshCw, GraduationCap, BookOpen, Layers, ClipboardList, Terminal, Activity, GaugeCircle, XCircle } from 'lucide-react';
+import { adminApi, courseApi, graphApi, labApi, evaluationApi, API_BASE_URL } from '../api/apiClient';
 import toast from 'react-hot-toast';
 
 // --- Config: liste des microservices à surveiller ---
 // Toutes les routes passent par la Gateway (port 8080).
 // On utilise des routes GET existantes (401 = service UP mais non authentifié, 404 = route manquante mais service UP)
 const SERVICES = [
-    { name: 'IAM Service',       url: 'http://localhost:8080/api/admin/users/pending',    label: 'IAM' },
-    { name: 'Knowledge Graph',   url: 'http://localhost:8080/api/graph/concepts',          label: 'Graph' },
-    { name: 'Content Service',   url: 'http://localhost:8080/api/content/concept/ping',    label: 'Content' },
-    { name: 'Tracking Service',  url: 'http://localhost:8080/api/traces/user/ping',        label: 'Tracking' },
-    { name: 'API Gateway',       url: 'http://localhost:8080/api/graph/modules',           label: 'Gateway' },
+    { name: 'IAM Service',       url: `${API_BASE_URL}/admin/users/pending`,     label: 'IAM' },
+    { name: 'Knowledge Graph',   url: `${API_BASE_URL}/graph/concepts`,          label: 'Graph' },
+    { name: 'Content Service',   url: `${API_BASE_URL}/content/concept/__ping__`, label: 'Content' },
+    { name: 'Tracking Service',  url: `${API_BASE_URL}/traces/user/__ping__`,    label: 'Tracking' },
+    { name: 'API Gateway',       url: `${API_BASE_URL}/graph/modules`,           label: 'Gateway' },
 ];
+
+const normalizeRole = (role) => (role || '').replace('ROLE_', '');
 
 async function pingService(svc) {
     const token = localStorage.getItem('token');
@@ -36,7 +38,8 @@ export default function AdminDashboard() {
     const [pendingUsers, setPendingUsers]     = useState([]);
     const [allUsers, setAllUsers]             = useState([]);
     const [services, setServices]             = useState([]);
-    const [stats, setStats]                   = useState({ teachers: 0, students: 0, courses: 0, concepts: 0 });
+    const [stats, setStats]                   = useState({ teachers: 0, students: 0, courses: 0, concepts: 0, evaluations: 0, labs: 0 });
+    const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading]               = useState(true);
     const [fetchError, setFetchError]         = useState(null);
     const [refreshing, setRefreshing]         = useState(false);
@@ -58,20 +61,33 @@ export default function AdminDashboard() {
         try {
             const [usersRes, coursesRes, conceptsRes] = await Promise.allSettled([
                 adminApi.getAllUsers(),
-                courseApi.getCourses(),
+                graphApi.getAdminCourses(),
                 graphApi.getConcepts(),
             ]);
             const users    = usersRes.status === 'fulfilled'    ? (usersRes.value.data    || []) : [];
             const courses  = coursesRes.status === 'fulfilled'  ? (coursesRes.value.data  || []) : [];
             const concepts = conceptsRes.status === 'fulfilled' ? (conceptsRes.value.data || []) : [];
+            const courseContent = await Promise.all((Array.isArray(courses) ? courses : []).map(async (course) => {
+                const [evalRes, labRes] = await Promise.allSettled([
+                    evaluationApi.getCourseEvaluations(course.id),
+                    labApi.getLabsByCourse(course.id),
+                ]);
+                return {
+                    evaluations: evalRes.status === 'fulfilled' && Array.isArray(evalRes.value.data) ? evalRes.value.data.length : 0,
+                    labs: labRes.status === 'fulfilled' && Array.isArray(labRes.value.data) ? labRes.value.data.length : 0,
+                };
+            }));
 
             setAllUsers(users);
             setStats({
-                teachers: users.filter(u => u.role === 'TEACHER').length,
-                students: users.filter(u => u.role === 'STUDENT').length,
+                teachers: users.filter(u => normalizeRole(u.role) === 'TEACHER').length,
+                students: users.filter(u => ['STUDENT', 'LEARNER'].includes(normalizeRole(u.role))).length,
                 courses:  courses.length,
                 concepts: Array.isArray(concepts) ? concepts.length : 0,
+                evaluations: courseContent.reduce((sum, item) => sum + item.evaluations, 0),
+                labs: courseContent.reduce((sum, item) => sum + item.labs, 0),
             });
+            setRecentActivity(buildRecentActivity(users, courses));
         } catch (e) {
             console.error('Error fetching stats', e);
         }
@@ -111,6 +127,7 @@ export default function AdminDashboard() {
     const upCount   = services.filter(s => s.status === 'UP').length;
     const downCount = services.filter(s => s.status === 'DOWN').length;
     const avgLatency = services.filter(s => s.latency !== null).reduce((acc, s, _, arr) => acc + s.latency / arr.length, 0);
+    const systemAlerts = buildSystemAlerts(services);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">
@@ -246,6 +263,57 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
+            {/* STATISTIQUES GLOBALES */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MiniStat icon={<BookOpen size={18} />} label="Total cours" value={stats.courses} color="rose" />
+                <MiniStat icon={<Layers size={18} />} label="Total concepts" value={stats.concepts} color="violet" />
+                <MiniStat icon={<ClipboardList size={18} />} label="Evaluations" value={stats.evaluations} color="indigo" />
+                <MiniStat icon={<Terminal size={18} />} label="TP" value={stats.labs} color="emerald" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <Activity size={18} className="text-slate-500" />
+                            Activite recente
+                        </h2>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                        {recentActivity.length > 0 ? recentActivity.map((item, idx) => (
+                            <div key={idx} className="px-6 py-3">
+                                <p className="text-sm font-semibold text-slate-700">{item.label}</p>
+                                <p className="text-xs text-slate-500">{item.detail}</p>
+                            </div>
+                        )) : (
+                            <div className="p-8 text-center text-slate-400">Aucune activite recente</div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <AlertTriangle size={18} className="text-slate-500" />
+                            Alertes systeme
+                        </h2>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                        {systemAlerts.length > 0 ? systemAlerts.map((alert, idx) => (
+                            <div key={idx} className="px-6 py-3 flex items-start gap-3">
+                                <AlertTriangle size={16} className={alert.level === 'error' ? 'text-red-500' : 'text-amber-500'} />
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-700">{alert.title}</p>
+                                    <p className="text-xs text-slate-500">{alert.message}</p>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="p-8 text-center text-slate-400">Aucune alerte critique</div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {/* SANTÉ DÉTAILLÉE DES SERVICES */}
             {services.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -256,24 +324,24 @@ export default function AdminDashboard() {
                         </h2>
                     </div>
                     <div className="divide-y divide-slate-100">
-                        {services.map(svc => (
+                        {services.map(svc => {
+                            const health = serviceHealthMeta(svc);
+                            return (
                             <div key={svc.name} className="flex items-center justify-between px-6 py-3 hover:bg-slate-50 transition">
                                 <div className="flex items-center gap-3">
-                                    <span className={`w-2 h-2 rounded-full ${svc.status === 'UP' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                                    {health.icon}
                                     <span className="font-medium text-slate-700 text-sm">{svc.name}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     {svc.latency !== null && (
-                                        <span className="text-xs text-slate-400 font-mono">{svc.latency}ms</span>
+                                        <span className="text-xs text-slate-400 font-mono">{svc.latency} ms</span>
                                     )}
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                                        svc.status === 'UP' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                                    }`}>
-                                        {svc.status}
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${health.className}`}>
+                                        {health.label}
                                     </span>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </div>
             )}
@@ -352,4 +420,72 @@ export default function AdminDashboard() {
             </div>
         </div>
     );
+}
+
+function MiniStat({ icon, label, value, color }) {
+    const classes = {
+        rose: 'bg-rose-50 text-rose-600',
+        violet: 'bg-violet-50 text-violet-600',
+        indigo: 'bg-indigo-50 text-indigo-600',
+        emerald: 'bg-emerald-50 text-emerald-600',
+    };
+    return (
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div className={`p-2 rounded-xl ${classes[color] || classes.indigo}`}>{icon}</div>
+            <div>
+                <p className="text-xs font-semibold text-slate-500">{label}</p>
+                <p className="text-xl font-black text-slate-800">{value}</p>
+            </div>
+        </div>
+    );
+}
+
+function buildRecentActivity(users, courses) {
+    const pending = users.filter(user => !user.estApprouve).slice(0, 2).map(user => ({
+        label: 'Inscription utilisateur',
+        detail: `${user.email || 'Utilisateur'} est en attente de validation.`,
+    }));
+    const approved = users.filter(user => user.estApprouve).slice(0, 1).map(user => ({
+        label: 'Validation compte',
+        detail: `${user.email || 'Utilisateur'} est actif sur la plateforme.`,
+    }));
+    const createdCourses = courses.slice(0, 2).map(course => ({
+        label: 'Creation cours',
+        detail: course.title || course.titre || 'Cours sans titre',
+    }));
+    return [...pending, ...createdCourses, ...approved].slice(0, 5);
+}
+
+function buildSystemAlerts(services) {
+    return services.flatMap(service => {
+        if (service.status === 'DOWN') {
+            return [{ level: 'error', title: `${service.name} DOWN`, message: 'Le service ne repond pas via la gateway.' }];
+        }
+        if (service.latency !== null && service.latency >= 1000) {
+            return [{ level: 'warning', title: `${service.name} lent`, message: `Latence elevee : ${service.latency} ms.` }];
+        }
+        return [];
+    });
+}
+
+function serviceHealthMeta(service) {
+    if (service.status === 'DOWN') {
+        return {
+            label: 'DOWN',
+            className: 'bg-red-100 text-red-700',
+            icon: <XCircle size={16} className="text-red-500" />,
+        };
+    }
+    if (service.latency !== null && service.latency >= 1000) {
+        return {
+            label: 'LENT',
+            className: 'bg-amber-100 text-amber-700',
+            icon: <GaugeCircle size={16} className="text-amber-500" />,
+        };
+    }
+    return {
+        label: 'UP',
+        className: 'bg-emerald-100 text-emerald-700',
+        icon: <CheckCircle size={16} className="text-emerald-500" />,
+    };
 }

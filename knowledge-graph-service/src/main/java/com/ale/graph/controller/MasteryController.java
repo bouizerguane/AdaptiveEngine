@@ -35,9 +35,17 @@ public class MasteryController {
      * @param body JSON : { "moduleId": "...", "userId": "..." }
      */
     @PostMapping("/validate-module")
-    public ResponseEntity<Map<String, Object>> validateModuleMastery(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> validateModuleMastery(
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        if (hasGatewayRole(userRole) && !isStudent(userRole)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Role STUDENT requis pour valider une maitrise."
+            ));
+        }
         String moduleId = body.get("moduleId");
-        String userId   = body.get("userId");
+        String userId   = firstNonBlank(userEmail, body.get("userId"));
 
         if (moduleId == null || moduleId.isBlank() || userId == null || userId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -82,9 +90,17 @@ public class MasteryController {
      * @param body JSON : { "conceptId": "...", "userId": "...", "basis": "LAB" }
      */
     @PostMapping("/validate-concept")
-    public ResponseEntity<Map<String, Object>> validateConceptMastery(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> validateConceptMastery(
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        if (hasGatewayRole(userRole) && !isStudent(userRole)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Role STUDENT requis pour valider une maitrise."
+            ));
+        }
         String conceptId = body.get("conceptId");
-        String userId    = body.get("userId");
+        String userId    = firstNonBlank(userEmail, body.get("userId"));
         String basis     = body.getOrDefault("basis", "QUIZ_DIRECT");
 
         if (conceptId == null || conceptId.isBlank() || userId == null || userId.isBlank()) {
@@ -126,6 +142,35 @@ public class MasteryController {
         ));
     }
 
+    @GetMapping("/concepts/{conceptId}")
+    public ResponseEntity<Map<String, Object>> getConceptMastery(
+            @PathVariable String conceptId,
+            @RequestParam String learnerEmail,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole
+    ) {
+        String effectiveLearnerEmail = isAdminOrTeacher(userRole) ? learnerEmail : firstNonBlank(userEmail, learnerEmail);
+        String cypher = """
+            MATCH (co:Concept {id: $conceptId})
+            RETURN EXISTS {
+                MATCH (:User {id: $learnerEmail})-[:ACQUIS]->(co)
+            } AS mastered
+            """;
+
+        Boolean mastered = neo4jClient.query(cypher)
+                .bindAll(Map.of("conceptId", conceptId, "learnerEmail", effectiveLearnerEmail))
+                .fetchAs(Boolean.class)
+                .mappedBy((typeSystem, record) -> record.get("mastered").asBoolean())
+                .first()
+                .orElse(false);
+
+        return ResponseEntity.ok(Map.of(
+                "conceptId", conceptId,
+                "learnerEmail", effectiveLearnerEmail,
+                "mastered", mastered
+        ));
+    }
+
     /**
      * GET /api/graph/mastery/teacher/{email}
      *
@@ -146,5 +191,26 @@ public class MasteryController {
                 .all();
 
         return ResponseEntity.ok(new java.util.ArrayList<>(result));
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank() && !"anonymousUser".equals(value)) return value;
+        }
+        return null;
+    }
+
+    private boolean isAdminOrTeacher(String role) {
+        return "ROLE_ADMIN".equals(role) || "ADMIN".equals(role)
+                || "ROLE_TEACHER".equals(role) || "TEACHER".equals(role);
+    }
+
+    private boolean hasGatewayRole(String role) {
+        return role != null && !role.isBlank();
+    }
+
+    private boolean isStudent(String role) {
+        return "ROLE_STUDENT".equals(role) || "STUDENT".equals(role)
+                || "ROLE_LEARNER".equals(role) || "LEARNER".equals(role);
     }
 }

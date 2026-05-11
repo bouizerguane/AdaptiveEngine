@@ -65,9 +65,20 @@ spring:
           uri: lb://tracking-service
           predicates:
             - Path=/api/tracking/**
+        - id: adaptive-engine-service
+          uri: lb://adaptive-engine-service
+          predicates:
+            - Path=/api/adaptive/**
+        - id: tutoring-service
+          uri: lb://tutoring-service
+          predicates:
+            - Path=/api/tutoring/**
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+jwt:
+  secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}

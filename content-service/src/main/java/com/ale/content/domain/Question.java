@@ -12,6 +12,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Question {
+    private String conceptId;
+    private String externalPrerequisiteLabel;
+    private Boolean generalQuestion;
     private String text;
     private String type; // QCM, TRUE_FALSE
     private List<String> options;

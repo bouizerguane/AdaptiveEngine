@@ -28,7 +28,23 @@ public class TeacherDashboardController {
     private final ObjectMapper objectMapper;
 
     @GetMapping("/summary")
-    public ResponseEntity<TeacherDashboardSummaryDto> getSummary(@RequestParam String teacherEmail) {
+    public ResponseEntity<TeacherDashboardSummaryDto> getSummary(
+            @RequestParam(required = false) String teacherEmail,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        if (!isAdmin(userRole)) {
+            teacherEmail = firstNonBlank(userEmail, teacherEmail);
+        }
+        if (teacherEmail == null || teacherEmail.isBlank()) {
+            return ResponseEntity.badRequest().body(TeacherDashboardSummaryDto.builder()
+                    .activeStudents(0)
+                    .avgSuccessRate(0.0)
+                    .completedLabs(0)
+                    .topDifficultConcepts(Collections.emptyList())
+                    .recentLabSubmissions(Collections.emptyList())
+                    .masteryByModule(Collections.emptyList())
+                    .build());
+        }
         
         // 1. Récupérer les cours de l'enseignant via knowledge-graph-service
         String coursesUrl = "http://knowledge-graph-service/api/graph/courses/teacher/" + teacherEmail;
@@ -105,6 +121,7 @@ public class TeacherDashboardController {
                     return TeacherDashboardSummaryDto.ConceptDifficulty.builder()
                             .conceptId(conceptId)
                             .avgScore(avgScore)
+                            .attempts(list.size())
                             .avgTimeSpent(avgTime)
                             .build();
                 })
@@ -144,5 +161,16 @@ public class TeacherDashboardController {
                 .build();
 
         return ResponseEntity.ok(dto);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank() && !"anonymousUser".equals(value)) return value;
+        }
+        return "";
+    }
+
+    private boolean isAdmin(String role) {
+        return "ROLE_ADMIN".equals(role) || "ADMIN".equals(role);
     }
 }

@@ -31,11 +31,7 @@ export default function AuthPage() {
             else navigate('/teacher/dashboard');
             
         } catch (err) {
-            if (err.response?.status === 403) {
-                setError(err.response.data.message || "Votre compte est en attente de validation.");
-            } else {
-                setError(err.response?.data?.message || "Identifiants invalides ou serveur indisponible.");
-            }
+            setError(err.response?.data?.message || "Identifiants invalides ou serveur indisponible.");
         } finally {
             setLoading(false);
         }

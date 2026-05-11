@@ -15,7 +15,10 @@ public class CourseSummaryDto {
     private String id;
     private String title;
     private String description;
+    private String objectifs;
+    private String prerequisTextuels;
     private String teacherEmail;
+    private String teacherName;
     private LocalDateTime createdAt;
     private String status;
 }

@@ -26,6 +26,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { graphApi, courseApi } from '../api/apiClient';
 import CustomDialog from '../components/CustomDialog';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 // --- COMPOSANT SORTABLE POUR MODULES ---
 function SortableModule({ mod, courseId, expanded, onToggle, onEdit, onDelete, children }) {
@@ -98,6 +99,7 @@ function SortableConcept({ concept, onEdit, onDelete }) {
 
 export default function CourseManager() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [expandedCourse, setExpandedCourse] = useState(null);
     const [expandedModule, setExpandedModule] = useState(null);
@@ -106,13 +108,14 @@ export default function CourseManager() {
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
     const [panel, setPanel] = useState({ isOpen: false, type: '', action: '', parentId: null, currentData: null });
-    const [formData, setFormData] = useState({ title: '', description: '', labelPedagogique: '', poidsCognitif: 1, estVerrouille: false });
+    const [formData, setFormData] = useState({ title: '', description: '', objectifs: '', prerequisTextuels: '', labelPedagogique: '', poidsCognitif: 1, estVerrouille: false });
     const [dialogConfig, setDialogConfig] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null });
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const { data: coursesList } = await courseApi.getCourses();
+            if (!user?.email) return;
+            const { data: coursesList } = await graphApi.getTeacherCourses(user.email);
             const fullTree = await Promise.all(coursesList.map(async (course) => {
                 try {
                     const { data: tree } = await courseApi.getCourseTree(course.id);
@@ -121,7 +124,7 @@ export default function CourseManager() {
             }));
             setCourses(fullTree);
         } catch (err) { toast.error('Impossible de charger les données'); } finally { setLoading(false); }
-    }, []);
+    }, [user?.email]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -130,8 +133,8 @@ export default function CourseManager() {
         if (action === 'EDIT' && currentData) {
             if (type === 'CONCEPT') {
                 setFormData({ title: '', description: currentData.description || '', labelPedagogique: currentData.labelPedagogique || '', poidsCognitif: currentData.poidsCognitif || 1, estVerrouille: currentData.estVerrouille || false });
-            } else { setFormData({ ...formData, title: currentData.title, description: currentData.description || '' }); }
-        } else { setFormData({ title: '', description: '', labelPedagogique: '', poidsCognitif: 1, estVerrouille: false }); }
+            } else { setFormData({ ...formData, title: currentData.title, description: currentData.description || '', objectifs: currentData.objectifs || '', prerequisTextuels: currentData.prerequisTextuels || '' }); }
+        } else { setFormData({ title: '', description: '', objectifs: '', prerequisTextuels: '', labelPedagogique: '', poidsCognitif: 1, estVerrouille: false }); }
     };
 
     const handleFormSubmit = async (e) => {
@@ -139,8 +142,15 @@ export default function CourseManager() {
         try {
             const { type, action, parentId, currentData } = panel;
             if (type === 'COURSE') {
-                if (action === 'CREATE') await courseApi.createCourse({ title: formData.title, description: formData.description });
-                else await courseApi.updateCourse(currentData.id, { title: formData.title, description: formData.description });
+                if (action === 'CREATE') await courseApi.createCourse({
+                    title: formData.title,
+                    description: formData.description,
+                    objectifs: formData.objectifs,
+                    prerequisTextuels: formData.prerequisTextuels,
+                    authorEmail: user.email,
+                    authorName: [user.prenom, user.nom].filter(Boolean).join(' ')
+                });
+                else await courseApi.updateCourse(currentData.id, { title: formData.title, description: formData.description, objectifs: formData.objectifs, prerequisTextuels: formData.prerequisTextuels });
             } else if (type === 'MODULE') {
                 if (action === 'CREATE') await graphApi.createModule(parentId, { title: formData.title, description: formData.description });
                 else await graphApi.updateModule(currentData.id, { title: formData.title, description: formData.description });
@@ -293,12 +303,13 @@ export default function CourseManager() {
             {panel.isOpen && (
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setPanel({...panel, isOpen: false})}></div>
-                    <div className="w-96 bg-white h-full relative shadow-2xl flex flex-col p-8 animate-slide-in">
-                        <div className="flex justify-between items-center mb-8">
+                    <div className="w-full max-w-md bg-white h-screen relative shadow-2xl flex flex-col animate-slide-in">
+                        <div className="shrink-0 flex justify-between items-center border-b border-slate-100 p-6">
                             <h2 className="text-2xl font-extrabold text-slate-800">{panel.action === 'CREATE' ? 'Nouveau' : 'Modifier'} {panel.type}</h2>
                             <button onClick={() => setPanel({...panel, isOpen: false})} className="p-2 hover:bg-slate-100 rounded-full transition text-slate-400"><X size={24} /></button>
                         </div>
-                        <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col gap-6">
+                        <form onSubmit={handleFormSubmit} className="min-h-0 flex-1 flex flex-col">
+                            <div className="flex-1 space-y-6 overflow-y-auto p-6">
                             {panel.type !== 'CONCEPT' ? (
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Titre</label>
@@ -314,6 +325,18 @@ export default function CourseManager() {
                                 <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Description</label>
                                 <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 h-32 resize-none transition"/>
                             </div>
+                            {panel.type === 'COURSE' && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Objectifs pedagogiques</label>
+                                        <textarea value={formData.objectifs} onChange={e => setFormData({...formData, objectifs: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none transition"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Prerequis textuels</label>
+                                        <textarea value={formData.prerequisTextuels} onChange={e => setFormData({...formData, prerequisTextuels: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none transition"/>
+                                    </div>
+                                </>
+                            )}
                             {panel.type === 'CONCEPT' && (
                                 <div className="space-y-4 pt-2">
                                     <div>
@@ -331,7 +354,8 @@ export default function CourseManager() {
                                     </div>
                                 </div>
                             )}
-                            <div className="mt-auto pt-8 flex gap-3">
+                            </div>
+                            <div className="shrink-0 flex gap-3 border-t border-slate-100 bg-white p-6">
                                 <button type="button" onClick={() => setPanel({...panel, isOpen: false})} className="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Annuler</button>
                                 <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Confirmer</button>
                             </div>

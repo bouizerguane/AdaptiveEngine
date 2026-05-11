@@ -4,15 +4,15 @@ import com.ale.iam.domain.AppUser;
 import com.ale.iam.domain.RoleType;
 import com.ale.iam.repository.UserRepository;
 import com.ale.iam.security.JwtUtils;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "L'Email est déjà pris"));
+            return ResponseEntity.badRequest().body(Map.of("message", "L'email est deja pris."));
         }
 
         AppUser user = new AppUser();
@@ -40,30 +40,33 @@ public class AuthController {
         user.setEstApprouve(false);
 
         userRepository.save(user);
-        return ResponseEntity.ok(Map.of("message", "Utilisateur enregistré avec succès. En attente de validation."));
+        return ResponseEntity.ok(Map.of("message", "Utilisateur enregistre avec succes. En attente de validation."));
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        AppUser user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        AppUser user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of("message", "Vous n’êtes pas encore inscrit."));
+        }
 
         if (!encoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Mot de passe invalide"));
+            return ResponseEntity.status(401).body(Map.of("message", "Email ou mot de passe incorrect."));
         }
 
         if (!user.getEstApprouve()) {
-            return ResponseEntity.status(403).body(Map.of("message", "Votre compte est en attente de validation par l'administrateur"));
+            return ResponseEntity.status(403).body(Map.of("message", "Votre compte est en attente de validation."));
         }
 
         String jwt = jwtUtils.generateJwtToken(user.getEmail(), user.getRole().name());
 
         return ResponseEntity.ok(Map.of(
-            "token", jwt,
-            "email", user.getEmail(),
-            "nom", user.getNom(),
-            "prenom", user.getPrenom(),
-            "role", user.getRole().name()
+                "token", jwt,
+                "email", user.getEmail(),
+                "nom", user.getNom(),
+                "prenom", user.getPrenom(),
+                "role", user.getRole().name()
         ));
     }
 }
@@ -91,7 +94,7 @@ class SignupRequest {
     private String email;
 
     @NotBlank
-    @Size(min = 6, message = "Le mot de passe doit faire au moins 6 caractères")
+    @Size(min = 6, message = "Le mot de passe doit faire au moins 6 caracteres")
     private String password;
 
     @NotBlank

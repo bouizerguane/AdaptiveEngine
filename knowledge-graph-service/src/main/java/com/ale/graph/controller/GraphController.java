@@ -9,6 +9,8 @@ import com.ale.graph.repository.ModuleRepository;
 import com.ale.graph.domain.Course;
 import com.ale.graph.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,12 +24,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/graph")
 @RequiredArgsConstructor
+@Slf4j
 public class GraphController {
 
     private final CourseRepository courseRepository;
     private final ModuleRepository moduleRepository;
     private final ChapitreRepository chapitreRepository;
     private final ConceptRepository conceptRepository;
+    private final Neo4jClient neo4jClient;
 
     // ==========================================
     // GLOBAL GRAPH
@@ -47,24 +51,52 @@ public class GraphController {
 
     @GetMapping("/courses")
     public Iterable<Course> getCourses(@AuthenticationPrincipal String authorEmail) {
-        if (authorEmail != null) {
-            return courseRepository.findByAuthorEmail(authorEmail);
-        }
-        return courseRepository.findAll();
+        return courseRepository.findAllCourses();
     }
 
     @GetMapping("/courses/teacher/{email}")
-    public Iterable<Course> getCoursesByTeacherEmail(@PathVariable String email) {
-        return courseRepository.findByAuthorEmail(email);
+    public Iterable<Course> getCoursesByTeacherEmail(
+            @PathVariable String email,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        String effectiveEmail = isAdmin(userRole) ? email : firstNonBlank(userEmail, email);
+        return courseRepository.findByAuthorEmail(effectiveEmail);
     }
 
     @PostMapping("/courses")
-    public Course createCourse(@RequestBody Course course, @AuthenticationPrincipal String authorEmail) {
+    public Course createCourse(
+            @RequestBody Course course,
+            @AuthenticationPrincipal String authorEmail,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         if (course.getId() == null) course.setId(UUID.randomUUID().toString());
         if (course.getCreatedAt() == null) course.setCreatedAt(LocalDateTime.now());
         if (course.getStatus() == null || course.getStatus().isBlank()) course.setStatus("PUBLISHED");
-        course.setAuthorEmail(authorEmail);
-        return courseRepository.save(course);
+        String requestAuthorEmail = course.getAuthorEmail();
+        String resolvedAuthorEmail = isValidAuthor(userEmail)
+                ? userEmail
+                : isValidAuthor(authorEmail) ? authorEmail : isValidAuthor(requestAuthorEmail) ? requestAuthorEmail : null;
+        course.setAuthorEmail(resolvedAuthorEmail);
+        if (course.getAuthorName() != null && course.getAuthorName().isBlank()) {
+            course.setAuthorName(null);
+        }
+        Course saved = courseRepository.save(course);
+        log.info("Course created with authorEmail: {}", saved.getAuthorEmail());
+        return saved;
+    }
+
+    private boolean isValidAuthor(String email) {
+        return email != null && !email.isBlank() && !"anonymousUser".equals(email);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (isValidAuthor(value)) return value;
+        }
+        return null;
+    }
+
+    private boolean isAdmin(String role) {
+        return "ROLE_ADMIN".equals(role) || "ADMIN".equals(role);
     }
 
     @PutMapping("/courses/{id}")
@@ -72,6 +104,8 @@ public class GraphController {
         return courseRepository.findById(id).map(course -> {
             course.setTitle(updated.getTitle());
             course.setDescription(updated.getDescription());
+            course.setObjectifs(updated.getObjectifs());
+            course.setPrerequisTextuels(updated.getPrerequisTextuels());
             if (updated.getStatus() != null && !updated.getStatus().isBlank()) {
                 course.setStatus(updated.getStatus());
             }
@@ -92,6 +126,25 @@ public class GraphController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/courses/{id}/prerequisite-concepts")
+    public ResponseEntity<List<Map<String, Object>>> getExternalPrerequisiteConcepts(@PathVariable String id) {
+        String cypher = """
+            MATCH (c:Course {id: $courseId})-[:CONTAINS_MODULE]->(:Module)-[:CONTAINS_CHAPITRE]->(:Chapitre)-[:CONTAINS_CONCEPT]->(co:Concept)
+            MATCH (pre:Concept)-[:isPredecessorOf]->(co)
+            WHERE NOT EXISTS {
+                MATCH (c)-[:CONTAINS_MODULE]->(:Module)-[:CONTAINS_CHAPITRE]->(:Chapitre)-[:CONTAINS_CONCEPT]->(pre)
+            }
+            RETURN DISTINCT pre.id AS id,
+                   pre.labelPedagogique AS labelPedagogique,
+                   pre.description AS description
+            ORDER BY labelPedagogique
+            """;
+        return ResponseEntity.ok(new java.util.ArrayList<>(neo4jClient.query(cypher)
+                .bindAll(Map.of("courseId", id))
+                .fetch()
+                .all()));
+    }
+
     // ==========================================
     // MODULES
     // ==========================================
@@ -107,12 +160,16 @@ public class GraphController {
     @PostMapping("/modules")
     public ResponseEntity<?> createModule(@RequestBody ModuleEntity module, 
                                           @RequestParam(required = true) String courseId,
-                                          @AuthenticationPrincipal String authorEmail) {
+                                          @AuthenticationPrincipal String authorEmail,
+                                          @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         if (courseId == null || courseId.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "courseId est obligatoire pour créer un module."));
         }
         if (module.getId() == null) module.setId(UUID.randomUUID().toString());
-        module.setAuthorEmail(authorEmail);
+        String resolvedAuthorEmail = isValidAuthor(userEmail)
+                ? userEmail
+                : isValidAuthor(authorEmail) ? authorEmail : courseRepository.findById(courseId).map(Course::getAuthorEmail).orElse(null);
+        module.setAuthorEmail(resolvedAuthorEmail);
         
         ModuleEntity saved = moduleRepository.save(module);
         courseRepository.attachModuleToCourse(courseId, saved.getId());
@@ -185,6 +242,32 @@ public class GraphController {
     @GetMapping("/concepts")
     public Iterable<Concept> getAllConcepts() {
         return conceptRepository.findAll();
+    }
+
+    @GetMapping("/concepts/{conceptId}/context")
+    public ResponseEntity<?> getConceptContext(
+            @PathVariable String conceptId,
+            @RequestParam(required = false) String currentCourseId) {
+        String cypher = """
+            MATCH (co:Concept {id: $conceptId})
+            OPTIONAL MATCH (course:Course)-[:CONTAINS_MODULE]->(:Module)-[:CONTAINS_CHAPITRE]->(:Chapitre)-[:CONTAINS_CONCEPT]->(co)
+            RETURN co.id AS conceptId,
+                   co.labelPedagogique AS conceptName,
+                   co.description AS description,
+                   course.id AS courseId,
+                   course.title AS courseTitle,
+                   CASE WHEN course.id IS NOT NULL AND course.id = $currentCourseId THEN true ELSE false END AS isInCurrentCourse
+            LIMIT 1
+            """;
+        return neo4jClient.query(cypher)
+                .bindAll(Map.of(
+                        "conceptId", conceptId,
+                        "currentCourseId", currentCourseId == null ? "" : currentCourseId
+                ))
+                .fetch()
+                .one()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/chapitres/{chapitreId}/concepts")

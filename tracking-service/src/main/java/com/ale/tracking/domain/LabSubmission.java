@@ -34,6 +34,10 @@ public class LabSubmission {
     @Column(nullable = false)
     private String userId;
 
+    private String learnerEmail;
+
+    private String studentEmail;
+
     /** ID du Lab (document MongoDB). */
     @Column(nullable = false)
     private String labId;
@@ -43,6 +47,8 @@ public class LabSubmission {
 
     /** ID du Concept cible — pour le marquage Neo4j (basis='LAB'). */
     private String conceptId;
+
+    private String targetId;
 
     /**
      * URL du dépôt GitHub soumis par l'apprenant.

@@ -101,7 +101,10 @@ export default function Register() {
                 title={dialogConfig.title}
                 message={dialogConfig.message}
                 onConfirm={dialogConfig.onConfirm}
-                onClose={() => setDialogConfig(prev => ({ ...prev, isOpen: false }))}
+                onClose={() => {
+                    setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                    if (dialogConfig.type === 'success') navigate('/');
+                }}
             />
         </div>
     );

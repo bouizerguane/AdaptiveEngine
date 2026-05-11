@@ -4,10 +4,14 @@ import { adminApi } from '../../api/apiClient';
 import toast from 'react-hot-toast';
 import CustomDialog from '../CustomDialog';
 
+const normalizeRole = (role) => (role || '').replace('ROLE_', '');
+
 export default function UserManagementTable() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState('ALL');
     
     // Modals state
     const [dialogConfig, setDialogConfig] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null });
@@ -32,10 +36,17 @@ export default function UserManagementTable() {
     }, []);
 
     // Filter logic
-    const filteredUsers = users.filter(u => 
-        (u.nom + ' ' + u.prenom).toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(u => {
+        const role = normalizeRole(u.role);
+        const query = searchTerm.toLowerCase();
+        const matchesSearch = (`${u.nom || ''} ${u.prenom || ''}`).toLowerCase().includes(query)
+            || (u.email || '').toLowerCase().includes(query);
+        const matchesRole = roleFilter === 'ALL' || role === roleFilter;
+        const matchesStatus = statusFilter === 'ALL'
+            || (statusFilter === 'ACTIVE' && u.estApprouve)
+            || (statusFilter === 'PENDING' && !u.estApprouve);
+        return matchesSearch && matchesRole && matchesStatus;
+    });
 
     // Delete handlers
     const confirmDelete = (user) => {
@@ -80,9 +91,9 @@ export default function UserManagementTable() {
 
     const getRoleBadge = (role) => {
         switch (role) {
-            case 'ADMIN': return <span className="px-2 py-1 text-xs font-bold rounded bg-rose-100 text-rose-700">Admin</span>;
-            case 'TEACHER': return <span className="px-2 py-1 text-xs font-bold rounded bg-indigo-100 text-indigo-700">Enseignant</span>;
-            case 'STUDENT': return <span className="px-2 py-1 text-xs font-bold rounded bg-emerald-100 text-emerald-700">Apprenant</span>;
+            case 'ADMIN': return <span className="px-2 py-1 text-xs font-bold rounded bg-rose-100 text-rose-700">ADMIN</span>;
+            case 'TEACHER': return <span className="px-2 py-1 text-xs font-bold rounded bg-indigo-100 text-indigo-700">TEACHER</span>;
+            case 'STUDENT': return <span className="px-2 py-1 text-xs font-bold rounded bg-emerald-100 text-emerald-700">STUDENT</span>;
             default: return <span className="px-2 py-1 text-xs font-bold rounded bg-slate-100 text-slate-700">{role}</span>;
         }
     };
@@ -98,15 +109,36 @@ export default function UserManagementTable() {
                     </div>
                 </div>
                 
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="Rechercher un utilisateur..." 
-                        className="pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full sm:w-64"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Rechercher..."
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value="ALL">Tous roles</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="TEACHER">TEACHER</option>
+                        <option value="STUDENT">STUDENT</option>
+                    </select>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    >
+                        <option value="ALL">Tous statuts</option>
+                        <option value="ACTIVE">Actifs</option>
+                        <option value="PENDING">En attente</option>
+                    </select>
                 </div>
             </div>
 

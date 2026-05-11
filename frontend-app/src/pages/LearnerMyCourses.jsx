@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { learnerApi } from '../api/learnerApi';
 import { useAuth } from '../context/AuthContext';
 
+const teacherLabel = (course) => course.teacherName || course.teacherFullName || course.authorName || course.teacherEmail || course.authorEmail || '';
+
 export default function LearnerMyCourses() {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
@@ -55,16 +57,16 @@ export default function LearnerMyCourses() {
                                 <h2 className="text-lg font-bold text-slate-800">{course.title || 'Cours sans titre'}</h2>
                                 <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
                                     <User size={16} />
-                                    <span>{course.teacherEmail || 'Enseignant non renseigné'}</span>
+                                    <span>{teacherLabel(course) ? `Enseignant : ${teacherLabel(course)}` : 'Enseignant non renseigne'}</span>
                                 </div>
                             </div>
                             <p className="text-sm text-slate-600 leading-6 flex-1">
                                 {course.description || 'Aucune description disponible pour ce cours.'}
                             </p>
-                            <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                            <Link to={`/learner/courses/${course.id}`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                                 <PlayCircle size={16} />
                                 Voir le cours
-                            </button>
+                            </Link>
                         </article>
                     ))}
                 </div>

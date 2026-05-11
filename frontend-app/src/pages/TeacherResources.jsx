@@ -32,9 +32,11 @@ import {
     Trash2, Plus, Minus, GraduationCap, Youtube as YoutubeIcon, FileText, Type, Combine, PanelTop,
     Eraser, Sigma
 } from 'lucide-react';
-import { contentApi, courseApi, adminApi } from '../api/apiClient';
+import { contentApi, courseApi, adminApi, graphApi } from '../api/apiClient';
 import CustomDialog from '../components/CustomDialog';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { normalizeCourseTree } from '../utils/courseOrder';
 
 const lowlight = createLowlight(common);
 
@@ -42,7 +44,7 @@ const FontSize = Extension.create({
   name: 'fontSize',
   addOptions() { return { types: ['textStyle'] } },
   addGlobalAttributes() {
-    return [{ types: this.options.types, attributes: { fontSize: { default: null, parseHTML: element => element.style.fontSize.replace(/['"]+/g, ''), renderHTML: attributes => { if (!attributes.fontSize) return {}; return { style: `font-size: ${attributes.fontSize}` } } } } }]
+    return [{ types: this.options.types, attributes: { fontSize: { default: null, parseHTML: element => (element.style.fontSize || '').replace(/['"]+/g, ''), renderHTML: attributes => { if (!attributes.fontSize) return {}; return { style: `font-size: ${attributes.fontSize}` } } } } }]
   },
   addCommands() { return { setFontSize: fontSize => ({ chain }) => chain().setMark('textStyle', { fontSize }).run(), unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run() } }
 });
@@ -86,10 +88,10 @@ const PdfExtension = Node.create({
 });
 
 const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
-    if (!editor) return null;
-
     const [showChars, setShowChars] = useState(false);
     const SPECIAL_CHARS = ['α', 'β', 'γ', '∞', '∑', 'Δ', '≈', '≠', 'π', 'θ', 'μ', 'Ω', '±', '≤', '≥', '√'];
+
+    if (!editor) return null;
 
     const addYoutubeVideo = () => {
         const url = prompt('URL de la vidéo YouTube :');
@@ -226,6 +228,7 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
 
 export default function TeacherResources() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [modules, setModules] = useState([]);
     const [chapters, setChapters] = useState([]);
@@ -262,14 +265,25 @@ export default function TeacherResources() {
     const [showPreview, setShowPreview] = useState(false);
 
     useEffect(() => {
-        courseApi.getCourses().then(r => setCourses(r.data)).catch(() => {}).finally(() => setLoadingHierarchy(false));
-    }, []);
+        if (!user?.email) return;
+        graphApi.getTeacherCourses(user.email)
+            .then(r => setCourses(r.data))
+            .catch(error => {
+                console.error('[TeacherResources] Impossible de charger les cours enseignant:', error);
+                toast.error('Impossible de charger vos cours.');
+            })
+            .finally(() => setLoadingHierarchy(false));
+    }, [user?.email]);
 
     useEffect(() => {
         if (!selectedCourse) { setModules([]); setSelectedModule(''); return; }
         courseApi.getCourseTree(selectedCourse).then(r => {
-            setModules(r.data.modules || []);
+            setModules(normalizeCourseTree(r.data)?.modules || []);
             setSelectedModule(''); setChapters([]); setSelectedChapter(''); setConcepts([]); setSelectedConcept('');
+        }).catch(error => {
+            console.error('[TeacherResources] Impossible de charger le plan du cours:', error);
+            setModules([]); setSelectedModule(''); setChapters([]); setSelectedChapter(''); setConcepts([]); setSelectedConcept('');
+            toast.error("Impossible de charger le plan du cours.");
         });
     }, [selectedCourse]);
 
@@ -325,9 +339,11 @@ export default function TeacherResources() {
             return;
         }
         try {
-            await contentApi.saveContent({ conceptId: selectedConcept, htmlContent: editorHtml });
+            const payload = { conceptId: selectedConcept, htmlContent: editorHtml || '' };
+            await contentApi.saveContent(payload);
             toast.success('Contenu de la ressource enregistré avec succès !');
         } catch (error) {
+            console.error('[TeacherResources] Save content error:', error.response?.data || error);
             toast.error('Une erreur est survenue lors de la sauvegarde du contenu.');
         }
     };
@@ -423,6 +439,21 @@ export default function TeacherResources() {
                             {concepts.map(c => <option key={c.id} value={c.id}>{c.labelPedagogique}</option>)}
                         </select>
                     </div>
+                    {selectedCourse && modules.length === 0 && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            Ce cours ne contient pas encore de module. Creez d'abord le plan du cours avant d'ajouter des ressources.
+                        </div>
+                    )}
+                    {selectedModule && chapters.length === 0 && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            Ce module ne contient pas encore de chapitre.
+                        </div>
+                    )}
+                    {selectedChapter && concepts.length === 0 && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                            Ce chapitre ne contient pas encore de concept.
+                        </div>
+                    )}
 
                     <AnimatePresence mode="wait">
                         {!selectedConcept ? (

@@ -22,6 +22,7 @@ public class TeacherDashboardSummaryDto {
     public static class ConceptDifficulty {
         private String conceptId;
         private double avgScore;
+        private long attempts;
         private double avgTimeSpent; // Temps moyen passé
     }
 

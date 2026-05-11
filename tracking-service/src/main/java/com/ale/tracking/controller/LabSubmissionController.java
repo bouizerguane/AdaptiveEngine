@@ -1,13 +1,16 @@
 package com.ale.tracking.controller;
 
 import com.ale.tracking.domain.LabSubmission;
+import com.ale.tracking.events.LabSubmittedEventPublisher;
 import com.ale.tracking.repository.LabSubmissionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,16 +25,37 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/labs")
 @RequiredArgsConstructor
+@Slf4j
 public class LabSubmissionController {
 
     private final LabSubmissionRepository submissionRepository;
+    private final LabSubmittedEventPublisher eventPublisher;
 
     /**
      * Crée ou met à jour une soumission.
      * Si une entrée STARTED existe déjà pour userId+labId, elle est mise à jour.
      */
     @PostMapping("/submit")
-    public ResponseEntity<LabSubmission> submit(@RequestBody LabSubmission submission) {
+    public ResponseEntity<?> submit(
+            @RequestBody LabSubmission submission,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+        applyUserHeader(submission, userEmail);
+        normalizeSubmission(submission);
+        log.info("[LabSubmissionController] submit userId={}, labId={}, courseId={}, conceptId={}, targetId={}, status={}",
+                submission.getUserId(), submission.getLabId(), submission.getCourseId(),
+                submission.getConceptId(), submission.getTargetId(), submission.getStatus());
+
+        if (submission.getUserId() == null || submission.getUserId().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "userId est obligatoire pour soumettre un TP."));
+        }
+        if (submission.getLabId() == null || submission.getLabId().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "labId est obligatoire pour soumettre un TP."));
+        }
+        if (submission.getStatus() == LabSubmission.LabStatus.COMPLETED
+                && (submission.getGithubRepoUrl() == null || submission.getGithubRepoUrl().isBlank())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "githubRepoUrl est obligatoire pour terminer un TP."));
+        }
+
         Optional<LabSubmission> existing = submissionRepository.findByUserIdAndLabId(
                 submission.getUserId(), submission.getLabId());
 
@@ -39,25 +63,83 @@ public class LabSubmissionController {
             LabSubmission s = existing.get();
             // Mise à jour du statut et des données
             s.setStatus(submission.getStatus());
+            s.setLearnerEmail(submission.getLearnerEmail());
+            s.setStudentEmail(submission.getStudentEmail());
+            s.setCourseId(submission.getCourseId());
+            s.setConceptId(submission.getConceptId());
+            s.setTargetId(submission.getTargetId());
             s.setGithubRepoUrl(submission.getGithubRepoUrl());
             s.setTimeSpentPerStep(submission.getTimeSpentPerStep());
             if (submission.getStatus() == LabSubmission.LabStatus.COMPLETED) {
                 s.setCompletedAt(LocalDateTime.now());
             }
-            return ResponseEntity.ok(submissionRepository.save(s));
+            LabSubmission saved = submissionRepository.save(s);
+            eventPublisher.publish(saved);
+            return ResponseEntity.ok(saved);
         }
 
         // Nouvelle soumission STARTED
         if (submission.getStatus() == LabSubmission.LabStatus.COMPLETED) {
             submission.setCompletedAt(LocalDateTime.now());
         }
-        return ResponseEntity.ok(submissionRepository.save(submission));
+        LabSubmission saved = submissionRepository.save(submission);
+        eventPublisher.publish(saved);
+        return ResponseEntity.ok(saved);
+    }
+
+    private void normalizeSubmission(LabSubmission submission) {
+        if (isBlank(submission.getLearnerEmail())) {
+            submission.setLearnerEmail(firstNonBlank(submission.getStudentEmail(), submission.getUserId()));
+        }
+        if (isBlank(submission.getStudentEmail())) {
+            submission.setStudentEmail(firstNonBlank(submission.getLearnerEmail(), submission.getUserId()));
+        }
+        if (isBlank(submission.getUserId())) {
+            submission.setUserId(firstNonBlank(submission.getLearnerEmail(), submission.getStudentEmail(), "anonymous"));
+        }
+        if (isBlank(submission.getConceptId()) && !isBlank(submission.getTargetId())) {
+            submission.setConceptId(submission.getTargetId());
+        }
+        if (isBlank(submission.getTargetId()) && !isBlank(submission.getConceptId())) {
+            submission.setTargetId(submission.getConceptId());
+        }
+        if (isBlank(submission.getCourseId())) {
+            submission.setCourseId("external-review");
+        }
+    }
+
+    private void applyUserHeader(LabSubmission submission, String userEmail) {
+        if (!isBlank(userEmail)) {
+            submission.setUserId(userEmail);
+            submission.setLearnerEmail(userEmail);
+            submission.setStudentEmail(userEmail);
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (!isBlank(value)) return value;
+        }
+        return "";
+    }
+
+    private boolean isTeacherOrAdmin(String role) {
+        return "ROLE_TEACHER".equals(role) || "TEACHER".equals(role)
+                || "ROLE_ADMIN".equals(role) || "ADMIN".equals(role);
     }
 
     /** Toutes les soumissions d'un apprenant. */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<LabSubmission>> getByUser(@PathVariable String userId) {
-        return ResponseEntity.ok(submissionRepository.findByUserId(userId));
+    public ResponseEntity<List<LabSubmission>> getByUser(
+            @PathVariable String userId,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        String effectiveUserId = isTeacherOrAdmin(userRole) ? userId : firstNonBlank(userEmail, userId);
+        return ResponseEntity.ok(submissionRepository.findByUserId(effectiveUserId));
     }
 
     /**
@@ -67,8 +149,11 @@ public class LabSubmissionController {
     @GetMapping("/{labId}/user/{userId}")
     public ResponseEntity<LabSubmission> getByLabAndUser(
             @PathVariable String labId,
-            @PathVariable String userId) {
-        return submissionRepository.findByUserIdAndLabId(userId, labId)
+            @PathVariable String userId,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        String effectiveUserId = isTeacherOrAdmin(userRole) ? userId : firstNonBlank(userEmail, userId);
+        return submissionRepository.findByUserIdAndLabId(effectiveUserId, labId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -78,7 +163,16 @@ public class LabSubmissionController {
      * Utilisé par le moteur LSTM pour détecter les TP trop difficiles.
      */
     @GetMapping("/{labId}/submissions")
-    public ResponseEntity<List<LabSubmission>> getLabSubmissions(@PathVariable String labId) {
+    public ResponseEntity<?> getLabSubmissions(
+            @PathVariable String labId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Role TEACHER ou ADMIN requis."));
+        }
         return ResponseEntity.ok(submissionRepository.findByLabIdAndIsTeacherTestFalse(labId));
+    }
+
+    private boolean hasGatewayRole(String role) {
+        return role != null && !role.isBlank();
     }
 }

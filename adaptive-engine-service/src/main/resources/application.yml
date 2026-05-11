@@ -1,0 +1,47 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: adaptive-engine-service
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:admin}
+    password: ${SPRING_RABBITMQ_PASSWORD:change_me_rabbitmq_password}
+    connection-timeout: 2s
+
+services:
+  graph:
+    url: ${KNOWLEDGE_GRAPH_SERVICE_URL:http://knowledge-graph-service:8082}
+  tracking:
+    url: ${TRACKING_SERVICE_URL:http://tracking-service:8084}
+
+management:
+  health:
+    rabbit:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  events:
+    exchange: adaptive.events
+    quiz-completed-queue: adaptive.quiz-completed
+    lab-submitted-queue: adaptive.lab-submitted
+
+logging:
+  level:
+    org.springframework.amqp.rabbit.connection.CachingConnectionFactory: warn
+    org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer: off
