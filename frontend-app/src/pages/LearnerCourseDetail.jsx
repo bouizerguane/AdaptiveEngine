@@ -44,6 +44,14 @@ const adaptiveScorePercent = (score) => {
     return Math.round(numeric * 100);
 };
 
+const strategyStepLabels = {
+    RESOURCE: 'Ressource',
+    LAB: 'TP',
+    FORMATIVE: 'Evaluation formative',
+    REVIEW: 'Revision',
+    CHALLENGE: 'Defi',
+};
+
 export default function LearnerCourseDetail() {
     const { courseId } = useParams();
     const [searchParams] = useSearchParams();
@@ -262,6 +270,15 @@ export default function LearnerCourseDetail() {
     const adaptiveExplanationReasons = Array.isArray(adaptiveNextConcept?.explanationReasons)
         ? adaptiveNextConcept.explanationReasons
         : [];
+    const learnerProfile = adaptivePath?.learnerProfile;
+    const learnerProfileGaps = Array.isArray(learnerProfile?.knowledgeGaps) ? learnerProfile.knowledgeGaps : [];
+    const learnerMasteryScore = learnerProfile?.masteryScore !== null && learnerProfile?.masteryScore !== undefined
+        ? Math.round(Number(learnerProfile.masteryScore))
+        : null;
+    const pedagogicalStrategy = adaptivePath?.pedagogicalStrategy;
+    const pedagogicalSequence = Array.isArray(pedagogicalStrategy?.recommendedSequence)
+        ? pedagogicalStrategy.recommendedSequence
+        : [];
     const adaptiveConceptStatuses = adaptivePath
         ? Object.fromEntries([
             ...(adaptivePath.masteredConcepts || []).map(item => [item.conceptId, { ...item, status: 'MASTERED' }]),
@@ -380,6 +397,80 @@ export default function LearnerCourseDetail() {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
                     <p className="font-bold">Recommendation adaptative</p>
                     <p className="mt-1">{recommendation.reason}</p>
+                </div>
+            )}
+
+            {learnerProfile && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800">Profil apprenant</p>
+                            <p className="mt-1 text-slate-500">{learnerProfile.profileExplanation}</p>
+                        </div>
+                        <span className="inline-flex w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                            {learnerProfile.profileType || 'DATA_INSUFFICIENT'}
+                        </span>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {learnerMasteryScore !== null && Number.isFinite(learnerMasteryScore) && (
+                            <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                                Maitrise : {learnerMasteryScore}%
+                            </span>
+                        )}
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                            Traces : {learnerProfile.tracesCount ?? 0}
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                            TP completes : {learnerProfile.completedLabsCount ?? 0}
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                            Temps : {Math.round((learnerProfile.totalLearningTime || 0) / 60)} min
+                        </span>
+                    </div>
+                    {learnerProfileGaps.length > 0 && (
+                        <div className="mt-4">
+                            <p className="font-semibold text-slate-700">Lacunes detectees</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {learnerProfileGaps.map(gap => (
+                                    <span key={gap} className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                                        {gap}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {pedagogicalStrategy && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800">Strategie pedagogique</p>
+                            <p className="mt-1 text-slate-500">{pedagogicalStrategy.strategyExplanation}</p>
+                        </div>
+                        <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                            {pedagogicalStrategy.strategyType || 'STANDARD'}
+                        </span>
+                    </div>
+                    {pedagogicalSequence.length > 0 && (
+                        <div className="mt-4">
+                            <p className="font-semibold text-slate-700">Sequence recommandee</p>
+                            <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                {pedagogicalSequence.map((step, index) => (
+                                    <li key={`${step}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                                        {index + 1}. {strategyStepLabels[step] || step}
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
+                    {pedagogicalStrategy.tutoringMessageHint && (
+                        <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-indigo-900">
+                            <p className="font-semibold">Conseil tutorat</p>
+                            <p className="mt-1 text-xs leading-relaxed">{pedagogicalStrategy.tutoringMessageHint}</p>
+                        </div>
+                    )}
                 </div>
             )}
 

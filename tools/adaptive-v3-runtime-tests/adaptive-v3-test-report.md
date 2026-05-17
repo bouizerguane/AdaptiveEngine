@@ -1,8 +1,8 @@
 # Adaptive Engine V3 Runtime Test Report
 
-Generated at: 2026-05-17T10:16:56.645Z
+Generated at: 2026-05-17T13:46:18.435Z
 API: http://localhost:8080/api
-Duration: 6963 ms
+Duration: 3686 ms
 
 | Case | Status | Expected | Actual |
 | --- | --- | --- | --- |
@@ -10,7 +10,7 @@ Duration: 6963 ms
 | Case A2 - Apprenant fort sans lacune | PASS | {"nextAction":"LEARN","nextConcept":"non-null","nextConceptStatus":"LEARNABLE","adaptiveScore":"present","scoreBreakdown":"present","explanationReasons":"non-empty","learnableConceptsSorted":"adaptiveScore descending"} | {"nextAction":"LEARN","nextConcept":{"conceptName":"Tableaux","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Votre historique recent montre une progression suffisante."]},"learnableScores":[{"conceptName":"Tableaux","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7}},{"conceptName":"Entrées/Sorties","adaptiveScore":0.58,"scoreBreakdown":{"prerequisiteScore":0.5,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.71,"engagementScore":0.7}}],"decisionExplanation":"Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.","scoringVersion":"V3_RULE_BASED_EXPLAINABLE"} |
 | Case B - Apprenant faible | PASS | {"nextAction":"REMEDIATION","nextConcept":"Variables","explanation":"present"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Variables","type":"INTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."]},"decisionExplanation":"La priorite est donnee au concept non maitrise lors du dernier diagnostic."} |
 | Case C - Concept externe | PASS | {"nextAction":"REMEDIATION","nextConceptType":"EXTERNAL","nextConceptName":"Pointeurs","frontendRoute":"/learner/external-concepts/:conceptId"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Pointeurs","type":"EXTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."]},"expectedFrontendRoute":"/learner/external-concepts/external-pointeurs-runtime-test","decisionExplanation":"La priorite est donnee au concept non maitrise lors du dernier diagnostic."} |
-| Case D - Engagement influence ranking | PASS | {"activeEngagementScore":"> passiveEngagementScore","activeAdaptiveScore":"> passiveAdaptiveScore for same recommendation context"} | {"active":{"learnerEmail":"student.v3.engagement@test.local","nextConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.76,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.57,"engagementScore":1},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante.","Votre activite recente sur les TP permet d'aborder ce concept maintenant."]},"engagementScore":1,"adaptiveScore":0.76},"passive":{"learnerEmail":"student.v3.external@test.local","comparedConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":0.7,"pedagogicalOrderScore":0.57,"engagementScore":0.7},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante."]},"engagementScore":0.7,"adaptiveScore":0.69},"scoreDifference":0.07} |
+| Case D - Engagement influence ranking | PASS | {"activeEngagementScore":"> passiveEngagementScore","activeAdaptiveScore":"> passiveAdaptiveScore for same recommendation context"} | {"active":{"learnerEmail":"student.v3.engagement@test.local","nextConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.76,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.57,"engagementScore":1},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante.","Votre activite recente sur les TP permet d'aborder ce concept maintenant."]},"engagementScore":1,"adaptiveScore":0.76},"passive":{"learnerEmail":"student.v3.external@test.local","comparedConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.65,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":0.7,"pedagogicalOrderScore":0.57,"engagementScore":0.3},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante.","La recommandation tient compte des difficultes ou abandons recents."]},"engagementScore":0.3,"adaptiveScore":0.65},"scoreDifference":0.11} |
 
 ## Case A1 - Apprenant fort avec lacune - PASS
 
@@ -176,37 +176,39 @@ Score breakdown / explanations:
       "conceptName": "Variables",
       "type": "INTERNAL",
       "status": "LEARNABLE",
-      "adaptiveScore": 0.68,
+      "adaptiveScore": 0.64,
       "scoreBreakdown": {
         "prerequisiteScore": 0.5,
         "diagnosticWeaknessScore": 1,
         "historicalPerformanceScore": 0.4,
         "pedagogicalOrderScore": 0.86,
-        "engagementScore": 0.7
+        "engagementScore": 0.3
       },
       "explanationReasons": [
         "Ce concept peut etre aborde sans prerequis declares.",
         "Le dernier diagnostic indique que ce concept doit etre renforce.",
         "Ce concept suit l'ordre pedagogique recommande.",
-        "Le moteur garde une progression prudente car les scores precedents sont faibles."
+        "Le moteur garde une progression prudente car les scores precedents sont faibles.",
+        "La recommandation tient compte des difficultes ou abandons recents."
       ]
     },
     {
       "conceptName": "Entrées/Sorties",
       "type": "INTERNAL",
       "status": "LEARNABLE",
-      "adaptiveScore": 0.49,
+      "adaptiveScore": 0.45,
       "scoreBreakdown": {
         "prerequisiteScore": 0.5,
         "diagnosticWeaknessScore": 0.3,
         "historicalPerformanceScore": 0.4,
         "pedagogicalOrderScore": 0.71,
-        "engagementScore": 0.7
+        "engagementScore": 0.3
       },
       "explanationReasons": [
         "Ce concept peut etre aborde sans prerequis declares.",
         "Ce concept suit l'ordre pedagogique recommande.",
-        "Le moteur garde une progression prudente car les scores precedents sont faibles."
+        "Le moteur garde une progression prudente car les scores precedents sont faibles.",
+        "La recommandation tient compte des difficultes ou abandons recents."
       ]
     }
   ]
@@ -272,18 +274,19 @@ Score breakdown / explanations:
     "conceptName": "Conditions",
     "type": "INTERNAL",
     "status": "LEARNABLE",
-    "adaptiveScore": 0.69,
+    "adaptiveScore": 0.65,
     "scoreBreakdown": {
       "prerequisiteScore": 1,
       "diagnosticWeaknessScore": 0.3,
       "historicalPerformanceScore": 0.7,
       "pedagogicalOrderScore": 0.57,
-      "engagementScore": 0.7
+      "engagementScore": 0.3
     },
     "explanationReasons": [
       "Tous les prerequis de ce concept sont satisfaits.",
       "Ce concept suit l'ordre pedagogique recommande.",
-      "Votre historique recent montre une progression suffisante."
+      "Votre historique recent montre une progression suffisante.",
+      "La recommandation tient compte des difficultes ou abandons recents."
     ]
   }
 }

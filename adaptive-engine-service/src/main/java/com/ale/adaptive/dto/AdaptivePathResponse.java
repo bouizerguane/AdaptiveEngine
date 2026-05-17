@@ -27,4 +27,6 @@ public class AdaptivePathResponse {
     private int submittedLabCount;
     private String decisionExplanation;
     private String scoringVersion;
+    private LearnerProfileDto learnerProfile;
+    private PedagogicalStrategyDto pedagogicalStrategy;
 }

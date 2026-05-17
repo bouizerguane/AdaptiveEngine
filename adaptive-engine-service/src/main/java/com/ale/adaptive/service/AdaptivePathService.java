@@ -2,6 +2,8 @@ package com.ale.adaptive.service;
 
 import com.ale.adaptive.dto.AdaptiveConceptDto;
 import com.ale.adaptive.dto.AdaptivePathResponse;
+import com.ale.adaptive.dto.LearnerProfileDto;
+import com.ale.adaptive.dto.PedagogicalStrategyDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -112,6 +114,17 @@ public class AdaptivePathService {
                 .map(this::withRemediationExplanation)
                 .toList();
         AdaptiveDecision decision = decide(!latestDiagnostic.isEmpty(), review, learnable);
+        LearnerProfileDto learnerProfile = buildLearnerProfile(
+                learnerEmail,
+                courseTree,
+                latestDiagnostic,
+                traces,
+                labs,
+                mastered,
+                review,
+                decision
+        );
+        PedagogicalStrategyDto pedagogicalStrategy = buildPedagogicalStrategy(learnerProfile, decision);
 
         log.info("[AdaptiveEngine] decision = {}", decision.nextAction());
         log.info("[AdaptiveEngine] nextConcept = {}", decision.nextConcept() == null
@@ -138,7 +151,223 @@ public class AdaptivePathService {
                 .submittedLabCount((int) labs.stream().filter(this::isCompletedLab).count())
                 .decisionExplanation(buildDecisionExplanation(decision))
                 .scoringVersion(SCORING_VERSION)
+                .learnerProfile(learnerProfile)
+                .pedagogicalStrategy(pedagogicalStrategy)
                 .build();
+    }
+
+    private PedagogicalStrategyDto buildPedagogicalStrategy(LearnerProfileDto learnerProfile, AdaptiveDecision decision) {
+        String profileType = learnerProfile == null ? null : learnerProfile.getProfileType();
+        int weakConceptsCount = learnerProfile == null ? 0 : learnerProfile.getWeakConceptsCount();
+        int tracesCount = learnerProfile == null ? 0 : learnerProfile.getTracesCount();
+        int completedLabsCount = learnerProfile == null ? 0 : learnerProfile.getCompletedLabsCount();
+        boolean hasKnowledgeGaps = learnerProfile != null
+                && learnerProfile.getKnowledgeGaps() != null
+                && !learnerProfile.getKnowledgeGaps().isEmpty();
+
+        if ("REMEDIATION".equals(decision.nextAction())
+                || "NEEDS_REMEDIATION".equals(profileType)
+                || weakConceptsCount > 0
+                || hasKnowledgeGaps) {
+            return strategy(
+                    "RECOVERY",
+                    "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+                    List.of("RESOURCE", "REVIEW", "LAB", "FORMATIVE"),
+                    strategyConstraints(learnerProfile, decision),
+                    "Proposer une explication simplifiee et rappeler les prerequis."
+            );
+        }
+
+        if ("HIGH_PERFORMING".equals(profileType)
+                && ("LEARN".equals(decision.nextAction()) || "COMPLETED".equals(decision.nextAction()))) {
+            return strategy(
+                    "ADVANCED",
+                    "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+                    List.of("RESOURCE", "CHALLENGE", "FORMATIVE"),
+                    strategyConstraints(learnerProfile, decision),
+                    "Proposer un defi ou une activite d'approfondissement."
+            );
+        }
+
+        if ("DATA_INSUFFICIENT".equals(profileType) || (tracesCount == 0 && completedLabsCount == 0)) {
+            return strategy(
+                    "SUPPORTIVE",
+                    "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+                    List.of("RESOURCE", "LAB", "FORMATIVE"),
+                    strategyConstraints(learnerProfile, decision),
+                    "Encourager l'apprenant et proposer une activite guidee."
+            );
+        }
+
+        return strategy(
+                "STANDARD",
+                "Le systeme applique une progression standard basee sur le parcours recommande.",
+                List.of("RESOURCE", "LAB", "FORMATIVE"),
+                strategyConstraints(learnerProfile, decision),
+                "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation."
+        );
+    }
+
+    private PedagogicalStrategyDto strategy(
+            String strategyType,
+            String strategyExplanation,
+            List<String> recommendedSequence,
+            List<String> constraints,
+            String tutoringMessageHint) {
+        return PedagogicalStrategyDto.builder()
+                .strategyType(strategyType)
+                .strategyExplanation(strategyExplanation)
+                .recommendedSequence(recommendedSequence)
+                .constraints(constraints)
+                .tutoringMessageHint(tutoringMessageHint)
+                .build();
+    }
+
+    private List<String> strategyConstraints(LearnerProfileDto learnerProfile, AdaptiveDecision decision) {
+        List<String> constraints = new ArrayList<>();
+        constraints.add("Respecter la decision principale du moteur: " + decision.nextAction() + ".");
+        if (decision.nextConcept() != null && decision.nextConcept().getConceptName() != null) {
+            constraints.add("Appliquer la strategie au concept recommande: " + decision.nextConcept().getConceptName() + ".");
+        }
+        if (learnerProfile != null && learnerProfile.getKnowledgeGaps() != null && !learnerProfile.getKnowledgeGaps().isEmpty()) {
+            constraints.add("Traiter les lacunes detectees avant d'avancer.");
+        }
+        if (learnerProfile != null && "DATA_INSUFFICIENT".equals(learnerProfile.getProfileType())) {
+            constraints.add("Collecter davantage de traces avant d'affiner la personnalisation.");
+        }
+        if (constraints.isEmpty()) {
+            constraints.add("Conserver la progression recommandee par le parcours adaptatif.");
+        }
+        return constraints;
+    }
+
+    private LearnerProfileDto buildLearnerProfile(
+            String learnerEmail,
+            Map<String, Object> courseTree,
+            Map<String, Object> latestDiagnostic,
+            List<Map<String, Object>> traces,
+            List<Map<String, Object>> labs,
+            List<AdaptiveConceptDto> masteredConcepts,
+            List<AdaptiveConceptDto> knowledgeGaps,
+            AdaptiveDecision decision) {
+        List<Double> assessmentScores = traces.stream()
+                .map(trace -> doubleValue(trace.get("scoreObtenu")))
+                .filter(Objects::nonNull)
+                .toList();
+        double totalWeightedScores = 0.0;
+        double totalWeights = 0.0;
+        Map<String, Double> conceptWeights = conceptWeights(courseTree);
+        Map<String, List<Double>> conceptScores = conceptScores(latestDiagnostic, traces);
+
+        for (Map.Entry<String, List<Double>> entry : conceptScores.entrySet()) {
+            List<Double> scores = entry.getValue();
+            if (scores.isEmpty()) continue;
+            double score = scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+            double weight = conceptWeights.getOrDefault(entry.getKey(), 1.0);
+            totalWeightedScores += weight * score;
+            totalWeights += weight;
+        }
+
+        Double masteryScore = totalWeights == 0.0 ? null : round(totalWeightedScores / totalWeights);
+        int completedLabsCount = (int) labs.stream().filter(this::isCompletedLab).count();
+        long totalLearningTime = traces.stream()
+                .map(trace -> doubleValue(trace.get("tempsConsultation")))
+                .filter(Objects::nonNull)
+                .mapToLong(Double::longValue)
+                .sum();
+        Double averageAssessmentScore = assessmentScores.isEmpty()
+                ? null
+                : round(assessmentScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0));
+        List<String> gapLabels = knowledgeGaps.stream()
+                .map(AdaptiveConceptDto::getConceptName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        String profileType = resolveProfileType(traces, completedLabsCount, gapLabels, decision);
+
+        return LearnerProfileDto.builder()
+                .learnerEmail(learnerEmail)
+                .masteryScore(masteryScore)
+                .knowledgeGaps(gapLabels)
+                .masteredConceptsCount(masteredConcepts.size())
+                .weakConceptsCount(gapLabels.size())
+                .tracesCount(traces.size())
+                .completedLabsCount(completedLabsCount)
+                .averageAssessmentScore(averageAssessmentScore)
+                .totalLearningTime(totalLearningTime)
+                .profileType(profileType)
+                .profileExplanation(profileExplanation(profileType))
+                .build();
+    }
+
+    private String resolveProfileType(
+            List<Map<String, Object>> traces,
+            int completedLabsCount,
+            List<String> knowledgeGaps,
+            AdaptiveDecision decision) {
+        if (traces.isEmpty() && completedLabsCount == 0) {
+            return "DATA_INSUFFICIENT";
+        }
+        if (!knowledgeGaps.isEmpty()) {
+            return "NEEDS_REMEDIATION";
+        }
+        if ("COMPLETED".equals(decision.nextAction())) {
+            return "HIGH_PERFORMING";
+        }
+        return "PROGRESSING";
+    }
+
+    private String profileExplanation(String profileType) {
+        return switch (profileType) {
+            case "NEEDS_REMEDIATION" -> "Le profil indique des lacunes detectees dans le dernier diagnostic.";
+            case "PROGRESSING" -> "Le profil indique une progression active.";
+            case "HIGH_PERFORMING" -> "Le profil indique une bonne maitrise des concepts evalues.";
+            default -> "Le profil sera affine apres davantage d'activites.";
+        };
+    }
+
+    private Map<String, Double> conceptWeights(Map<String, Object> courseTree) {
+        Map<String, Double> weights = new LinkedHashMap<>();
+        for (Map<String, Object> module : mapList(courseTree.get("modules"))) {
+            for (Map<String, Object> chapitre : mapList(module.get("chapitres"))) {
+                for (Map<String, Object> concept : mapList(chapitre.get("concepts"))) {
+                    String conceptId = stringValue(concept.get("id"));
+                    if (conceptId == null) continue;
+                    weights.put(conceptId, firstNonNullDouble(concept.get("poidsCognitif"), 1.0));
+                }
+            }
+        }
+        return weights;
+    }
+
+    private Map<String, List<Double>> conceptScores(Map<String, Object> latestDiagnostic, List<Map<String, Object>> traces) {
+        Map<String, List<Double>> scoresByConcept = new LinkedHashMap<>();
+
+        for (Map<String, Object> result : readConceptResults(latestDiagnostic)) {
+            String conceptId = stringValue(result.get("conceptId"));
+            Double score = doubleValue(result.get("score"));
+            if (conceptId != null && score != null) {
+                scoresByConcept.computeIfAbsent(conceptId, ignored -> new ArrayList<>()).add(score);
+            }
+        }
+
+        for (Map<String, Object> trace : traces) {
+            String targetId = stringValue(trace.get("targetId"));
+            String targetType = stringValue(trace.get("targetType"));
+            Double score = doubleValue(trace.get("scoreObtenu"));
+            if (targetId != null && score != null && "CONCEPT".equalsIgnoreCase(targetType)) {
+                scoresByConcept.computeIfAbsent(targetId, ignored -> new ArrayList<>()).add(score);
+            }
+            for (Map<String, Object> result : readConceptResults(trace)) {
+                String conceptId = stringValue(result.get("conceptId"));
+                Double conceptScore = doubleValue(result.get("score"));
+                if (conceptId != null && conceptScore != null) {
+                    scoresByConcept.computeIfAbsent(conceptId, ignored -> new ArrayList<>()).add(conceptScore);
+                }
+            }
+        }
+
+        return scoresByConcept;
     }
 
     private List<AdaptiveConceptDto> buildConceptsToReview(
@@ -601,6 +830,11 @@ public class AdaptivePathService {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private double firstNonNullDouble(Object value, double fallback) {
+        Double parsed = doubleValue(value);
+        return parsed == null ? fallback : parsed;
     }
 
     private double round(double value) {
