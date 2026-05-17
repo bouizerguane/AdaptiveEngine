@@ -38,6 +38,12 @@ const parseExternalResults = (value) => {
     }
 };
 
+const adaptiveScorePercent = (score) => {
+    const numeric = Number(score);
+    if (!Number.isFinite(numeric)) return null;
+    return Math.round(numeric * 100);
+};
+
 export default function LearnerCourseDetail() {
     const { courseId } = useParams();
     const [searchParams] = useSearchParams();
@@ -252,6 +258,10 @@ export default function LearnerCourseDetail() {
     const adaptiveNextConceptId = adaptiveNextConcept?.conceptId;
     const adaptiveNextConceptName = adaptiveNextConcept?.conceptName || 'Concept inconnu';
     const adaptiveNextConceptType = adaptiveNextConcept?.type || 'INTERNAL';
+    const adaptiveNextScore = adaptiveScorePercent(adaptiveNextConcept?.adaptiveScore);
+    const adaptiveExplanationReasons = Array.isArray(adaptiveNextConcept?.explanationReasons)
+        ? adaptiveNextConcept.explanationReasons
+        : [];
     const adaptiveConceptStatuses = adaptivePath
         ? Object.fromEntries([
             ...(adaptivePath.masteredConcepts || []).map(item => [item.conceptId, { ...item, status: 'MASTERED' }]),
@@ -316,29 +326,50 @@ export default function LearnerCourseDetail() {
                         {adaptiveNextAction === 'LEARN' && 'Prochain concept recommande'}
                         {adaptiveNextAction === 'COMPLETED' && 'Cours termine'}
                     </p>
-                    <p className="mt-1">{adaptivePath.recommendationReason}</p>
+                    <p className="mt-1">{adaptivePath.decisionExplanation || adaptivePath.recommendationReason}</p>
                     {adaptiveNextConcept && (
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
-                                {adaptiveNextConceptName}
-                            </span>
-                            {adaptiveNextConceptType === 'EXTERNAL' ? (
-                                <Link
-                                    to={`/learner/external-concepts/${adaptiveNextConceptId}?sourceCourseId=${courseId}`}
-                                    className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                                >
-                                    Ouvrir le prerequis externe
-                                </Link>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        const concept = concepts.find(item => item.id === adaptiveNextConceptId);
-                                        if (concept) setSelectedConcept(concept);
-                                    }}
-                                    className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                                >
-                                    Ouvrir le concept
-                                </button>
+                        <div className="mt-3 space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
+                                    {adaptiveNextConceptName}
+                                </span>
+                                {adaptiveNextScore !== null && (
+                                    <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
+                                        Score adaptatif : {adaptiveNextScore}%
+                                    </span>
+                                )}
+                                {adaptiveNextConceptType === 'EXTERNAL' ? (
+                                    <Link
+                                        to={`/learner/external-concepts/${adaptiveNextConceptId}?sourceCourseId=${courseId}`}
+                                        className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                                    >
+                                        Ouvrir le prerequis externe
+                                    </Link>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            const concept = concepts.find(item => item.id === adaptiveNextConceptId);
+                                            if (concept) setSelectedConcept(concept);
+                                        }}
+                                        className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                                    >
+                                        Ouvrir le concept
+                                    </button>
+                                )}
+                            </div>
+                            {(adaptivePath.decisionExplanation || adaptiveExplanationReasons.length > 0) && (
+                                <div className="rounded-lg border border-white/60 bg-white/70 p-3">
+                                    <p className="font-bold">Pourquoi ce concept ?</p>
+                                    {adaptiveExplanationReasons.length > 0 ? (
+                                        <ul className="mt-2 space-y-1">
+                                            {adaptiveExplanationReasons.map(reason => (
+                                                <li key={reason}>- {reason}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="mt-1">{adaptivePath.decisionExplanation}</p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}

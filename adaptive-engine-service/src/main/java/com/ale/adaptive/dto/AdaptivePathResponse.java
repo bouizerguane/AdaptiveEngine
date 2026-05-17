@@ -25,4 +25,6 @@ public class AdaptivePathResponse {
     private Map<String, Object> latestDiagnostic;
     private int traceCount;
     private int submittedLabCount;
+    private String decisionExplanation;
+    private String scoringVersion;
 }

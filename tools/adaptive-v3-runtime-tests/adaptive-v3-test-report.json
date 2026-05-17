@@ -1,0 +1,1508 @@
+{
+  "metadata": {
+    "generatedAt": "2026-05-17T10:16:56.645Z",
+    "apiBaseUrl": "http://localhost:8080/api",
+    "scoringVersionExpected": "V3_RULE_BASED_EXPLAINABLE"
+  },
+  "learners": {
+    "strong": "student.v3.strong@test.local",
+    "strongNoGap": "student.v3.strong.nogap@test.local",
+    "weak": "student.v3.weak@test.local",
+    "external": "student.v3.external@test.local",
+    "engagement": "student.v3.engagement@test.local"
+  },
+  "cases": [
+    {
+      "name": "Case A1 - Apprenant fort avec lacune",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "nextAction",
+          "expected": "REMEDIATION",
+          "actual": "REMEDIATION",
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept contains Fonctions",
+          "expected": "contains Fonctions",
+          "actual": "Fonctions",
+          "status": "PASS"
+        },
+        {
+          "label": "explanationReasons",
+          "expected": "non-empty",
+          "actual": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ],
+          "status": "PASS"
+        },
+        {
+          "label": "decisionExplanation",
+          "expected": "non-empty",
+          "actual": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "nextAction": "REMEDIATION",
+        "nextConceptContains": "Fonctions",
+        "explanationReasons": "non-empty",
+        "decisionExplanation": "non-empty"
+      },
+      "actual": {
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptName": "Fonctions",
+          "type": "INTERNAL",
+          "status": "TO_REVIEW",
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.v3.strong@test.local",
+        "courseId": "ae-runtime-course-algo",
+        "courseTitle": "Introduction à l'Algorithmique",
+        "diagnosticPassed": true,
+        "masteredConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "learnableConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.69,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.29,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.58,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Ce concept peut etre aborde sans prerequis declares.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          }
+        ],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "TO_REVIEW",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": [
+              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            ]
+          }
+        ],
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptId": "ae-runtime-concept-fonctions",
+          "conceptName": "Fonctions",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "moduleTitle": "Structures de contrôle",
+          "chapitreTitle": "Decider, repeter et organiser",
+          "status": "TO_REVIEW",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "learningPhase": "REMEDIATION",
+        "nextRecommendation": {
+          "action": "REMEDIATION",
+          "learningPhase": "REMEDIATION",
+          "conceptId": "ae-runtime-concept-fonctions",
+          "conceptName": "Fonctions",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "reason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic."
+        },
+        "recommendationReason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.",
+        "latestDiagnostic": {
+          "idTrace": 41,
+          "courseId": "ae-runtime-course-algo",
+          "targetId": "ae-runtime-course-algo",
+          "targetType": "COURSE",
+          "studentEmail": "student.v3.strong@test.local",
+          "learnerEmail": "student.v3.strong@test.local",
+          "userId": "student.v3.strong@test.local",
+          "evaluationId": "runtime-diagnostic-ae-runtime-course-algo-1779013018926",
+          "typeEvaluation": "DIAGNOSTIC_ENTREE",
+          "scoreObtenu": 82.6,
+          "tempsConsultation": 300,
+          "horodatage": "2026-05-17T10:16:58",
+          "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+          "tabSwitchesCount": 0,
+          "masterySource": "DIAGNOSTIC_ENTREE",
+          "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":92},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":92},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":true,\"score\":92},{\"conceptId\":\"ae-runtime-concept-boucles\",\"conceptName\":\"Boucles\",\"name\":\"Boucles\",\"mastered\":true,\"score\":92},{\"conceptId\":\"ae-runtime-concept-fonctions\",\"conceptName\":\"Fonctions\",\"name\":\"Fonctions\",\"mastered\":false,\"score\":45}]"
+        },
+        "traceCount": 2,
+        "submittedLabCount": 0,
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      }
+    },
+    {
+      "name": "Case A2 - Apprenant fort sans lacune",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "nextAction",
+          "expected": "LEARN",
+          "actual": "LEARN",
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept non null",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept.status",
+          "expected": "LEARNABLE",
+          "actual": "LEARNABLE",
+          "status": "PASS"
+        },
+        {
+          "label": "adaptiveScore present",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        },
+        {
+          "label": "scoreBreakdown present",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        },
+        {
+          "label": "explanationReasons",
+          "expected": "non-empty",
+          "actual": [
+            "Tous les prerequis de ce concept sont satisfaits.",
+            "Votre historique recent montre une progression suffisante."
+          ],
+          "status": "PASS"
+        },
+        {
+          "label": "learnableConcepts sorted by adaptiveScore desc",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "nextAction": "LEARN",
+        "nextConcept": "non-null",
+        "nextConceptStatus": "LEARNABLE",
+        "adaptiveScore": "present",
+        "scoreBreakdown": "present",
+        "explanationReasons": "non-empty",
+        "learnableConceptsSorted": "adaptiveScore descending"
+      },
+      "actual": {
+        "nextAction": "LEARN",
+        "nextConcept": {
+          "conceptName": "Tableaux",
+          "type": "INTERNAL",
+          "status": "LEARNABLE",
+          "adaptiveScore": 0.69,
+          "scoreBreakdown": {
+            "prerequisiteScore": 1,
+            "diagnosticWeaknessScore": 0.3,
+            "historicalPerformanceScore": 1,
+            "pedagogicalOrderScore": 0.29,
+            "engagementScore": 0.7
+          },
+          "explanationReasons": [
+            "Tous les prerequis de ce concept sont satisfaits.",
+            "Votre historique recent montre une progression suffisante."
+          ]
+        },
+        "learnableScores": [
+          {
+            "conceptName": "Tableaux",
+            "adaptiveScore": 0.69,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.29,
+              "engagementScore": 0.7
+            }
+          },
+          {
+            "conceptName": "Entrées/Sorties",
+            "adaptiveScore": 0.58,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 0.7
+            }
+          }
+        ],
+        "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.v3.strong.nogap@test.local",
+        "courseId": "ae-runtime-course-algo",
+        "courseTitle": "Introduction à l'Algorithmique",
+        "diagnosticPassed": true,
+        "masteredConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "MASTERED",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "learnableConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.69,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.29,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.58,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Ce concept peut etre aborde sans prerequis declares.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          }
+        ],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [],
+        "nextAction": "LEARN",
+        "nextConcept": {
+          "conceptId": "ae-runtime-concept-tableaux",
+          "conceptName": "Tableaux",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "moduleTitle": "Structures de contrôle",
+          "chapitreTitle": "Decider, repeter et organiser",
+          "status": "LEARNABLE",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": 0.69,
+          "scoreBreakdown": {
+            "prerequisiteScore": 1,
+            "diagnosticWeaknessScore": 0.3,
+            "historicalPerformanceScore": 1,
+            "pedagogicalOrderScore": 0.29,
+            "engagementScore": 0.7
+          },
+          "explanationReasons": [
+            "Tous les prerequis de ce concept sont satisfaits.",
+            "Votre historique recent montre une progression suffisante."
+          ]
+        },
+        "learningPhase": "LEARNING",
+        "nextRecommendation": {
+          "action": "LEARN",
+          "learningPhase": "LEARNING",
+          "conceptId": "ae-runtime-concept-tableaux",
+          "conceptName": "Tableaux",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "reason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants."
+        },
+        "recommendationReason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.",
+        "latestDiagnostic": {
+          "idTrace": 42,
+          "courseId": "ae-runtime-course-algo",
+          "targetId": "ae-runtime-course-algo",
+          "targetType": "COURSE",
+          "studentEmail": "student.v3.strong.nogap@test.local",
+          "learnerEmail": "student.v3.strong.nogap@test.local",
+          "userId": "student.v3.strong.nogap@test.local",
+          "evaluationId": "runtime-diagnostic-ae-runtime-course-algo-1779013019760",
+          "typeEvaluation": "DIAGNOSTIC_ENTREE",
+          "scoreObtenu": 94,
+          "tempsConsultation": 300,
+          "horodatage": "2026-05-17T10:16:59",
+          "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+          "tabSwitchesCount": 0,
+          "masterySource": "DIAGNOSTIC_ENTREE",
+          "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":94},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":94},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":true,\"score\":94},{\"conceptId\":\"ae-runtime-concept-boucles\",\"conceptName\":\"Boucles\",\"name\":\"Boucles\",\"mastered\":true,\"score\":94}]"
+        },
+        "traceCount": 1,
+        "submittedLabCount": 0,
+        "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      }
+    },
+    {
+      "name": "Case B - Apprenant faible",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "nextAction",
+          "expected": "REMEDIATION",
+          "actual": "REMEDIATION",
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept = Variables",
+          "expected": "contains Variables",
+          "actual": "Variables",
+          "status": "PASS"
+        },
+        {
+          "label": "explanationReasons",
+          "expected": "non-empty",
+          "actual": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ],
+          "status": "PASS"
+        },
+        {
+          "label": "decisionExplanation",
+          "expected": "non-empty",
+          "actual": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "nextAction": "REMEDIATION",
+        "nextConcept": "Variables",
+        "explanation": "present"
+      },
+      "actual": {
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptName": "Variables",
+          "type": "INTERNAL",
+          "status": "TO_REVIEW",
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic."
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.v3.weak@test.local",
+        "courseId": "ae-runtime-course-algo",
+        "courseTitle": "Introduction à l'Algorithmique",
+        "diagnosticPassed": true,
+        "masteredConcepts": [],
+        "learnableConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.68,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 1,
+              "historicalPerformanceScore": 0.4,
+              "pedagogicalOrderScore": 0.86,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Ce concept peut etre aborde sans prerequis declares.",
+              "Le dernier diagnostic indique que ce concept doit etre renforce.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Le moteur garde une progression prudente car les scores precedents sont faibles."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.49,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 0.4,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Ce concept peut etre aborde sans prerequis declares.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Le moteur garde une progression prudente car les scores precedents sont faibles."
+            ]
+          }
+        ],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-variables"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-types-de-donnees"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-conditions"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-boucles"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "TO_REVIEW",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": [
+              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "TO_REVIEW",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": [
+              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "TO_REVIEW",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": [
+              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            ]
+          }
+        ],
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptId": "ae-runtime-concept-variables",
+          "conceptName": "Variables",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de l'algorithmique",
+          "chapitreTitle": "Representer et manipuler les donnees",
+          "status": "TO_REVIEW",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "learningPhase": "REMEDIATION",
+        "nextRecommendation": {
+          "action": "REMEDIATION",
+          "learningPhase": "REMEDIATION",
+          "conceptId": "ae-runtime-concept-variables",
+          "conceptName": "Variables",
+          "courseId": "ae-runtime-course-algo",
+          "type": "INTERNAL",
+          "reason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic."
+        },
+        "recommendationReason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.",
+        "latestDiagnostic": {
+          "idTrace": 43,
+          "courseId": "ae-runtime-course-algo",
+          "targetId": "ae-runtime-course-algo",
+          "targetType": "COURSE",
+          "studentEmail": "student.v3.weak@test.local",
+          "learnerEmail": "student.v3.weak@test.local",
+          "userId": "student.v3.weak@test.local",
+          "evaluationId": "runtime-diagnostic-ae-runtime-course-algo-1779013020580",
+          "typeEvaluation": "DIAGNOSTIC_ENTREE",
+          "scoreObtenu": 35,
+          "tempsConsultation": 300,
+          "horodatage": "2026-05-17T10:17:00",
+          "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+          "tabSwitchesCount": 0,
+          "masterySource": "DIAGNOSTIC_ENTREE",
+          "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":false,\"score\":30},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":false,\"score\":35},{\"conceptId\":\"ae-runtime-concept-boucles\",\"conceptName\":\"Boucles\",\"name\":\"Boucles\",\"mastered\":false,\"score\":40}]"
+        },
+        "traceCount": 2,
+        "submittedLabCount": 0,
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      }
+    },
+    {
+      "name": "Case C - Concept externe",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "nextAction",
+          "expected": "REMEDIATION",
+          "actual": "REMEDIATION",
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept.type",
+          "expected": "EXTERNAL",
+          "actual": "EXTERNAL",
+          "status": "PASS"
+        },
+        {
+          "label": "nextConcept.name",
+          "expected": "contains Pointeurs",
+          "actual": "Pointeurs",
+          "status": "PASS"
+        },
+        {
+          "label": "route externe attendue",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "nextAction": "REMEDIATION",
+        "nextConceptType": "EXTERNAL",
+        "nextConceptName": "Pointeurs",
+        "frontendRoute": "/learner/external-concepts/:conceptId"
+      },
+      "actual": {
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptName": "Pointeurs",
+          "type": "EXTERNAL",
+          "status": "TO_REVIEW",
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "expectedFrontendRoute": "/learner/external-concepts/external-pointeurs-runtime-test",
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic."
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.v3.external@test.local",
+        "courseId": "ae-runtime-course-ds",
+        "courseTitle": "Structures de Données",
+        "diagnosticPassed": true,
+        "masteredConcepts": [],
+        "learnableConcepts": [],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-listes-chainees",
+            "conceptName": "Listes chaînées",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures linéaires",
+            "chapitreTitle": "Chainage et acces sequentiel",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-pointeurs"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-piles",
+            "conceptName": "Piles",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures linéaires",
+            "chapitreTitle": "Chainage et acces sequentiel",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux-en-c",
+              "ae-runtime-concept-listes-chainees"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-files",
+            "conceptName": "Files",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures linéaires",
+            "chapitreTitle": "Chainage et acces sequentiel",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-piles"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-arbres",
+            "conceptName": "Arbres",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures avancées",
+            "chapitreTitle": "Hierarchies, reseaux et parcours",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-files"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-graphes",
+            "conceptName": "Graphes",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures avancées",
+            "chapitreTitle": "Hierarchies, reseaux et parcours",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-arbres"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-algorithmes-de-parcours",
+            "conceptName": "Algorithmes de parcours",
+            "courseId": "ae-runtime-course-ds",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures avancées",
+            "chapitreTitle": "Hierarchies, reseaux et parcours",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-fonctions-en-c",
+              "ae-runtime-concept-graphes"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [
+          {
+            "conceptId": "external-pointeurs-runtime-test",
+            "conceptName": "Pointeurs",
+            "courseId": null,
+            "type": "EXTERNAL",
+            "moduleTitle": "",
+            "chapitreTitle": "",
+            "status": "TO_REVIEW",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": [
+              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            ]
+          }
+        ],
+        "nextAction": "REMEDIATION",
+        "nextConcept": {
+          "conceptId": "external-pointeurs-runtime-test",
+          "conceptName": "Pointeurs",
+          "courseId": null,
+          "type": "EXTERNAL",
+          "moduleTitle": "",
+          "chapitreTitle": "",
+          "status": "TO_REVIEW",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": [
+            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+          ]
+        },
+        "learningPhase": "REMEDIATION",
+        "nextRecommendation": {
+          "action": "REMEDIATION",
+          "learningPhase": "REMEDIATION",
+          "conceptId": "external-pointeurs-runtime-test",
+          "conceptName": "Pointeurs",
+          "courseId": null,
+          "type": "EXTERNAL",
+          "reason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic."
+        },
+        "recommendationReason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.",
+        "latestDiagnostic": {
+          "idTrace": 44,
+          "courseId": "ae-runtime-course-ds",
+          "targetId": "ae-runtime-course-ds",
+          "targetType": "COURSE",
+          "studentEmail": "student.v3.external@test.local",
+          "learnerEmail": "student.v3.external@test.local",
+          "userId": "student.v3.external@test.local",
+          "evaluationId": "runtime-diagnostic-ae-runtime-course-ds-1779013021272",
+          "typeEvaluation": "DIAGNOSTIC_ENTREE",
+          "scoreObtenu": 35,
+          "tempsConsultation": 300,
+          "horodatage": "2026-05-17T10:17:01",
+          "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+          "tabSwitchesCount": 0,
+          "masterySource": "DIAGNOSTIC_ENTREE",
+          "conceptResults": "[{\"conceptId\":\"external-pointeurs-runtime-test\",\"conceptName\":\"Pointeurs\",\"name\":\"Pointeurs\",\"mastered\":false,\"score\":35}]"
+        },
+        "traceCount": 3,
+        "submittedLabCount": 0,
+        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+      }
+    },
+    {
+      "name": "Case D - Engagement influence ranking",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "engagementScore actif > passif",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        },
+        {
+          "label": "adaptiveScore actif > passif",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "activeEngagementScore": "> passiveEngagementScore",
+        "activeAdaptiveScore": "> passiveAdaptiveScore for same recommendation context"
+      },
+      "actual": {
+        "active": {
+          "learnerEmail": "student.v3.engagement@test.local",
+          "nextConcept": {
+            "conceptName": "Conditions",
+            "type": "INTERNAL",
+            "status": "LEARNABLE",
+            "adaptiveScore": 0.76,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.57,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante.",
+              "Votre activite recente sur les TP permet d'aborder ce concept maintenant."
+            ]
+          },
+          "engagementScore": 1,
+          "adaptiveScore": 0.76
+        },
+        "passive": {
+          "learnerEmail": "student.v3.external@test.local",
+          "comparedConcept": {
+            "conceptName": "Conditions",
+            "type": "INTERNAL",
+            "status": "LEARNABLE",
+            "adaptiveScore": 0.69,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 0.7,
+              "pedagogicalOrderScore": 0.57,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          },
+          "engagementScore": 0.7,
+          "adaptiveScore": 0.69
+        },
+        "scoreDifference": 0.07
+      },
+      "adaptivePathResponse": {
+        "active": {
+          "learnerEmail": "student.v3.engagement@test.local",
+          "courseId": "ae-runtime-course-algo",
+          "courseTitle": "Introduction à l'Algorithmique",
+          "diagnosticPassed": true,
+          "masteredConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-variables",
+              "conceptName": "Variables",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "MASTERED",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-types-de-donnees",
+              "conceptName": "Types de données",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "MASTERED",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            }
+          ],
+          "learnableConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-conditions",
+              "conceptName": "Conditions",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "LEARNABLE",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": 0.76,
+              "scoreBreakdown": {
+                "prerequisiteScore": 1,
+                "diagnosticWeaknessScore": 0.3,
+                "historicalPerformanceScore": 1,
+                "pedagogicalOrderScore": 0.57,
+                "engagementScore": 1
+              },
+              "explanationReasons": [
+                "Tous les prerequis de ce concept sont satisfaits.",
+                "Ce concept suit l'ordre pedagogique recommande.",
+                "Votre historique recent montre une progression suffisante.",
+                "Votre activite recente sur les TP permet d'aborder ce concept maintenant."
+              ]
+            },
+            {
+              "conceptId": "ae-runtime-concept-entrees-sorties",
+              "conceptName": "Entrées/Sorties",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "LEARNABLE",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": 0.61,
+              "scoreBreakdown": {
+                "prerequisiteScore": 0.5,
+                "diagnosticWeaknessScore": 0.3,
+                "historicalPerformanceScore": 1,
+                "pedagogicalOrderScore": 0.71,
+                "engagementScore": 1
+              },
+              "explanationReasons": [
+                "Ce concept peut etre aborde sans prerequis declares.",
+                "Ce concept suit l'ordre pedagogique recommande.",
+                "Votre historique recent montre une progression suffisante.",
+                "Votre activite recente sur les TP permet d'aborder ce concept maintenant."
+              ]
+            }
+          ],
+          "blockedConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-boucles",
+              "conceptName": "Boucles",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-conditions"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-tableaux",
+              "conceptName": "Tableaux",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-boucles"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-fonctions",
+              "conceptName": "Fonctions",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-tableaux"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            }
+          ],
+          "conceptsToReview": [],
+          "nextAction": "LEARN",
+          "nextConcept": {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.76,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.57,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante.",
+              "Votre activite recente sur les TP permet d'aborder ce concept maintenant."
+            ]
+          },
+          "learningPhase": "LEARNING",
+          "nextRecommendation": {
+            "action": "LEARN",
+            "learningPhase": "LEARNING",
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "reason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants."
+          },
+          "recommendationReason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.",
+          "latestDiagnostic": {
+            "idTrace": 45,
+            "courseId": "ae-runtime-course-algo",
+            "targetId": "ae-runtime-course-algo",
+            "targetType": "COURSE",
+            "studentEmail": "student.v3.engagement@test.local",
+            "learnerEmail": "student.v3.engagement@test.local",
+            "userId": "student.v3.engagement@test.local",
+            "evaluationId": "runtime-diagnostic-ae-runtime-course-algo-1779013021804",
+            "typeEvaluation": "DIAGNOSTIC_ENTREE",
+            "scoreObtenu": 88,
+            "tempsConsultation": 300,
+            "horodatage": "2026-05-17T10:17:01",
+            "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+            "tabSwitchesCount": 0,
+            "masterySource": "DIAGNOSTIC_ENTREE",
+            "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":88},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":88}]"
+          },
+          "traceCount": 10,
+          "submittedLabCount": 3,
+          "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+          "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+        },
+        "passive": {
+          "learnerEmail": "student.v3.external@test.local",
+          "courseId": "ae-runtime-course-algo",
+          "courseTitle": "Introduction à l'Algorithmique",
+          "diagnosticPassed": true,
+          "masteredConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-variables",
+              "conceptName": "Variables",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "MASTERED",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-types-de-donnees",
+              "conceptName": "Types de données",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "MASTERED",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            }
+          ],
+          "learnableConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-conditions",
+              "conceptName": "Conditions",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "LEARNABLE",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": 0.69,
+              "scoreBreakdown": {
+                "prerequisiteScore": 1,
+                "diagnosticWeaknessScore": 0.3,
+                "historicalPerformanceScore": 0.7,
+                "pedagogicalOrderScore": 0.57,
+                "engagementScore": 0.7
+              },
+              "explanationReasons": [
+                "Tous les prerequis de ce concept sont satisfaits.",
+                "Ce concept suit l'ordre pedagogique recommande.",
+                "Votre historique recent montre une progression suffisante."
+              ]
+            },
+            {
+              "conceptId": "ae-runtime-concept-entrees-sorties",
+              "conceptName": "Entrées/Sorties",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Bases de l'algorithmique",
+              "chapitreTitle": "Representer et manipuler les donnees",
+              "status": "LEARNABLE",
+              "missingPrerequisiteIds": [],
+              "adaptiveScore": 0.53,
+              "scoreBreakdown": {
+                "prerequisiteScore": 0.5,
+                "diagnosticWeaknessScore": 0.3,
+                "historicalPerformanceScore": 0.7,
+                "pedagogicalOrderScore": 0.71,
+                "engagementScore": 0.7
+              },
+              "explanationReasons": [
+                "Ce concept peut etre aborde sans prerequis declares.",
+                "Ce concept suit l'ordre pedagogique recommande.",
+                "Votre historique recent montre une progression suffisante."
+              ]
+            }
+          ],
+          "blockedConcepts": [
+            {
+              "conceptId": "ae-runtime-concept-boucles",
+              "conceptName": "Boucles",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-conditions"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-tableaux",
+              "conceptName": "Tableaux",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-boucles"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            },
+            {
+              "conceptId": "ae-runtime-concept-fonctions",
+              "conceptName": "Fonctions",
+              "courseId": "ae-runtime-course-algo",
+              "type": "INTERNAL",
+              "moduleTitle": "Structures de contrôle",
+              "chapitreTitle": "Decider, repeter et organiser",
+              "status": "BLOCKED",
+              "missingPrerequisiteIds": [
+                "ae-runtime-concept-tableaux"
+              ],
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": null
+            }
+          ],
+          "conceptsToReview": [],
+          "nextAction": "LEARN",
+          "nextConcept": {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.69,
+            "scoreBreakdown": {
+              "prerequisiteScore": 1,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 0.7,
+              "pedagogicalOrderScore": 0.57,
+              "engagementScore": 0.7
+            },
+            "explanationReasons": [
+              "Tous les prerequis de ce concept sont satisfaits.",
+              "Ce concept suit l'ordre pedagogique recommande.",
+              "Votre historique recent montre une progression suffisante."
+            ]
+          },
+          "learningPhase": "LEARNING",
+          "nextRecommendation": {
+            "action": "LEARN",
+            "learningPhase": "LEARNING",
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "reason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants."
+          },
+          "recommendationReason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.",
+          "latestDiagnostic": {
+            "idTrace": 46,
+            "courseId": "ae-runtime-course-algo",
+            "targetId": "ae-runtime-course-algo",
+            "targetType": "COURSE",
+            "studentEmail": "student.v3.external@test.local",
+            "learnerEmail": "student.v3.external@test.local",
+            "userId": "student.v3.external@test.local",
+            "evaluationId": "runtime-diagnostic-ae-runtime-course-algo-1779013022006",
+            "typeEvaluation": "DIAGNOSTIC_ENTREE",
+            "scoreObtenu": 88,
+            "tempsConsultation": 300,
+            "horodatage": "2026-05-17T10:17:02",
+            "feedbackGenere": "Runtime Adaptive V3 diagnostic simulation",
+            "tabSwitchesCount": 0,
+            "masterySource": "DIAGNOSTIC_ENTREE",
+            "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":88},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":88}]"
+          },
+          "traceCount": 4,
+          "submittedLabCount": 0,
+          "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+          "scoringVersion": "V3_RULE_BASED_EXPLAINABLE"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "errors": [],
+    "durationMs": 6963
+  }
+}
