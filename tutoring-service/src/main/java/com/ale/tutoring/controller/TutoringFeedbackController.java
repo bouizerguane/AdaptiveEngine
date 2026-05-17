@@ -32,7 +32,14 @@ public class TutoringFeedbackController {
                 request.conceptId(),
                 request.conceptName(),
                 request.score(),
-                request.evaluationType()
+                request.evaluationType(),
+                request.strategyType(),
+                request.nextAction(),
+                request.profileType(),
+                request.masteryScore(),
+                request.knowledgeGaps(),
+                request.recommendedSequence(),
+                request.tutoringMessageHint()
         );
         return ResponseEntity.ok(tutoringFeedbackService.generate(effectiveRequest));
     }

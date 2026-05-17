@@ -5,6 +5,11 @@ import java.util.List;
 public record TutoringFeedbackResponse(
         String eventType,
         String message,
-        List<String> actions
+        List<String> actions,
+        String feedbackType,
+        List<String> recommendedActions,
+        List<String> learningSequence,
+        String motivationalMessage,
+        String explanation
 ) {
 }

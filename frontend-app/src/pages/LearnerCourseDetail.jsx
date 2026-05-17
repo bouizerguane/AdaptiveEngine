@@ -52,6 +52,12 @@ const strategyStepLabels = {
     CHALLENGE: 'Defi',
 };
 
+const tutoringEventFromAction = (nextAction) => {
+    if (nextAction === 'REMEDIATION') return 'DIAGNOSTIC_FAILED';
+    if (nextAction === 'COMPLETED') return 'CONCEPT_MASTERED';
+    return 'GENERAL';
+};
+
 export default function LearnerCourseDetail() {
     const { courseId } = useParams();
     const [searchParams] = useSearchParams();
@@ -75,6 +81,7 @@ export default function LearnerCourseDetail() {
     const [externalConceptPrerequisites, setExternalConceptPrerequisites] = useState([]);
     const [externalDiagnosticResults, setExternalDiagnosticResults] = useState([]);
     const [tutoringFeedbacks, setTutoringFeedbacks] = useState({});
+    const [strategyTutoringFeedback, setStrategyTutoringFeedback] = useState(null);
 
     const concepts = useMemo(() => flattenConcepts(course), [course]);
 
@@ -242,6 +249,32 @@ export default function LearnerCourseDetail() {
             })
             .finally(() => setContentLoading(false));
     }, [selectedConcept?.id, user?.email]);
+
+    useEffect(() => {
+        const strategy = adaptivePath?.pedagogicalStrategy;
+        if (!strategy || !user?.email) {
+            setStrategyTutoringFeedback(null);
+            return;
+        }
+
+        tutoringApi.getFeedback({
+            eventType: tutoringEventFromAction(adaptivePath.nextAction),
+            learnerEmail: user.email,
+            courseId,
+            courseTitle: course?.title,
+            conceptId: adaptivePath.nextConcept?.conceptId,
+            conceptName: adaptivePath.nextConcept?.conceptName,
+            strategyType: strategy.strategyType,
+            nextAction: adaptivePath.nextAction,
+            profileType: adaptivePath.learnerProfile?.profileType,
+            masteryScore: adaptivePath.learnerProfile?.masteryScore,
+            knowledgeGaps: adaptivePath.learnerProfile?.knowledgeGaps || [],
+            recommendedSequence: strategy.recommendedSequence || [],
+            tutoringMessageHint: strategy.tutoringMessageHint,
+        })
+            .then(response => setStrategyTutoringFeedback(response.data))
+            .catch(() => setStrategyTutoringFeedback(null));
+    }, [adaptivePath, course?.title, courseId, user?.email]);
 
     if (loading) {
         return (
@@ -469,6 +502,49 @@ export default function LearnerCourseDetail() {
                         <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-indigo-900">
                             <p className="font-semibold">Conseil tutorat</p>
                             <p className="mt-1 text-xs leading-relaxed">{pedagogicalStrategy.tutoringMessageHint}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {strategyTutoringFeedback && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800">Feedback pedagogique</p>
+                            <p className="mt-1 text-slate-500">{strategyTutoringFeedback.message}</p>
+                        </div>
+                        {strategyTutoringFeedback.feedbackType && (
+                            <span className="inline-flex w-fit rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+                                {strategyTutoringFeedback.feedbackType}
+                            </span>
+                        )}
+                    </div>
+                    {Array.isArray(strategyTutoringFeedback.learningSequence) && strategyTutoringFeedback.learningSequence.length > 0 && (
+                        <div className="mt-4">
+                            <p className="font-semibold text-slate-700">Sequence proposee</p>
+                            <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                {strategyTutoringFeedback.learningSequence.map((step, index) => (
+                                    <li key={`${step}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                                        {index + 1}. {strategyStepLabels[step] || step}
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
+                    {strategyTutoringFeedback.motivationalMessage && (
+                        <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 font-semibold text-emerald-800">
+                            {strategyTutoringFeedback.motivationalMessage}
+                        </p>
+                    )}
+                    {Array.isArray(strategyTutoringFeedback.recommendedActions) && strategyTutoringFeedback.recommendedActions.length > 0 && (
+                        <div className="mt-4">
+                            <p className="font-semibold text-slate-700">Actions recommandees</p>
+                            <ul className="mt-2 space-y-1 text-slate-600">
+                                {strategyTutoringFeedback.recommendedActions.map(action => (
+                                    <li key={action}>- {action}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
