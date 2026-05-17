@@ -1,4 +1,4 @@
-# Adaptive Engine V5 Runtime Tests
+# Strategie pedagogique - Runtime Tests
 
 Validation runtime de `pedagogicalStrategy` ajoute a `/api/adaptive/path`.
 

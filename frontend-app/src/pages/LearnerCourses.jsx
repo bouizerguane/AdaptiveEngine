@@ -134,7 +134,9 @@ export default function LearnerCourses() {
                 </div>
             ) : courses.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 dark:bg-slate-900 dark:border-slate-700">
-                    Aucun cours ne correspond a votre recherche.
+                    <BookOpen className="mx-auto mb-3 text-slate-300" size={34} />
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">Aucun cours disponible.</p>
+                    <p className="mt-1 text-sm">Essayez une autre recherche ou revenez plus tard.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -153,7 +155,7 @@ export default function LearnerCourses() {
 
             {detailsCourse && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setDetailsCourse(null)}>
-                    <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl dark:bg-slate-900" onClick={event => event.stopPropagation()}>
+                    <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900" onClick={event => event.stopPropagation()}>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{detailsCourse.title || 'Cours sans titre'}</h2>
                         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Enseignant : {teacherLabel(detailsCourse) || 'Non renseigne'}</p>
                         <div className="mt-5 space-y-4 text-sm text-slate-700 dark:text-slate-300">
@@ -171,7 +173,7 @@ export default function LearnerCourses() {
                             </section>
                         </div>
                         <div className="mt-6 flex justify-end gap-2">
-                            <button onClick={() => setDetailsCourse(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-200">Fermer</button>
+                            <button onClick={() => setDetailsCourse(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Fermer</button>
                             {!enrolledIds.has(detailsCourse.id) && (
                                 <button onClick={() => handleEnroll(detailsCourse.id)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">S'inscrire</button>
                             )}

@@ -1,12 +1,12 @@
 {
   "metadata": {
-    "generatedAt": "2026-05-17T14:03:42.445Z",
+    "generatedAt": "2026-05-17T19:33:31.078Z",
     "apiBaseUrl": "http://localhost:8080/api",
     "endpoint": "POST /api/tutoring/feedback"
   },
   "cases": [
     {
-      "name": "V6 - RECOVERY",
+      "name": "Feedback tutorat - RECOVERY",
       "status": "PASS",
       "assertions": [
         {
@@ -99,7 +99,7 @@
       }
     },
     {
-      "name": "V6 - SUPPORTIVE",
+      "name": "Feedback tutorat - SUPPORTIVE",
       "status": "PASS",
       "assertions": [
         {
@@ -186,7 +186,7 @@
       }
     },
     {
-      "name": "V6 - STANDARD",
+      "name": "Feedback tutorat - STANDARD",
       "status": "PASS",
       "assertions": [
         {
@@ -273,7 +273,7 @@
       }
     },
     {
-      "name": "V6 - ADVANCED",
+      "name": "Feedback tutorat - ADVANCED",
       "status": "PASS",
       "assertions": [
         {
@@ -360,7 +360,7 @@
       }
     },
     {
-      "name": "V6 - Fallback sans strategyType",
+      "name": "Feedback tutorat - Fallback sans strategyType",
       "status": "PASS",
       "assertions": [
         {
@@ -395,7 +395,7 @@
       "errors": [],
       "expected": {
         "eventType": "DIAGNOSTIC_FAILED",
-        "message": "V1 eventType logic"
+        "message": "eventType historique"
       },
       "actual": {
         "eventType": "DIAGNOSTIC_FAILED",
@@ -418,6 +418,6 @@
     "passed": 5,
     "failed": 0,
     "errors": [],
-    "durationMs": 456
+    "durationMs": 365
   }
 }

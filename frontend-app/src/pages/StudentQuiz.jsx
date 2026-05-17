@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { contentApi, evaluationApi, trackingApi, masteryApi, adaptiveApi, courseApi, graphApi } from '../api/apiClient';
+import { learnerApi } from '../api/learnerApi';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import CustomDialog from '../components/CustomDialog';
 import {
     ClipboardList, CheckCircle, XCircle, Timer, Loader2,
-    AlertTriangle, Lightbulb, ChevronLeft, ChevronRight, Send
+    AlertTriangle, Lightbulb, ChevronLeft, ChevronRight, Send, Lock
 } from 'lucide-react';
 
 /* ─── Helpers ─── */
@@ -14,7 +15,6 @@ const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const pad = (n) => String(n).padStart(2, '0');
 const formatTime = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 const getConceptTitle = (concept) => concept?.labelPedagogique || concept?.title || concept?.name || concept?.libelle || concept?.label || '';
-const shortId = (id = '') => String(id).slice(0, 8);
 const collectConceptNames = (course) => {
     const names = {};
     (course?.modules || []).forEach(module => {
@@ -25,6 +25,19 @@ const collectConceptNames = (course) => {
         });
     });
     return names;
+};
+
+const evaluationLabels = {
+    DIAGNOSTIC_ENTREE: 'Diagnostic initial',
+    DIAGNOSTIC_POSITIONNEMENT: 'Diagnostic de positionnement',
+    FORMATIVE: 'Evaluation formative',
+    VALIDATION: 'Validation finale',
+};
+
+const difficultyLabels = {
+    EASY: 'Facile',
+    MEDIUM: 'Moyen',
+    HARD: 'Avance',
 };
 
 export default function StudentQuiz() {
@@ -46,6 +59,8 @@ export default function StudentQuiz() {
     const [conceptNameMap, setConceptNameMap] = useState({});
     const [context, setContext] = useState({ courseId: '', courseTitle: '', conceptTitle: '' });
     const [diagnosticAlreadyPassed, setDiagnosticAlreadyPassed] = useState(false);
+    const [validationLocked, setValidationLocked] = useState(false);
+    const [validationProgress, setValidationProgress] = useState({ mastered: 0, total: 0 });
 
     /* ─── Tracking refs ─── */
     const startTimeRef = useRef(Date.now());
@@ -110,11 +125,24 @@ export default function StudentQuiz() {
                     Promise.all([
                         courseApi.getCourseTree(courseId).then(response => response.data).catch(() => null),
                         graphApi.getCoursePrerequisiteConcepts(courseId).then(response => response.data || []).catch(() => []),
-                    ]).then(([courseTree, prerequisiteConcepts]) => {
+                        user?.email
+                            ? learnerApi.getLearningStatus(user.email, courseId).then(response => response.data || []).catch(() => [])
+                            : Promise.resolve([]),
+                    ]).then(([courseTree, prerequisiteConcepts, learningStatuses]) => {
                         const names = collectConceptNames(courseTree);
                         prerequisiteConcepts.forEach(concept => {
                             if (concept?.id) names[concept.id] = getConceptTitle(concept);
                         });
+                        const courseConceptIds = Object.keys(collectConceptNames(courseTree));
+                        const masteredCount = (learningStatuses || []).filter(item => item.status === 'MASTERED').length;
+                        const courseValidation = ev.typeEvaluation === 'VALIDATION' && (ev.targetType || 'COURSE') === 'COURSE';
+                        setValidationProgress({ mastered: masteredCount, total: courseConceptIds.length });
+                        setValidationLocked(Boolean(
+                            courseValidation
+                            && user?.role === 'ROLE_STUDENT'
+                            && courseConceptIds.length > 0
+                            && masteredCount < courseConceptIds.length
+                        ));
                         setConceptNameMap(names);
                         setContext({
                             courseId,
@@ -124,6 +152,7 @@ export default function StudentQuiz() {
                     });
                 } else if ((ev.targetType || 'CONCEPT') === 'CONCEPT') {
                     setContext(previous => ({ ...previous, conceptTitle: conceptNameMap[ev.targetId] || '' }));
+                    setValidationLocked(false);
                 }
             })
             .catch(() => toast.error('Impossible de charger l\'évaluation.'))
@@ -313,13 +342,13 @@ export default function StudentQuiz() {
 
     /* ─── Loaders ─── */
     if (loading) return (
-        <div className="flex h-64 items-center justify-center text-slate-400 gap-2">
-            <Loader2 className="animate-spin" size={20}/> Chargement…
+        <div className="flex h-64 items-center justify-center gap-2 text-slate-500 dark:text-slate-300">
+            <Loader2 className="animate-spin" size={20}/> Chargement de l'evaluation...
         </div>
     );
     if (!evaluation) return (
-        <div className="flex h-64 items-center justify-center text-slate-400">
-            <AlertTriangle className="mr-2"/> Aucune évaluation pour ce concept.
+        <div className="flex h-64 items-center justify-center text-slate-500 dark:text-slate-300">
+            <AlertTriangle className="mr-2"/> Aucune evaluation disponible pour ce concept.
         </div>
     );
 
@@ -329,12 +358,12 @@ export default function StudentQuiz() {
     const isInitialDiagnostic = ['DIAGNOSTIC_ENTREE', 'DIAGNOSTIC_POSITIONNEMENT'].includes(evaluation.typeEvaluation);
     const currentAnswer = answers[currentIdx];
     const answeredCount = Object.keys(answers).length;
-    const displayConceptName = (conceptId) => conceptNameMap[conceptId] || `Concept inconnu (${shortId(conceptId)}...)`;
+    const displayConceptName = (conceptId) => conceptNameMap[conceptId] || 'Concept non identifie';
 
     if (!submitted && diagnosticAlreadyPassed && isInitialDiagnostic) {
         return (
             <div className="max-w-2xl mx-auto py-12 px-4">
-                <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-8 text-center text-indigo-800">
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-8 text-center text-indigo-800 shadow-sm dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-100">
                     <ClipboardList className="mx-auto mb-3 text-indigo-600" size={42} />
                     <h1 className="text-xl font-bold">Diagnostic deja passe</h1>
                     <p className="mx-auto mt-2 max-w-lg text-sm">
@@ -349,22 +378,42 @@ export default function StudentQuiz() {
     }
 
     /* ─── RESULT SCREEN ─── */
+    if (!submitted && validationLocked && isValidation) {
+        return (
+            <div className="max-w-2xl mx-auto py-12 px-4">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-8 text-center text-amber-900 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                    <Lock className="mx-auto mb-3 text-amber-600" size={42} />
+                    <h1 className="text-xl font-bold">Validation finale verrouillee</h1>
+                    <p className="mx-auto mt-2 max-w-lg text-sm">
+                        Vous devez maitriser les concepts requis avant de passer la validation finale.
+                        Progression actuelle : {validationProgress.mastered}/{validationProgress.total} concepts maitrises.
+                    </p>
+                    <button
+                        onClick={() => context.courseId ? navigate(`/learner/courses/${context.courseId}`) : navigate(-1)}
+                        className="mt-5 rounded-lg bg-amber-700 px-5 py-2 text-sm font-bold text-white hover:bg-amber-800"
+                    >
+                        Retour au cours
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (submitted && result) {
         return (
             <div className="max-w-2xl mx-auto py-12 px-4">
-                <div className={`rounded-3xl p-10 text-center shadow-xl border-2 ${result.passed ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                <div className={`rounded-lg p-8 text-center shadow-sm border ${result.passed ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900' : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900'}`}>
                     {result.passed ? <CheckCircle size={64} className="text-emerald-500 mx-auto mb-4"/> : <XCircle size={64} className="text-red-500 mx-auto mb-4"/>}
                     <p className="text-5xl font-black mb-1" style={{ color: result.passed ? '#059669' : '#dc2626' }}>{result.scoreObtenu}%</p>
                     <p className="font-semibold text-slate-700 mb-1">{result.correct} / {result.total} correctes</p>
                     {isValidation && tabSwitchesRef.current > 0 && (
-                        <p className="text-xs text-amber-600 mt-2 font-medium">⚠️ {tabSwitchesRef.current} changement(s) d'onglet détecté(s)</p>
+                        <p className="text-xs text-amber-600 mt-2 font-medium">{tabSwitchesRef.current} changement(s) d'onglet detecte(s)</p>
                     )}
                     <p className="text-slate-500 text-sm mt-3 max-w-sm mx-auto">{result.feedbackGenere}</p>
                     {/* Banniere module validé automatiquement */}
                     {result.moduleValidated && (
-                        <div className="mt-4 mx-auto max-w-sm px-4 py-3 bg-sky-50 border border-sky-200 rounded-xl text-sky-700 text-sm font-semibold flex items-center gap-2">
-                            <span className="text-xl">⚡</span>
-                            Saut de niveau validé ! Tous les concepts de ce module sont marqués comme acquis.
+                        <div className="mt-4 mx-auto max-w-sm px-4 py-3 bg-sky-50 border border-sky-200 rounded-lg text-sky-700 text-sm font-semibold">
+                            Saut de niveau valide. Tous les concepts de ce module sont marques comme acquis.
                         </div>
                     )}
                     {result.adaptiveResult?.nextRecommendation?.conceptId && (
@@ -377,7 +426,7 @@ export default function StudentQuiz() {
                     {(result.conceptResults?.length > 0 || result.externalPrerequisiteResults?.length > 0) && (
                         <div className="mt-5 grid gap-3 text-left">
                             {result.conceptResults?.length > 0 && (
-                                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
                                     <p className="font-bold text-slate-800">Resultats par concept</p>
                                     <div className="mt-2 space-y-1">
                                         {result.conceptResults.map(item => (
@@ -389,7 +438,7 @@ export default function StudentQuiz() {
                                 </div>
                             )}
                             {result.externalPrerequisiteResults?.length > 0 && (
-                                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
                                     <p className="font-bold text-slate-800">Prerequis externes</p>
                                     <div className="mt-2 space-y-1">
                                         {result.externalPrerequisiteResults.map(item => (
@@ -404,15 +453,15 @@ export default function StudentQuiz() {
                     )}
                     {!result.passed && !isInitialDiagnostic && (
                         <button onClick={() => navigate(-1)}
-                            className="inline-block mt-4 px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition text-sm">
+                            className="inline-block mt-4 px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition text-sm">
                             Revoir le contenu du concept
                         </button>
                     )}
                     <div className="flex justify-center gap-3 mt-6">
                         {!result.passed && !isValidation && !isInitialDiagnostic && (
                             <button onClick={() => { setSubmitted(false); setAnswers({}); setResult(null); setCurrentIdx(0); startTimeRef.current = Date.now(); if (evaluation.tempsImparti > 0) setTimeLeft(evaluation.tempsImparti * 60); }}
-                                className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition text-sm">
-                                Réessayer
+                                className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition text-sm">
+                                Reessayer
                             </button>
                         )}
                         {isInitialDiagnostic && result.firstFailedConceptId && result.firstFailedHasContent && (
@@ -420,20 +469,20 @@ export default function StudentQuiz() {
                                 onClick={() => navigate(result.firstFailedContext?.isInCurrentCourse === false
                                     ? `/learner/external-concepts/${encodeURIComponent(result.firstFailedConceptId)}?sourceCourseId=${encodeURIComponent(result.courseId || '')}`
                                     : `/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.firstFailedConceptId)}`)}
-                                className="px-5 py-2 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition text-sm"
+                                className="px-5 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition text-sm"
                             >
-                                Réviser ce concept
+                                Reviser ce concept
                             </button>
                         )}
                         {isInitialDiagnostic && result.recommendationConceptId && (
                             <button
                                 onClick={() => navigate(`/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.recommendationConceptId)}`)}
-                                className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition text-sm"
+                                className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition text-sm"
                             >
                                 Voir la recommandation
                             </button>
                         )}
-                        <button onClick={() => result.courseId ? navigate(`/learner/courses/${result.courseId}`) : navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 transition text-sm">
+                        <button onClick={() => result.courseId ? navigate(`/learner/courses/${result.courseId}`) : navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-800 transition text-sm">
                             Retour au cours
                         </button>
                     </div>
@@ -444,7 +493,7 @@ export default function StudentQuiz() {
                     {questions.map((question, i) => {
                         const isRight = answers[i] === question.correctAnswer;
                         return (
-                            <div key={i} className={`p-4 rounded-xl border text-sm ${isRight ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+                            <div key={i} className={`p-4 rounded-lg border text-sm ${isRight ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-900' : 'border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900'}`}>
                                 <p className="font-semibold text-slate-800 mb-1">{i + 1}. {question.text}</p>
                                 <p className={isRight ? 'text-emerald-700' : 'text-red-600'}>
                                     Votre réponse : <strong>{answers[i] || '—'}</strong>
@@ -469,7 +518,7 @@ export default function StudentQuiz() {
     /* ─── QUIZ PLAYER ─── */
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
-            <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-500">
+            <div className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {context.courseId ? (
                     <Link to={`/learner/courses/${context.courseId}`} className="font-semibold text-indigo-600 hover:text-indigo-700">
                         {context.courseTitle || 'Retour au cours'}
@@ -482,19 +531,19 @@ export default function StudentQuiz() {
                 <span>/</span>
                 <span>{context.conceptTitle || 'Concept'}</span>
                 <span>/</span>
-                <span className="font-semibold text-slate-700">Quiz</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-100">Quiz</span>
             </div>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <div className="text-xs text-indigo-500 font-bold uppercase tracking-widest flex items-center gap-1 mb-1">
-                        <ClipboardList size={12}/> {evaluation.typeEvaluation}
+                        <ClipboardList size={12}/> {evaluationLabels[evaluation.typeEvaluation] || 'Evaluation'}
                     </div>
-                    <h1 className="text-xl font-bold text-slate-800">Évaluation en cours</h1>
+                    <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Evaluation en cours</h1>
                 </div>
                 {/* Timer */}
                 {timeLeft !== null && (
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg shadow ${timeLeft < 60 ? 'bg-red-50 text-red-600 border-2 border-red-300 animate-pulse' : 'bg-slate-100 text-slate-700'}`}>
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg shadow-sm ${timeLeft < 60 ? 'bg-red-50 text-red-600 border border-red-300 animate-pulse' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
                         <Timer size={18}/> {formatTime(timeLeft)}
                     </div>
                 )}
@@ -512,15 +561,15 @@ export default function StudentQuiz() {
             </div>
 
             {/* Question Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 mb-4 dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between mb-4">
-                    <p className="font-semibold text-slate-800 text-base leading-snug flex-1">{q.text}</p>
+                    <p className="font-semibold text-slate-800 text-base leading-snug flex-1 dark:text-slate-100">{q.text}</p>
                     {q.difficulty && (
                         <span className={`ml-3 text-xs px-2 py-0.5 rounded-full border font-bold shrink-0 ${
                             q.difficulty === 'EASY' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' :
                             q.difficulty === 'MEDIUM' ? 'text-amber-600 bg-amber-50 border-amber-200' :
                             'text-red-600 bg-red-50 border-red-200'}`}>
-                            {q.difficulty}
+                            {difficultyLabels[q.difficulty] || q.difficulty}
                         </span>
                     )}
                 </div>
@@ -530,7 +579,7 @@ export default function StudentQuiz() {
                     {(q.options || []).filter(o => o).map((opt, oIdx) => {
                         const isSelected = currentAnswer === opt;
                         const isCorrect = opt === q.correctAnswer;
-                        let cls = 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:border-indigo-300';
+                        let cls = 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700';
                         if (evaluation.showImmediateFeedback && currentAnswer) {
                             if (isCorrect) cls = 'border-emerald-400 bg-emerald-50 text-emerald-700 font-bold';
                             else if (isSelected) cls = 'border-red-400 bg-red-50 text-red-700';
@@ -538,7 +587,7 @@ export default function StudentQuiz() {
                         } else if (isSelected) { cls = 'border-indigo-400 bg-indigo-50 text-indigo-700 font-semibold'; }
                         return (
                             <button key={oIdx} onClick={() => selectAnswer(opt)}
-                                className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${cls}`}>
+                                className={`w-full text-left px-4 py-3 rounded-lg border transition text-sm ${cls}`}>
                                 {opt}
                             </button>
                         );
@@ -554,8 +603,8 @@ export default function StudentQuiz() {
                         <Lightbulb size={15}/> {revealedHints[currentIdx] ? 'Masquer l\'indice' : 'Afficher un indice'}
                     </button>
                     {revealedHints[currentIdx] && (
-                        <div className="mt-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800">
-                            💡 {q.hintText}
+                        <div className="mt-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                            {q.hintText}
                         </div>
                     )}
                 </div>
@@ -564,20 +613,20 @@ export default function StudentQuiz() {
             {/* Navigation */}
             <div className="flex items-center justify-between gap-3">
                 <button onClick={goPrev} disabled={currentIdx === 0 || !canGoBack}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
-                    <ChevronLeft size={16}/> Précédent
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <ChevronLeft size={16}/> Precedent
                 </button>
 
                 {currentIdx < questions.length - 1 ? (
                     <button onClick={goNext}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition">
+                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition">
                         Suivant <ChevronRight size={16}/>
                     </button>
                 ) : (
                     <button onClick={() => handleSubmit(false)} disabled={submitting}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl font-bold text-sm transition ${submitting ? 'bg-indigo-400 text-white cursor-wait' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition ${submitting ? 'bg-indigo-400 text-white cursor-wait' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
                         {submitting ? <Loader2 className="animate-spin" size={16}/> : <Send size={16}/>}
-                        {submitting ? 'Envoi…' : 'Soumettre mes réponses'}
+                        {submitting ? 'Envoi...' : 'Soumettre mes reponses'}
                     </button>
                 )}
             </div>

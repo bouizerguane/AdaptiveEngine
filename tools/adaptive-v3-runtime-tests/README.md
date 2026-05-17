@@ -1,6 +1,6 @@
-# Adaptive Engine V3 Runtime Tests
+# Scoring explicable - Runtime Tests
 
-Framework de validation runtime pour `adaptive-engine-service` V3.
+Framework de validation runtime pour le scoring explicable de `adaptive-engine-service`.
 
 Ce dossier ne modifie pas le moteur, ne modifie pas RabbitMQ et n'écrit jamais directement en base. Le script utilise uniquement les APIs exposees par la gateway :
 
@@ -51,7 +51,7 @@ node tools/adaptive-v3-runtime-tests/run-adaptive-v3-runtime-tests.mjs
 Cas couverts :
 
 - A1 : apprenant fort avec une lacune detectee au diagnostic, donc `REMEDIATION`.
-- A2 : apprenant fort sans lacune detectee, donc scoring V3 en mode `LEARN`.
+- A2 : apprenant fort sans lacune detectee, donc scoring explicable en mode `LEARN`.
 - B : apprenant faible avec prerequis critique a remedier.
 - C : concept externe detecte dans le diagnostic.
 - D : comparaison de l'effet engagement sur le score adaptatif.

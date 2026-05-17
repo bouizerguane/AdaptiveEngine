@@ -51,7 +51,7 @@ async function main() {
   const admin = await login(ADMIN_EMAIL, ADMIN_PASSWORD);
 
   await runStrategyCase(admin.token, {
-    name: 'V6 - RECOVERY',
+    name: 'Feedback tutorat - RECOVERY',
     strategyType: 'RECOVERY',
     expectedFeedbackType: 'REMEDIATION_FEEDBACK',
     nextAction: 'REMEDIATION',
@@ -61,7 +61,7 @@ async function main() {
     eventType: 'DIAGNOSTIC_FAILED',
   });
   await runStrategyCase(admin.token, {
-    name: 'V6 - SUPPORTIVE',
+    name: 'Feedback tutorat - SUPPORTIVE',
     strategyType: 'SUPPORTIVE',
     expectedFeedbackType: 'GUIDED_SUPPORT',
     nextAction: 'PASS_DIAGNOSTIC',
@@ -70,7 +70,7 @@ async function main() {
     eventType: 'GENERAL',
   });
   await runStrategyCase(admin.token, {
-    name: 'V6 - STANDARD',
+    name: 'Feedback tutorat - STANDARD',
     strategyType: 'STANDARD',
     expectedFeedbackType: 'STANDARD_GUIDANCE',
     nextAction: 'LEARN',
@@ -79,7 +79,7 @@ async function main() {
     eventType: 'GENERAL',
   });
   await runStrategyCase(admin.token, {
-    name: 'V6 - ADVANCED',
+    name: 'Feedback tutorat - ADVANCED',
     strategyType: 'ADVANCED',
     expectedFeedbackType: 'ENRICHMENT_FEEDBACK',
     nextAction: 'COMPLETED',
@@ -98,10 +98,10 @@ async function runStrategyCase(token, config) {
   try {
     const response = await postFeedback(token, {
       eventType: config.eventType,
-      learnerEmail: 'student.v6.runtime@test.local',
-      courseId: 'runtime-v6-course',
-      courseTitle: 'Runtime V6 Course',
-      conceptId: 'runtime-v6-concept',
+      learnerEmail: 'student.tutoring.runtime@test.local',
+      courseId: 'runtime-tutoring-course',
+      courseTitle: 'Runtime tutoring course',
+      conceptId: 'runtime-tutoring-concept',
       conceptName: 'Variables',
       score: config.strategyType === 'RECOVERY' ? 38 : 92,
       evaluationType: config.eventType === 'DIAGNOSTIC_FAILED' ? 'DIAGNOSTIC_ENTREE' : 'FORMATIVE',
@@ -111,7 +111,7 @@ async function runStrategyCase(token, config) {
       masteryScore: config.strategyType === 'SUPPORTIVE' ? null : 82,
       knowledgeGaps: config.knowledgeGaps || [],
       recommendedSequence: config.sequence,
-      tutoringMessageHint: 'Runtime V6 hint',
+      tutoringMessageHint: 'Runtime tutoring hint',
     });
 
     assertEquals(test, 'feedbackType', config.expectedFeedbackType, response.feedbackType);
@@ -130,17 +130,17 @@ async function runStrategyCase(token, config) {
 }
 
 async function runFallbackCase(token) {
-  const test = createCase('V6 - Fallback sans strategyType', {
-    expected: { eventType: 'DIAGNOSTIC_FAILED', message: 'V1 eventType logic' },
+  const test = createCase('Feedback tutorat - Fallback sans strategyType', {
+    expected: { eventType: 'DIAGNOSTIC_FAILED', message: 'eventType historique' },
   });
 
   try {
     const response = await postFeedback(token, {
       eventType: 'DIAGNOSTIC_FAILED',
-      learnerEmail: 'student.v6.runtime@test.local',
-      courseId: 'runtime-v6-course',
-      courseTitle: 'Runtime V6 Course',
-      conceptId: 'runtime-v6-concept',
+      learnerEmail: 'student.tutoring.runtime@test.local',
+      courseId: 'runtime-tutoring-course',
+      courseTitle: 'Runtime tutoring course',
+      conceptId: 'runtime-tutoring-concept',
       conceptName: 'Variables',
       score: 35,
       evaluationType: 'DIAGNOSTIC_ENTREE',
@@ -245,7 +245,7 @@ function writeReports() {
 
 function renderMarkdownReport(data) {
   const lines = [];
-  lines.push('# Tutoring Service V6 Runtime Test Report');
+  lines.push('# Feedback tutorat - Runtime Test Report');
   lines.push('');
   lines.push(`Generated at: ${data.metadata.generatedAt}`);
   lines.push(`API: ${data.metadata.apiBaseUrl}`);

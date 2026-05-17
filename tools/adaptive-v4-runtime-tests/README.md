@@ -1,4 +1,4 @@
-# Adaptive Engine V4 Runtime Tests
+# Profil apprenant - Runtime Tests
 
 Validation runtime du `LearnerProfileDto` ajoute a `/api/adaptive/path`.
 
@@ -35,4 +35,3 @@ tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.md
 ```
 
 Les rapports incluent les assertions, le profil retourne, les champs KMS et la reponse adaptive path.
-

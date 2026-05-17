@@ -17,18 +17,18 @@ const ADMIN_PASSWORD = process.env.ADAPTIVE_ADMIN_PASSWORD || process.env.ADMIN_
 const TEST_PASSWORD = 'moh123';
 
 const learners = {
-  strong: 'student.v3.strong@test.local',
-  strongNoGap: 'student.v3.strong.nogap@test.local',
-  weak: 'student.v3.weak@test.local',
-  external: 'student.v3.external@test.local',
-  engagement: 'student.v3.engagement@test.local',
+  strong: 'student.scoring.strong@test.local',
+  strongNoGap: 'student.scoring.strong.nogap@test.local',
+  weak: 'student.scoring.weak@test.local',
+  external: 'student.scoring.external@test.local',
+  engagement: 'student.scoring.engagement@test.local',
 };
 
 const report = {
   metadata: {
     generatedAt: new Date().toISOString(),
     apiBaseUrl: API_BASE_URL,
-    scoringVersionExpected: 'V3_RULE_BASED_EXPLAINABLE',
+    scoringVersionExpected: 'RULE_BASED_EXPLAINABLE',
   },
   learners,
   cases: [],
@@ -105,8 +105,8 @@ async function ensureLearners(adminToken) {
 
 async function signupIfNeeded(email) {
   const body = {
-    nom: 'V3',
-    prenom: email.split('@')[0].replace('student.v3.', ''),
+    nom: 'Runtime',
+    prenom: email.split('@')[0].replace('student.scoring.', ''),
     email,
     password: TEST_PASSWORD,
     role: 'STUDENT',
@@ -357,7 +357,7 @@ async function simulateHighEngagement(session, course, concepts) {
       courseId: course.id,
       conceptId: lab.targetId,
       targetId: lab.targetId,
-      githubRepoUrl: `https://github.com/adaptive-v3-runtime/${slug(session.email)}-${slug(lab.id)}`,
+      githubRepoUrl: `https://github.com/adaptive-runtime/${slug(session.email)}-${slug(lab.id)}`,
       status: 'COMPLETED',
       timeSpentPerStep: JSON.stringify({ 0: 120, 1: 240, 2: 180 }),
     }, session.token);
@@ -376,7 +376,7 @@ async function simulateHighEngagement(session, course, concepts) {
       scoreObtenu: 92,
       tempsConsultation: 180,
       horodatage: new Date().toISOString().slice(0, 19),
-      feedbackGenere: 'Runtime V3 high engagement trace',
+      feedbackGenere: 'Runtime high engagement trace',
       masterySource: 'QUIZ_DIRECT',
     }, session.token);
   }
@@ -396,7 +396,7 @@ async function simulateDiagnostic(session, course, conceptResults, options = {})
     scoreObtenu: average(conceptResults.map((item) => item.score)),
     tempsConsultation: 300,
     horodatage: new Date().toISOString().slice(0, 19),
-    feedbackGenere: 'Runtime Adaptive V3 diagnostic simulation',
+    feedbackGenere: 'Runtime adaptive diagnostic simulation',
     masterySource: 'DIAGNOSTIC_ENTREE',
     conceptResults: JSON.stringify(conceptResults),
   };
@@ -421,7 +421,7 @@ async function simulateDiagnostic(session, course, conceptResults, options = {})
 async function enroll(session, course) {
   await apiPost(`/graph/courses/${encodeURIComponent(course.id)}/enroll`, {
     learnerEmail: session.email,
-    nom: 'V3',
+    nom: 'Runtime',
     prenom: session.email.split('@')[0],
   }, session.token).catch((error) => {
     if (!String(error.message).includes('404')) return;
@@ -594,7 +594,7 @@ function writeReports() {
 
 function renderMarkdownReport(data) {
   const lines = [];
-  lines.push('# Adaptive Engine V3 Runtime Test Report');
+  lines.push('# Scoring explicable - Runtime Test Report');
   lines.push('');
   lines.push(`Generated at: ${data.metadata.generatedAt}`);
   lines.push(`API: ${data.metadata.apiBaseUrl}`);

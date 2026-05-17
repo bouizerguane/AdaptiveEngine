@@ -1,0 +1,609 @@
+{
+  "metadata": {
+    "generatedAt": "2026-05-17T19:33:31.559Z",
+    "sourceReports": [
+      "tools/adaptive-v3-runtime-tests/adaptive-v3-test-report.json",
+      "tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.json",
+      "tools/adaptive-v5-runtime-tests/adaptive-v5-test-report.json",
+      "tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json"
+    ],
+    "note": "Rapport genere uniquement depuis les rapports runtime existants."
+  },
+  "totals": {
+    "totalTests": 18,
+    "totalPass": 18,
+    "totalFail": 0,
+    "totalDurationMs": 10955
+  },
+  "components": [
+    {
+      "component": "Scoring explicable",
+      "scope": "scoring explicable",
+      "sourceReport": "tools/adaptive-v3-runtime-tests/adaptive-v3-test-report.json",
+      "generatedAt": "2026-05-17T19:33:19.994Z",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "durationMs": 3050,
+      "cases": [
+        {
+          "name": "Case A1 - Apprenant fort avec lacune",
+          "status": "PASS",
+          "expected": {
+            "nextAction": "REMEDIATION",
+            "nextConceptContains": "Fonctions",
+            "explanationReasons": "non-empty",
+            "decisionExplanation": "non-empty"
+          },
+          "actual": {
+            "nextAction": "REMEDIATION",
+            "nextConcept": {
+              "conceptName": "Fonctions",
+              "type": "INTERNAL",
+              "status": "TO_REVIEW",
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": [
+                "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+              ]
+            }
+          }
+        },
+        {
+          "name": "Case A2 - Apprenant fort sans lacune",
+          "status": "PASS",
+          "expected": {
+            "nextAction": "LEARN",
+            "nextConcept": "non-null",
+            "nextConceptStatus": "LEARNABLE",
+            "adaptiveScore": "present",
+            "scoreBreakdown": "present",
+            "explanationReasons": "non-empty",
+            "learnableConceptsSorted": "adaptiveScore descending"
+          },
+          "actual": {
+            "nextAction": "LEARN",
+            "nextConcept": {
+              "conceptName": "Tableaux",
+              "type": "INTERNAL",
+              "status": "LEARNABLE",
+              "adaptiveScore": 0.69,
+              "scoreBreakdown": {
+                "prerequisiteScore": 1,
+                "diagnosticWeaknessScore": 0.3,
+                "historicalPerformanceScore": 1,
+                "pedagogicalOrderScore": 0.29,
+                "engagementScore": 0.7
+              },
+              "explanationReasons": [
+                "Tous les prerequis de ce concept sont satisfaits.",
+                "Votre historique recent montre une progression suffisante."
+              ]
+            }
+          }
+        },
+        {
+          "name": "Case B - Apprenant faible",
+          "status": "PASS",
+          "expected": {
+            "nextAction": "REMEDIATION",
+            "nextConcept": "Variables",
+            "explanation": "present"
+          },
+          "actual": {
+            "nextAction": "REMEDIATION",
+            "nextConcept": {
+              "conceptName": "Variables",
+              "type": "INTERNAL",
+              "status": "TO_REVIEW",
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": [
+                "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+              ]
+            }
+          }
+        },
+        {
+          "name": "Case C - Concept externe",
+          "status": "PASS",
+          "expected": {
+            "nextAction": "REMEDIATION",
+            "nextConceptType": "EXTERNAL",
+            "nextConceptName": "Pointeurs",
+            "frontendRoute": "/learner/external-concepts/:conceptId"
+          },
+          "actual": {
+            "nextAction": "REMEDIATION",
+            "nextConcept": {
+              "conceptName": "Pointeurs",
+              "type": "EXTERNAL",
+              "status": "TO_REVIEW",
+              "adaptiveScore": null,
+              "scoreBreakdown": null,
+              "explanationReasons": [
+                "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+              ]
+            }
+          }
+        },
+        {
+          "name": "Case D - Engagement influence ranking",
+          "status": "PASS",
+          "expected": {
+            "activeEngagementScore": "> passiveEngagementScore",
+            "activeAdaptiveScore": "> passiveAdaptiveScore for same recommendation context"
+          },
+          "actual": {
+            "nextConcept": null
+          }
+        }
+      ]
+    },
+    {
+      "component": "Profil apprenant",
+      "scope": "profil apprenant",
+      "sourceReport": "tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.json",
+      "generatedAt": "2026-05-17T19:33:23.224Z",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "durationMs": 4638,
+      "cases": [
+        {
+          "name": "Profil apprenant - Apprenant sans donnees",
+          "status": "PASS",
+          "expected": {
+            "profileType": "DATA_INSUFFICIENT",
+            "profileExplanation": "present"
+          },
+          "actual": {
+            "nextConcept": null
+          }
+        },
+        {
+          "name": "Profil apprenant - Apprenant avec lacunes",
+          "status": "PASS",
+          "expected": {
+            "profileType": "NEEDS_REMEDIATION",
+            "knowledgeGaps": "non-empty"
+          },
+          "actual": {
+            "nextConcept": null
+          }
+        },
+        {
+          "name": "Profil apprenant - Apprenant actif sans lacunes",
+          "status": "PASS",
+          "expected": {
+            "profileType": "PROGRESSING",
+            "knowledgeGaps": "empty",
+            "masteryScore": "calculable"
+          },
+          "actual": {
+            "nextConcept": null
+          }
+        },
+        {
+          "name": "Profil apprenant - Apprenant avec tres bonnes performances",
+          "status": "PASS",
+          "expected": {
+            "profileType": "HIGH_PERFORMING",
+            "nextAction": "COMPLETED",
+            "masteryScore": "calculable"
+          },
+          "actual": {
+            "nextAction": "COMPLETED",
+            "nextConcept": null,
+            "learnerProfile": {
+              "learnerEmail": "student.profile.high@test.local",
+              "masteryScore": 95.12,
+              "knowledgeGaps": [],
+              "masteredConceptsCount": 7,
+              "weakConceptsCount": 0,
+              "tracesCount": 4,
+              "completedLabsCount": 0,
+              "averageAssessmentScore": 95.75,
+              "totalLearningTime": 1020,
+              "profileType": "HIGH_PERFORMING",
+              "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "component": "Strategie pedagogique",
+      "scope": "strategie pedagogique",
+      "sourceReport": "tools/adaptive-v5-runtime-tests/adaptive-v5-test-report.json",
+      "generatedAt": "2026-05-17T19:33:28.041Z",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "durationMs": 2902,
+      "cases": [
+        {
+          "name": "Strategie pedagogique - Apprenant sans donnees",
+          "status": "PASS",
+          "expected": {
+            "profileType": "DATA_INSUFFICIENT",
+            "strategyType": "SUPPORTIVE"
+          },
+          "actual": {
+            "nextConcept": null,
+            "learnerProfile": {
+              "learnerEmail": "student.strategy.nodata@test.local",
+              "masteryScore": null,
+              "knowledgeGaps": [],
+              "masteredConceptsCount": 0,
+              "weakConceptsCount": 0,
+              "tracesCount": 0,
+              "completedLabsCount": 0,
+              "averageAssessmentScore": null,
+              "totalLearningTime": 0,
+              "profileType": "DATA_INSUFFICIENT",
+              "profileExplanation": "Le profil sera affine apres davantage d'activites."
+            },
+            "pedagogicalStrategy": {
+              "strategyType": "SUPPORTIVE",
+              "strategyExplanation": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+              "recommendedSequence": [
+                "RESOURCE",
+                "LAB",
+                "FORMATIVE"
+              ],
+              "constraints": [
+                "Respecter la decision principale du moteur: PASS_DIAGNOSTIC.",
+                "Collecter davantage de traces avant d'affiner la personnalisation."
+              ],
+              "tutoringMessageHint": "Encourager l'apprenant et proposer une activite guidee."
+            }
+          }
+        },
+        {
+          "name": "Strategie pedagogique - Apprenant avec lacunes",
+          "status": "PASS",
+          "expected": {
+            "profileType": "NEEDS_REMEDIATION",
+            "strategyType": "RECOVERY"
+          },
+          "actual": {
+            "nextConcept": null,
+            "learnerProfile": {
+              "learnerEmail": "student.strategy.gaps@test.local",
+              "masteryScore": 40.16,
+              "knowledgeGaps": [
+                "Variables",
+                "Conditions"
+              ],
+              "masteredConceptsCount": 0,
+              "weakConceptsCount": 2,
+              "tracesCount": 1,
+              "completedLabsCount": 0,
+              "averageAssessmentScore": 38.5,
+              "totalLearningTime": 300,
+              "profileType": "NEEDS_REMEDIATION",
+              "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
+            },
+            "pedagogicalStrategy": {
+              "strategyType": "RECOVERY",
+              "strategyExplanation": "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+              "recommendedSequence": [
+                "RESOURCE",
+                "REVIEW",
+                "LAB",
+                "FORMATIVE"
+              ],
+              "constraints": [
+                "Respecter la decision principale du moteur: REMEDIATION.",
+                "Appliquer la strategie au concept recommande: Variables.",
+                "Traiter les lacunes detectees avant d'avancer."
+              ],
+              "tutoringMessageHint": "Proposer une explication simplifiee et rappeler les prerequis."
+            }
+          }
+        },
+        {
+          "name": "Strategie pedagogique - Apprenant en progression normale",
+          "status": "PASS",
+          "expected": {
+            "profileType": "PROGRESSING",
+            "strategyType": "STANDARD"
+          },
+          "actual": {
+            "nextConcept": null,
+            "learnerProfile": {
+              "learnerEmail": "student.strategy.progressing@test.local",
+              "masteryScore": 81.49,
+              "knowledgeGaps": [],
+              "masteredConceptsCount": 2,
+              "weakConceptsCount": 0,
+              "tracesCount": 2,
+              "completedLabsCount": 0,
+              "averageAssessmentScore": 80,
+              "totalLearningTime": 540,
+              "profileType": "PROGRESSING",
+              "profileExplanation": "Le profil indique une progression active."
+            },
+            "pedagogicalStrategy": {
+              "strategyType": "STANDARD",
+              "strategyExplanation": "Le systeme applique une progression standard basee sur le parcours recommande.",
+              "recommendedSequence": [
+                "RESOURCE",
+                "LAB",
+                "FORMATIVE"
+              ],
+              "constraints": [
+                "Respecter la decision principale du moteur: LEARN.",
+                "Appliquer la strategie au concept recommande: Conditions."
+              ],
+              "tutoringMessageHint": "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation."
+            }
+          }
+        },
+        {
+          "name": "Strategie pedagogique - Apprenant performant",
+          "status": "PASS",
+          "expected": {
+            "profileType": "HIGH_PERFORMING",
+            "nextAction": "COMPLETED",
+            "strategyType": "ADVANCED"
+          },
+          "actual": {
+            "nextAction": "COMPLETED",
+            "nextConcept": null,
+            "learnerProfile": {
+              "learnerEmail": "student.strategy.high@test.local",
+              "masteryScore": 95.12,
+              "knowledgeGaps": [],
+              "masteredConceptsCount": 7,
+              "weakConceptsCount": 0,
+              "tracesCount": 4,
+              "completedLabsCount": 0,
+              "averageAssessmentScore": 95.75,
+              "totalLearningTime": 1020,
+              "profileType": "HIGH_PERFORMING",
+              "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
+            },
+            "pedagogicalStrategy": {
+              "strategyType": "ADVANCED",
+              "strategyExplanation": "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+              "recommendedSequence": [
+                "RESOURCE",
+                "CHALLENGE",
+                "FORMATIVE"
+              ],
+              "constraints": [
+                "Respecter la decision principale du moteur: COMPLETED."
+              ],
+              "tutoringMessageHint": "Proposer un defi ou une activite d'approfondissement."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "component": "Feedback tutorat",
+      "scope": "feedback tutorat",
+      "sourceReport": "tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json",
+      "generatedAt": "2026-05-17T19:33:31.078Z",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "durationMs": 365,
+      "cases": [
+        {
+          "name": "Feedback tutorat - RECOVERY",
+          "status": "PASS",
+          "expected": {
+            "strategyType": "RECOVERY",
+            "feedbackType": "REMEDIATION_FEEDBACK"
+          },
+          "actual": {
+            "nextConcept": null,
+            "feedbackType": "REMEDIATION_FEEDBACK",
+            "eventType": "DIAGNOSTIC_FAILED"
+          }
+        },
+        {
+          "name": "Feedback tutorat - SUPPORTIVE",
+          "status": "PASS",
+          "expected": {
+            "strategyType": "SUPPORTIVE",
+            "feedbackType": "GUIDED_SUPPORT"
+          },
+          "actual": {
+            "nextConcept": null,
+            "feedbackType": "GUIDED_SUPPORT",
+            "eventType": "GENERAL"
+          }
+        },
+        {
+          "name": "Feedback tutorat - STANDARD",
+          "status": "PASS",
+          "expected": {
+            "strategyType": "STANDARD",
+            "feedbackType": "STANDARD_GUIDANCE"
+          },
+          "actual": {
+            "nextConcept": null,
+            "feedbackType": "STANDARD_GUIDANCE",
+            "eventType": "GENERAL"
+          }
+        },
+        {
+          "name": "Feedback tutorat - ADVANCED",
+          "status": "PASS",
+          "expected": {
+            "strategyType": "ADVANCED",
+            "feedbackType": "ENRICHMENT_FEEDBACK"
+          },
+          "actual": {
+            "nextConcept": null,
+            "feedbackType": "ENRICHMENT_FEEDBACK",
+            "eventType": "CONCEPT_MASTERED"
+          }
+        },
+        {
+          "name": "Feedback tutorat - Fallback sans strategyType",
+          "status": "PASS",
+          "expected": {
+            "eventType": "DIAGNOSTIC_FAILED",
+            "message": "eventType historique"
+          },
+          "actual": {
+            "nextConcept": null,
+            "feedbackType": null,
+            "eventType": "DIAGNOSTIC_FAILED"
+          }
+        }
+      ]
+    }
+  ],
+  "importantExamples": {
+    "nextAction": {
+      "sourceComponent": "Scoring explicable",
+      "caseName": "Case A1 - Apprenant fort avec lacune",
+      "nextAction": "REMEDIATION",
+      "nextConcept": {
+        "conceptName": "Fonctions",
+        "type": "INTERNAL",
+        "status": "TO_REVIEW",
+        "adaptiveScore": null,
+        "scoreBreakdown": null,
+        "explanationReasons": [
+          "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+        ]
+      },
+      "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic."
+    },
+    "learnerProfile": {
+      "sourceComponent": "Profil apprenant",
+      "caseName": "Profil apprenant - Apprenant sans donnees",
+      "value": {
+        "learnerEmail": "student.profile.nodata@test.local",
+        "masteryScore": null,
+        "knowledgeGaps": [],
+        "masteredConceptsCount": 0,
+        "weakConceptsCount": 0,
+        "tracesCount": 0,
+        "completedLabsCount": 0,
+        "averageAssessmentScore": null,
+        "totalLearningTime": 0,
+        "profileType": "DATA_INSUFFICIENT",
+        "profileExplanation": "Le profil sera affine apres davantage d'activites."
+      }
+    },
+    "pedagogicalStrategy": {
+      "sourceComponent": "Strategie pedagogique",
+      "caseName": "Strategie pedagogique - Apprenant sans donnees",
+      "value": {
+        "strategyType": "SUPPORTIVE",
+        "strategyExplanation": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+        "recommendedSequence": [
+          "RESOURCE",
+          "LAB",
+          "FORMATIVE"
+        ],
+        "constraints": [
+          "Respecter la decision principale du moteur: PASS_DIAGNOSTIC.",
+          "Collecter davantage de traces avant d'affiner la personnalisation."
+        ],
+        "tutoringMessageHint": "Encourager l'apprenant et proposer une activite guidee."
+      }
+    },
+    "tutoringFeedback": {
+      "sourceComponent": "Feedback tutorat",
+      "caseName": "Feedback tutorat - RECOVERY",
+      "value": {
+        "eventType": "DIAGNOSTIC_FAILED",
+        "feedbackType": "REMEDIATION_FEEDBACK",
+        "message": "Des lacunes ont ete detectees sur Variables. Il est recommande de revoir la ressource avant de refaire le TP puis l'evaluation formative.",
+        "actions": [
+          "Revoir la ressource",
+          "Reprendre les prerequis",
+          "Realiser ou refaire le TP",
+          "Passer l'evaluation formative"
+        ],
+        "recommendedActions": [
+          "Revoir la ressource",
+          "Reprendre les prerequis",
+          "Realiser ou refaire le TP",
+          "Passer l'evaluation formative"
+        ],
+        "learningSequence": [
+          "RESOURCE",
+          "REVIEW",
+          "LAB",
+          "FORMATIVE"
+        ],
+        "motivationalMessage": "Cette etape sert a consolider vos bases avant de continuer.",
+        "explanation": "La strategie RECOVERY est appliquee car le parcours signale une remediation ou des lacunes. Contexte utilise: profil=NEEDS_REMEDIATION; action=REMEDIATION; evaluation=DIAGNOSTIC_ENTREE; score=38.0; lacunes=Variables."
+      }
+    }
+  },
+  "limits": [
+    "Les mecanismes valides sont rule-based.",
+    "Aucun ML n est utilise.",
+    "RabbitMQ reste complementaire au runtime HTTP teste.",
+    "Le profil apprenant n est pas persiste comme objet dedie.",
+    "Il n y a pas d orchestration automatique par evenements entre strategie et tutorat."
+  ],
+  "pfeInterpretation": {
+    "whatTestsDemonstrate": [
+      "Les tests demontrent que les endpoints runtime exposent les champs attendus pour le scoring explicable, le profil apprenant, la strategie pedagogique et le feedback tutorat.",
+      "Ils demontrent que les decisions, profils, strategies et feedbacks sont coherents avec les cas simules dans les rapports existants.",
+      "Ils demontrent une non-regression observable sur les couches successives deja testees."
+    ],
+    "whatTestsDoNotDemonstrate": [
+      "Ils ne demontrent pas une superiorite pedagogique statistique.",
+      "Ils ne mesurent pas la performance utilisateur en conditions reelles.",
+      "Ils ne prouvent pas une generalisation hors des datasets et scenarios runtime couverts.",
+      "Ils ne valident pas une orchestration asynchrone RabbitMQ complete."
+    ],
+    "howToUseInResultsChapter": [
+      "Presenter les totaux PASS/FAIL comme validation fonctionnelle runtime.",
+      "Utiliser les exemples JSON pour illustrer les sorties reelles du systeme.",
+      "Separer clairement la validation technique des conclusions pedagogiques.",
+      "Relier chaque composant fonctionnel a son apport: scoring, profil, strategie, feedback."
+    ]
+  },
+  "screenshotChecklist": [
+    {
+      "item": "dashboard apprenant",
+      "status": "a capturer"
+    },
+    {
+      "item": "adaptive path",
+      "status": "a capturer"
+    },
+    {
+      "item": "profil apprenant",
+      "status": "a capturer"
+    },
+    {
+      "item": "strategie pedagogique",
+      "status": "a capturer"
+    },
+    {
+      "item": "feedback tutoring",
+      "status": "a capturer"
+    },
+    {
+      "item": "dashboard enseignant",
+      "status": "a capturer"
+    },
+    {
+      "item": "dashboard admin",
+      "status": "a capturer"
+    },
+    {
+      "item": "RabbitMQ UI",
+      "status": "a capturer"
+    },
+    {
+      "item": "Consul UI",
+      "status": "a capturer"
+    }
+  ]
+}

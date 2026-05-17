@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdaptivePathService {
 
-    private static final String SCORING_VERSION = "V3_RULE_BASED_EXPLAINABLE";
+    private static final String SCORING_VERSION = "RULE_BASED_EXPLAINABLE";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;

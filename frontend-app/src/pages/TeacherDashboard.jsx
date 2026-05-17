@@ -39,6 +39,44 @@ const learnerSecondaryLabel = (value) => {
 
 const percent = (value) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 
+const parseConceptResults = (value) => {
+    if (!value) return [];
+    try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+        return Array.isArray(parsed.concepts) ? parsed.concepts : [];
+    } catch {
+        return [];
+    }
+};
+
+const formatActivityDate = (value) => {
+    if (!value) return 'Aucune activite recente';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Date inconnue';
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const riskMeta = {
+    HIGH: { label: 'Risque eleve', className: 'border-red-200 bg-red-50 text-red-700' },
+    MEDIUM: { label: 'Risque moyen', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+    LOW: { label: 'Progression normale', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+};
+
+const strategyLabels = {
+    RECOVERY: 'Remediation',
+    SUPPORTIVE: 'Accompagnement guide',
+    STANDARD: 'Progression standard',
+    ADVANCED: 'Approfondissement',
+};
+
+const emptyStrategyDistribution = {
+    RECOVERY: 0,
+    SUPPORTIVE: 0,
+    STANDARD: 0,
+    ADVANCED: 0,
+};
+
 const difficultBadge = (failureRate) => {
     if (failureRate >= 70) {
         return { label: 'eleve', className: 'border-red-200 bg-red-50 text-red-700' };
@@ -61,6 +99,9 @@ export default function TeacherDashboard() {
     const [studentsMap, setStudentsMap] = useState({});
     const [courseProgress, setCourseProgress] = useState([]);
     const [studentsInDifficulty, setStudentsInDifficulty] = useState([]);
+    const [riskLearners, setRiskLearners] = useState([]);
+    const [blockingConcepts, setBlockingConcepts] = useState([]);
+    const [adaptiveDistribution, setAdaptiveDistribution] = useState(emptyStrategyDistribution);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -81,6 +122,10 @@ export default function TeacherDashboard() {
                 const learnersByEmail = {};
                 const progressByCourse = [];
                 const weakStudents = [];
+                const riskItems = [];
+                const blockingByConcept = {};
+                const strategyCounts = { ...emptyStrategyDistribution };
+                let learnerCourseCount = 0;
 
                 for (const course of teacherCourses) {
                     const currentCourseId = course.id;
@@ -136,6 +181,58 @@ export default function TeacherDashboard() {
                         const masteredCount = statuses.filter((item) => item.status === 'MASTERED').length;
                         const learnerProgress = percent((masteredCount / courseConcepts.length) * 100);
                         const nonMasteredCount = Math.max(courseConcepts.length - masteredCount, 0);
+                        const [latestDiagnosticRes, learnerTracesRes] = await Promise.all([
+                            trackingApi.getLatestDiagnostic(learnerEmail, currentCourseId).catch(() => ({ data: null })),
+                            trackingApi.getTracesByUser(learnerEmail).catch(() => ({ data: [] })),
+                        ]);
+                        const diagnosticFailures = parseConceptResults(latestDiagnosticRes.data?.conceptResults)
+                            .filter((item) => item?.conceptId && !item.mastered);
+                        const weakConceptNames = diagnosticFailures.map((item) => {
+                            const conceptInfo = conceptsById[item.conceptId] || courseConcepts.find((concept) => concept.id === item.conceptId);
+                            const name = conceptInfo?.conceptName || conceptTitle(conceptInfo);
+                            const safeName = name && !looksLikeUuid(name) ? name : 'Concept non identifie';
+                            if (!blockingByConcept[item.conceptId]) {
+                                blockingByConcept[item.conceptId] = {
+                                    conceptId: item.conceptId,
+                                    conceptName: safeName,
+                                    courseTitle: currentCourseTitle,
+                                    difficulties: 0,
+                                    remediations: 0,
+                                    trend: 'stable',
+                                };
+                            }
+                            blockingByConcept[item.conceptId].difficulties += 1;
+                            blockingByConcept[item.conceptId].remediations += 1;
+                            return safeName;
+                        });
+                        const learnerTraces = learnerTracesRes.data || [];
+                        const lastTrace = learnerTraces
+                            .filter((trace) => trace.courseId === currentCourseId || !trace.courseId)
+                            .sort((a, b) => new Date(b.horodatage || 0) - new Date(a.horodatage || 0))[0];
+                        const hasLowRecentActivity = learnerTraces.length === 0;
+                        const riskLevel = diagnosticFailures.length >= 2 || learnerProgress < 35 || hasLowRecentActivity
+                            ? 'HIGH'
+                            : diagnosticFailures.length === 1 || learnerProgress < 70
+                                ? 'MEDIUM'
+                                : 'LOW';
+                        const inferredStrategy = riskLevel === 'HIGH'
+                            ? 'RECOVERY'
+                            : hasLowRecentActivity
+                                ? 'SUPPORTIVE'
+                                : learnerProgress >= 90
+                                    ? 'ADVANCED'
+                                    : 'STANDARD';
+                        strategyCounts[inferredStrategy] += 1;
+                        learnerCourseCount += 1;
+                        riskItems.push({
+                            email: learnerEmail,
+                            name: learnerName(learner),
+                            courseTitle: currentCourseTitle,
+                            progress: learnerProgress,
+                            gaps: weakConceptNames.slice(0, 3),
+                            lastActivity: formatActivityDate(lastTrace?.horodatage),
+                            riskLevel,
+                        });
 
                         masteredInstances += masteredCount;
 
@@ -168,6 +265,17 @@ export default function TeacherDashboard() {
                 setStudentsMap(learnersByEmail);
                 setCourseProgress(progressByCourse);
                 setStudentsInDifficulty(weakStudents);
+                setRiskLearners(riskItems.sort((a, b) => {
+                    const order = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+                    return order[a.riskLevel] - order[b.riskLevel] || a.progress - b.progress;
+                }));
+                setBlockingConcepts(Object.values(blockingByConcept)
+                    .sort((a, b) => b.difficulties - a.difficulties)
+                    .slice(0, 8));
+                setAdaptiveDistribution(Object.fromEntries(Object.entries(strategyCounts).map(([key, value]) => [
+                    key,
+                    learnerCourseCount > 0 ? Math.round((value / learnerCourseCount) * 100) : 0,
+                ])));
             } catch (error) {
                 console.error('Erreur chargement dashboard enseignant:', error);
                 setSummary(null);
@@ -177,6 +285,9 @@ export default function TeacherDashboard() {
                 setStudentsMap({});
                 setCourseProgress([]);
                 setStudentsInDifficulty([]);
+                setRiskLearners([]);
+                setBlockingConcepts([]);
+                setAdaptiveDistribution(emptyStrategyDistribution);
             } finally {
                 setLoading(false);
             }
@@ -271,8 +382,8 @@ export default function TeacherDashboard() {
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-slate-800">Tableau de bord Enseignant</h1>
-                <p className="mt-2 text-lg text-slate-500">
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Tableau de bord enseignant</h1>
+                <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
                     Suivi des cours, concepts difficiles, progression et apprenants a accompagner.
                 </p>
             </div>
@@ -287,23 +398,23 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 <TeacherCourseCard />
 
-                <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm xl:col-span-2">
+                <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2 dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <TrendingUp className="text-emerald-600" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800">Progression par cours</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Progression par cours</h2>
                     </div>
                     <div className="space-y-4">
                         {courseProgress.length > 0 ? (
                             courseProgress.map((item) => (
-                                <div key={item.courseId || item.title} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                                <div key={item.courseId || item.title} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                                         <div>
-                                            <p className="font-semibold text-slate-800">{item.title}</p>
-                                            <p className="text-sm text-slate-500">
+                                            <p className="font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 {item.learners} apprenant(s) - {item.totalConcepts} concept(s)
                                             </p>
                                         </div>
-                                        <span className="text-lg font-bold text-slate-800">{item.progress.toFixed(1)}%</span>
+                                        <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{item.progress.toFixed(1)}%</span>
                                     </div>
                                     <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                                         <div
@@ -311,7 +422,7 @@ export default function TeacherDashboard() {
                                             style={{ width: `${item.progress}%` }}
                                         />
                                     </div>
-                                    <p className="mt-2 text-xs text-slate-500">
+                                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                                         Calcul : concepts maitrises / total des concepts attendus pour les apprenants inscrits.
                                     </p>
                                 </div>
@@ -323,29 +434,98 @@ export default function TeacherDashboard() {
                 </section>
             </div>
 
+            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="mb-4 flex items-center gap-2">
+                    <Users className="text-red-500" size={20} />
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Apprenants necessitant une attention</h2>
+                </div>
+                {riskLearners.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="border-b border-slate-100 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                <tr>
+                                    <th className="py-3 pr-4 font-semibold">Apprenant</th>
+                                    <th className="py-3 pr-4 font-semibold">Cours</th>
+                                    <th className="py-3 pr-4 font-semibold">Progression</th>
+                                    <th className="py-3 pr-4 font-semibold">Lacunes</th>
+                                    <th className="py-3 pr-4 font-semibold">Derniere activite</th>
+                                    <th className="py-3 font-semibold">Niveau risque</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                {riskLearners.slice(0, 10).map((learner) => {
+                                    const risk = riskMeta[learner.riskLevel] || riskMeta.LOW;
+                                    return (
+                                        <tr key={`${learner.email}-${learner.courseTitle}`} className="align-top">
+                                            <td className="py-3 pr-4">
+                                                <p className="font-semibold text-slate-800 dark:text-slate-100">{learner.name}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">{learnerSecondaryLabel(learner.email)}</p>
+                                            </td>
+                                            <td className="py-3 pr-4 text-slate-600 dark:text-slate-300">{learner.courseTitle}</td>
+                                            <td className="py-3 pr-4 font-semibold text-slate-800 dark:text-slate-100">{learner.progress.toFixed(1)}%</td>
+                                            <td className="py-3 pr-4 text-slate-600 dark:text-slate-300">
+                                                {learner.gaps.length > 0 ? learner.gaps.join(', ') : 'Aucune lacune bloquante'}
+                                            </td>
+                                            <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">{learner.lastActivity}</td>
+                                            <td className="py-3">
+                                                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${risk.className}`}>{risk.label}</span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <EmptyState message="Aucun apprenant a risque detecte avec les donnees actuelles." />
+                )}
+            </section>
+
+            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="mb-4 flex items-center gap-2">
+                    <Target className="text-indigo-600" size={20} />
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Repartition des parcours adaptatifs</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-4">
+                    {Object.entries(adaptiveDistribution).map(([key, value]) => (
+                        <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{strategyLabels[key]}</p>
+                                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{value}%</p>
+                            </div>
+                            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                <div className="h-full rounded-full bg-indigo-600" style={{ width: `${value}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+                <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <AlertTriangle className="text-orange-500" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800">Concepts difficiles</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Concepts difficiles</h2>
                     </div>
                     <div className="space-y-3">
-                        {difficultConcepts.length > 0 ? (
-                            difficultConcepts.map((concept, index) => (
-                                <div key={`${concept.conceptName}-${index}`} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                        {(blockingConcepts.length > 0 ? blockingConcepts : difficultConcepts).length > 0 ? (
+                            (blockingConcepts.length > 0 ? blockingConcepts : difficultConcepts).map((concept, index) => (
+                                <div key={`${concept.conceptName}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div>
-                                            <p className="font-bold text-slate-800">{concept.conceptName}</p>
-                                            <p className="text-sm text-slate-500">{concept.courseTitle}</p>
+                                            <p className="font-bold text-slate-800 dark:text-slate-100">{concept.conceptName}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{concept.courseTitle}</p>
                                         </div>
-                                        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${concept.badge.className}`}>
-                                            {concept.badge.label}
-                                        </span>
+                                        {concept.badge && (
+                                            <span className={`rounded-full border px-3 py-1 text-xs font-bold ${concept.badge.className}`}>
+                                                {concept.badge.label}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                                        <Metric label="Taux d'echec" value={`${concept.failureRate.toFixed(1)}%`} />
-                                        <Metric label="Tentatives" value={concept.attempts} />
-                                        <Metric label="Temps moyen" value={`${concept.avgTimeMinutes.toFixed(1)} min`} />
+                                        <Metric label="Difficultes" value={concept.difficulties ?? `${concept.failureRate.toFixed(1)}%`} />
+                                        <Metric label="Remediations" value={concept.remediations ?? concept.attempts} />
+                                        <Metric label="Tendance" value={concept.trend || `${concept.avgTimeMinutes.toFixed(1)} min`} />
                                     </div>
                                     <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
                                         Ce concept necessite une remediation.
@@ -358,10 +538,10 @@ export default function TeacherDashboard() {
                     </div>
                 </section>
 
-                <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+                <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <Target className="text-indigo-600" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800">Maitrise par module</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Maitrise par module</h2>
                     </div>
                     <div className="min-h-[280px]">
                         {summary?.masteryByModule && summary.masteryByModule.length > 0 ? (
@@ -385,20 +565,20 @@ export default function TeacherDashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+                <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <Users className="text-red-500" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800">Etudiants en difficulte</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Apprenants en difficulte</h2>
                     </div>
                     <div className="space-y-3">
                         {studentsInDifficulty.length > 0 ? (
                             studentsInDifficulty.slice(0, 8).map((student) => (
-                                <div key={`${student.email}-${student.courseTitle}`} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                                <div key={`${student.email}-${student.courseTitle}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                         <div>
-                                            <p className="font-semibold text-slate-800">{student.name}</p>
-                                            <p className="text-sm text-slate-500">{student.email}</p>
-                                            <p className="mt-1 text-sm text-slate-600">{student.courseTitle}</p>
+                                            <p className="font-semibold text-slate-800 dark:text-slate-100">{student.name}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{student.email}</p>
+                                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{student.courseTitle}</p>
                                         </div>
                                         <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-bold text-red-700">
                                             {student.progress.toFixed(1)}%
@@ -412,21 +592,36 @@ export default function TeacherDashboard() {
                     </div>
                 </section>
 
-                <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+                <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <Lightbulb className="text-amber-500" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800">Suggestions pedagogiques</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Suggestions pedagogiques</h2>
                     </div>
                     <div className="space-y-3">
                         {suggestions.map((item, index) => (
-                            <div key={index} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                                <p className="font-semibold text-slate-800">{item.title}</p>
-                                <p className="mt-1 text-sm text-slate-500">{item.message}</p>
+                            <div key={index} className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                                <p className="font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.message}</p>
                             </div>
                         ))}
                     </div>
                 </section>
             </div>
+
+            <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                    <Lightbulb className="text-indigo-600" size={20} />
+                    <h2 className="text-xl font-bold text-slate-800">Derniers feedbacks et strategies</h2>
+                </div>
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+                    <p className="font-semibold text-slate-800">Feedbacks tutoring visibles cote apprenant</p>
+                    <p className="mt-1">
+                        Les feedbacks tutorat et strategies pedagogiques sont generes a la demande dans le flux apprenant.
+                        Ils ne sont pas encore persistes dans le tableau de bord enseignant ; les indicateurs disponibles ici restent les traces,
+                        les difficultes par concept, la progression moyenne et les soumissions TP recentes.
+                    </p>
+                </div>
+            </section>
 
             <section className="overflow-hidden rounded-lg border border-slate-100 bg-white shadow-sm">
                 <div className="border-b border-slate-100 p-6">
@@ -509,13 +704,13 @@ function KpiCard({ icon, label, value, color }) {
     };
 
     return (
-        <div className="flex items-center gap-4 rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
                 {icon}
             </div>
             <div>
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
             </div>
         </div>
     );
@@ -523,16 +718,16 @@ function KpiCard({ icon, label, value, color }) {
 
 function Metric({ label, value }) {
     return (
-        <div className="rounded-lg border border-slate-100 bg-white p-3">
-            <p className="text-xs text-slate-500">{label}</p>
-            <p className="mt-1 font-bold text-slate-800">{value}</p>
+        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="mt-1 font-bold text-slate-800 dark:text-slate-100">{value}</p>
         </div>
     );
 }
 
 function EmptyState({ message }) {
     return (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
             <CheckCircle2 className="mx-auto mb-2 text-slate-300" size={22} />
             {message}
         </div>

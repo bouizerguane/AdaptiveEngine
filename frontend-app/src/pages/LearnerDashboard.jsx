@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BookOpen, CheckCircle2, Compass, Loader2, Lock, PlayCircle, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { courseApi, graphApi, labTrackingApi, masteryApi, trackingApi } from '../api/apiClient';
+import { courseApi, graphApi, labTrackingApi, masteryApi, trackingApi, tutoringApi } from '../api/apiClient';
 import { learnerApi } from '../api/learnerApi';
 import { useAuth } from '../context/AuthContext';
 import { flattenConcepts, normalizeCourseTree } from '../utils/courseOrder';
@@ -25,6 +25,48 @@ const parseConceptResults = (value) => {
     }
 };
 
+const tutoringEventFromAction = (nextAction) => {
+    if (nextAction === 'REMEDIATION') return 'DIAGNOSTIC_FAILED';
+    if (nextAction === 'COMPLETED') return 'CONCEPT_MASTERED';
+    return 'GENERAL';
+};
+
+const profileTypeLabels = {
+    DATA_INSUFFICIENT: 'Donnees insuffisantes',
+    NEEDS_REMEDIATION: 'Remediation necessaire',
+    PROGRESSING: 'Progression active',
+    HIGH_PERFORMING: 'Tres bonne maitrise',
+};
+
+const strategyTypeLabels = {
+    RECOVERY: 'Parcours de remediation',
+    SUPPORTIVE: 'Progression guidee',
+    STANDARD: 'Progression standard',
+    ADVANCED: 'Approfondissement',
+};
+
+const sequenceLabels = {
+    RESOURCE: 'Ressource',
+    REVIEW: 'Revision',
+    LAB: 'TP',
+    FORMATIVE: 'Evaluation formative',
+    CHALLENGE: 'Defi',
+};
+
+const formatHistoryDate = (value) => {
+    if (!value) return 'Date inconnue';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Date inconnue';
+    return date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
+
+const traceLabel = (trace) => {
+    if (trace.typeEvaluation === 'VALIDATION') return `Validation finale terminee : ${trace.scoreObtenu ?? 0}%`;
+    if (trace.typeEvaluation === 'FORMATIVE') return `Evaluation formative terminee : ${trace.scoreObtenu ?? 0}%`;
+    if (trace.typeEvaluation?.startsWith('DIAGNOSTIC')) return 'Diagnostic initial termine';
+    return `Evaluation terminee : ${trace.scoreObtenu ?? 0}%`;
+};
+
 export default function LearnerDashboard() {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
@@ -32,6 +74,8 @@ export default function LearnerDashboard() {
     const [recommendation, setRecommendation] = useState(null);
     const [reviewConcepts, setReviewConcepts] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
+    const [learningHistory, setLearningHistory] = useState([]);
+    const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,15 +92,18 @@ export default function LearnerDashboard() {
                     setRecommendation(null);
                     setReviewConcepts([]);
                     setRecentActivity([]);
+                    setLearningHistory([]);
+                    setNotifications([]);
                     return;
                 }
 
                 const progressItems = await Promise.all(enrolledCourses.map(async (course) => {
-                    const [treeRes, statusRes, recommendationRes, latestDiagnosticRes] = await Promise.all([
+                    const [treeRes, statusRes, recommendationRes, latestDiagnosticRes, adaptivePathRes] = await Promise.all([
                         courseApi.getCourseTree(course.id).catch(() => ({ data: course })),
                         learnerApi.getLearningStatus(user.email, course.id).catch(() => ({ data: [] })),
                         learnerApi.getNextRecommendation(user.email, course.id).catch(() => ({ data: null })),
                         trackingApi.getLatestDiagnostic(user.email, course.id).catch(() => ({ data: null })),
+                        learnerApi.getAdaptivePath(course.id).catch(() => ({ data: null })),
                     ]);
 
                     const tree = normalizeCourseTree(treeRes.data);
@@ -68,6 +115,25 @@ export default function LearnerDashboard() {
                     const blocked = statuses.filter(item => item.status === 'BLOCKED').length;
                     const total = concepts.length;
                     const percent = total > 0 ? Math.round((mastered / total) * 100) : 0;
+                    const adaptivePath = adaptivePathRes.data;
+                    const strategy = adaptivePath?.pedagogicalStrategy;
+                    const strategyFeedback = strategy
+                        ? await tutoringApi.getFeedback({
+                            eventType: tutoringEventFromAction(adaptivePath.nextAction),
+                            learnerEmail: user.email,
+                            courseId: course.id,
+                            courseTitle: course.title,
+                            conceptId: adaptivePath.nextConcept?.conceptId,
+                            conceptName: adaptivePath.nextConcept?.conceptName,
+                            strategyType: strategy.strategyType,
+                            nextAction: adaptivePath.nextAction,
+                            profileType: adaptivePath.learnerProfile?.profileType,
+                            masteryScore: adaptivePath.learnerProfile?.masteryScore,
+                            knowledgeGaps: adaptivePath.learnerProfile?.knowledgeGaps || [],
+                            recommendedSequence: strategy.recommendedSequence || [],
+                            tutoringMessageHint: strategy.tutoringMessageHint,
+                        }).then(response => response.data).catch(() => null)
+                        : null;
 
                     const failedResults = parseConceptResults(latestDiagnosticRes.data?.conceptResults)
                         .filter(item => item?.conceptId && !item.mastered);
@@ -101,18 +167,26 @@ export default function LearnerDashboard() {
                         blocked,
                         percent,
                         recommendation: recommendationRes.data,
+                        adaptivePath,
+                        strategyFeedback,
                         reviewConcepts: unresolved.filter(Boolean),
                     };
                 }));
 
                 setCourseProgress(progressItems);
-                setRecommendation(progressItems.find(item => item.recommendation?.conceptId) || null);
+                setRecommendation(progressItems.find(item => item.adaptivePath?.nextAction && item.adaptivePath.nextAction !== 'COMPLETED')
+                    || progressItems.find(item => item.adaptivePath?.nextAction === 'COMPLETED')
+                    || progressItems.find(item => item.recommendation?.conceptId)
+                    || null);
                 setReviewConcepts(progressItems.flatMap(item => item.reviewConcepts));
 
                 const [tracesRes, labsRes] = await Promise.all([
                     trackingApi.getTracesByUser(user.email).catch(() => ({ data: [] })),
                     labTrackingApi.getByUser(user.email).catch(() => ({ data: [] })),
                 ]);
+                const conceptNames = Object.fromEntries(progressItems.flatMap(item =>
+                    flattenConcepts(item.tree).map(concept => [concept.id, conceptLabel(concept)])
+                ));
                 const activities = [
                     ...(tracesRes.data || []).map(trace => ({
                         type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'Diagnostic' : trace.scoreObtenu >= 70 ? 'Quiz reussi' : 'Quiz',
@@ -129,6 +203,50 @@ export default function LearnerDashboard() {
                     .sort((a, b) => new Date(b.date) - new Date(a.date))
                     .slice(0, 3);
                 setRecentActivity(activities);
+                const history = [
+                    ...(tracesRes.data || []).map(trace => ({
+                        type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'diagnostic' : trace.typeEvaluation === 'VALIDATION' ? 'validation' : 'quiz',
+                        date: trace.horodatage,
+                        title: traceLabel(trace),
+                        detail: trace.targetId && conceptNames[trace.targetId] ? conceptNames[trace.targetId] : 'Activite enregistree',
+                    })),
+                    ...(labsRes.data || []).filter(lab => lab.status === 'COMPLETED').map(lab => ({
+                        type: 'lab',
+                        date: lab.completedAt,
+                        title: 'TP soumis',
+                        detail: lab.githubRepoUrl || 'Soumission enregistree',
+                    })),
+                    ...progressItems.flatMap(item => (item.reviewConcepts || []).map(concept => ({
+                        type: 'remediation',
+                        date: new Date().toISOString(),
+                        title: 'Remediation recommandee',
+                        detail: `${concept.name} - ${item.course.title}`,
+                    }))),
+                    ...progressItems.filter(item => item.adaptivePath?.nextConcept?.conceptName).map(item => ({
+                        type: 'recommendation',
+                        date: new Date().toISOString(),
+                        title: 'Nouveau concept recommande',
+                        detail: `${item.adaptivePath.nextConcept.conceptName} - ${item.course.title}`,
+                    })),
+                ]
+                    .filter(item => item.date)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 10);
+                setLearningHistory(history);
+                const notificationItems = [];
+                if (progressItems.some(item => item.adaptivePath?.nextAction === 'REMEDIATION' || item.reviewConcepts.length > 0)) {
+                    notificationItems.push({ tone: 'amber', message: 'Une remediation est recommandee.' });
+                }
+                if (progressItems.some(item => item.adaptivePath?.nextAction === 'LEARN')) {
+                    notificationItems.push({ tone: 'indigo', message: 'Un nouveau concept est recommande.' });
+                }
+                if (progressItems.some(item => item.adaptivePath?.nextAction === 'COMPLETED' || (item.total > 0 && item.mastered === item.total))) {
+                    notificationItems.push({ tone: 'emerald', message: 'Un cours est termine ou pret pour la validation finale.' });
+                }
+                if (progressItems.some(item => item.learnable > 0 && item.strategyFeedback)) {
+                    notificationItems.push({ tone: 'sky', message: 'Un conseil personnalise est disponible pour votre prochaine activite.' });
+                }
+                setNotifications(notificationItems.slice(0, 4));
             } catch (error) {
                 console.error('[LearnerDashboard] load failed', error);
                 toast.error("Impossible de charger votre tableau de bord.");
@@ -145,7 +263,13 @@ export default function LearnerDashboard() {
         mastered: acc.mastered + item.mastered,
         learnable: acc.learnable + item.learnable,
         blocked: acc.blocked + item.blocked,
-    }), { totalConcepts: 0, mastered: 0, learnable: 0, blocked: 0 }), [courseProgress]);
+        completedCourses: acc.completedCourses + (item.adaptivePath?.nextAction === 'COMPLETED' || (item.total > 0 && item.mastered === item.total) ? 1 : 0),
+    }), { totalConcepts: 0, mastered: 0, learnable: 0, blocked: 0, completedCourses: 0 }), [courseProgress]);
+    const activeCourses = Math.max(courses.length - summary.completedCourses, 0);
+    const primaryAdaptivePath = recommendation?.adaptivePath;
+    const primaryProfile = primaryAdaptivePath?.learnerProfile;
+    const primaryStrategy = primaryAdaptivePath?.pedagogicalStrategy;
+    const primaryFeedback = recommendation?.strategyFeedback;
 
     if (loading) {
         return (
@@ -179,10 +303,10 @@ export default function LearnerDashboard() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                 {[
                     ['Cours inscrits', courses.length, BookOpen, 'text-indigo-600 bg-indigo-50'],
-                    ['Concepts', summary.totalConcepts, Compass, 'text-sky-600 bg-sky-50'],
+                    ['En cours', activeCourses, Compass, 'text-sky-600 bg-sky-50'],
                     ['Maitrises', summary.mastered, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
+                    ['Termines', summary.completedCourses, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
                     ['A apprendre', summary.learnable, PlayCircle, 'text-indigo-600 bg-indigo-50'],
-                    ['Bloques', summary.blocked, Lock, 'text-amber-600 bg-amber-50'],
                 ].map(([label, value, Icon, color]) => (
                     <section key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-center gap-3">
@@ -196,7 +320,25 @@ export default function LearnerDashboard() {
                 ))}
             </div>
 
-            {recommendation?.recommendation?.conceptId && (
+            {primaryAdaptivePath ? (
+                <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="flex items-center gap-2 text-sm font-bold"><Sparkles size={16} /> Recommandation Adaptive Engine</p>
+                            <h2 className="mt-1 text-xl font-bold">
+                                {primaryAdaptivePath.nextAction === 'COMPLETED'
+                                    ? 'Cours termine'
+                                    : primaryAdaptivePath.nextConcept?.conceptName || 'Diagnostic initial requis'}
+                            </h2>
+                            <p className="text-sm">{recommendation.course.title}</p>
+                            <p className="mt-1 text-sm opacity-80">{primaryAdaptivePath.decisionExplanation || primaryAdaptivePath.recommendationReason}</p>
+                        </div>
+                        <Link to={`/learner/courses/${recommendation.course.id}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800">
+                            Ouvrir le cours
+                        </Link>
+                    </div>
+                </section>
+            ) : recommendation?.recommendation?.conceptId && (
                 <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
@@ -208,6 +350,46 @@ export default function LearnerDashboard() {
                         <Link to={`/learner/courses/${recommendation.course.id}?focusConcept=${recommendation.recommendation.conceptId}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800">
                             Continuer
                         </Link>
+                    </div>
+                </section>
+            )}
+
+            {(primaryProfile || primaryStrategy || primaryFeedback) && (
+                <section className="grid gap-4 lg:grid-cols-3">
+                    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Situation actuelle</h2>
+                        {primaryProfile ? (
+                            <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                <p className="font-semibold text-indigo-700 dark:text-indigo-300">{profileTypeLabels[primaryProfile.profileType] || 'Situation en cours d analyse'}</p>
+                                {primaryProfile.masteryScore !== null && primaryProfile.masteryScore !== undefined && (
+                                    <p>Maitrise : {Math.round(Number(primaryProfile.masteryScore))}%</p>
+                                )}
+                                <p>Traces : {primaryProfile.tracesCount ?? 0}</p>
+                                <p>TP completes : {primaryProfile.completedLabsCount ?? 0}</p>
+                                {(primaryProfile.knowledgeGaps || []).length > 0 && (
+                                    <p>Lacunes : {primaryProfile.knowledgeGaps.join(', ')}</p>
+                                )}
+                            </div>
+                        ) : <p className="mt-3 text-sm text-slate-500">Votre situation sera precisee apres les premieres activites.</p>}
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Approche recommandee</h2>
+                        {primaryStrategy ? (
+                            <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">{strategyTypeLabels[primaryStrategy.strategyType] || 'Progression standard'}</p>
+                                <p>{primaryStrategy.strategyExplanation}</p>
+                                <p>Sequence : {(primaryStrategy.recommendedSequence || []).map(step => sequenceLabels[step] || step).join(' -> ')}</p>
+                            </div>
+                        ) : <p className="mt-3 text-sm text-slate-500">Aucune approche specifique disponible actuellement.</p>}
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Conseil personnalise</h2>
+                        {primaryFeedback ? (
+                            <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                <p>{primaryFeedback.message}</p>
+                                {primaryFeedback.motivationalMessage && <p className="font-semibold text-emerald-700 dark:text-emerald-300">{primaryFeedback.motivationalMessage}</p>}
+                            </div>
+                        ) : <p className="mt-3 text-sm text-slate-500">Aucun conseil personnalise disponible actuellement.</p>}
                     </div>
                 </section>
             )}
@@ -245,7 +427,10 @@ export default function LearnerDashboard() {
                 <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Concepts a reviser</h2>
                     {reviewConcepts.length === 0 ? (
-                        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Aucun concept non maitrise issu du dernier diagnostic.</p>
+                        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">Aucune remediation necessaire.</p>
+                            <p className="mt-1">Vous pouvez continuer votre progression.</p>
+                        </div>
                     ) : (
                         <div className="mt-3 space-y-2">
                             {reviewConcepts.map(item => (
@@ -261,6 +446,65 @@ export default function LearnerDashboard() {
                                     </Link>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Notifications pedagogiques</h2>
+                    {notifications.length === 0 ? (
+                        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            Aucune notification pedagogique pour le moment.
+                        </div>
+                    ) : (
+                        <div className="mt-3 space-y-2">
+                            {notifications.map((item, index) => {
+                                const toneClass = item.tone === 'amber'
+                                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                    : item.tone === 'emerald'
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                        : item.tone === 'sky'
+                                            ? 'border-sky-200 bg-sky-50 text-sky-800'
+                                            : 'border-indigo-200 bg-indigo-50 text-indigo-800';
+                                return (
+                                    <div key={`${item.message}-${index}`} className={`rounded-lg border p-3 text-sm font-semibold ${toneClass}`}>
+                                        {item.message}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Historique d'apprentissage</h2>
+                    {learningHistory.length === 0 ? (
+                        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            Aucune activite recente.
+                        </div>
+                    ) : (
+                        <div className="mt-4 space-y-3">
+                            {learningHistory.map((item, index) => {
+                                const color = item.type === 'remediation'
+                                    ? 'bg-amber-500'
+                                    : item.type === 'validation' || item.type === 'lab'
+                                        ? 'bg-emerald-500'
+                                        : item.type === 'recommendation'
+                                            ? 'bg-indigo-500'
+                                            : 'bg-slate-400';
+                                return (
+                                    <div key={`${item.type}-${item.date}-${index}`} className="flex gap-3">
+                                        <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${color}`} />
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-slate-800 dark:text-slate-100">{item.title}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{item.detail}</p>
+                                            <p className="text-xs text-slate-400">{formatHistoryDate(item.date)}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

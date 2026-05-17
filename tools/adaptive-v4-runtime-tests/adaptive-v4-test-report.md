@@ -1,18 +1,18 @@
-# Adaptive Engine V4 Runtime Test Report
+# Profil apprenant - Runtime Test Report
 
-Generated at: 2026-05-17T13:46:18.394Z
+Generated at: 2026-05-17T19:33:23.224Z
 API: http://localhost:8080/api
 KMS: KMS_u = sum(W_i * S_u,i) / sum(W_i), W_i = poidsCognitif if available else 1
-Duration: 2234 ms
+Duration: 4638 ms
 
 | Case | Status | Expected | Actual |
 | --- | --- | --- | --- |
-| V4 - Apprenant sans donnees | PASS | {"profileType":"DATA_INSUFFICIENT","profileExplanation":"present"} | {"learnerEmail":"student.v4.nodata@test.local","masteryScore":null,"knowledgeGaps":[],"masteredConceptsCount":0,"weakConceptsCount":0,"tracesCount":0,"completedLabsCount":0,"averageAssessmentScore":null,"totalLearningTime":0,"profileType":"DATA_INSUFFICIENT","profileExplanation":"Le profil sera affine apres davantage d'activites."} |
-| V4 - Apprenant avec lacunes | PASS | {"profileType":"NEEDS_REMEDIATION","knowledgeGaps":"non-empty"} | {"learnerEmail":"student.v4.gaps@test.local","masteryScore":40.16,"knowledgeGaps":["Variables","Conditions"],"masteredConceptsCount":0,"weakConceptsCount":2,"tracesCount":2,"completedLabsCount":0,"averageAssessmentScore":38.5,"totalLearningTime":600,"profileType":"NEEDS_REMEDIATION","profileExplanation":"Le profil indique des lacunes detectees dans le dernier diagnostic."} |
-| V4 - Apprenant actif sans lacunes | PASS | {"profileType":"PROGRESSING","knowledgeGaps":"empty","masteryScore":"calculable"} | {"learnerEmail":"student.v4.progressing@test.local","masteryScore":81.38,"knowledgeGaps":[],"masteredConceptsCount":2,"weakConceptsCount":0,"tracesCount":4,"completedLabsCount":0,"averageAssessmentScore":80,"totalLearningTime":1080,"profileType":"PROGRESSING","profileExplanation":"Le profil indique une progression active."} |
-| V4 - Apprenant avec tres bonnes performances | PASS | {"profileType":"HIGH_PERFORMING","nextAction":"COMPLETED","masteryScore":"calculable"} | {"nextAction":"COMPLETED","learnerProfile":{"learnerEmail":"student.v4.high@test.local","masteryScore":95.14,"knowledgeGaps":[],"masteredConceptsCount":7,"weakConceptsCount":0,"tracesCount":8,"completedLabsCount":0,"averageAssessmentScore":95.75,"totalLearningTime":2040,"profileType":"HIGH_PERFORMING","profileExplanation":"Le profil indique une bonne maitrise des concepts evalues."}} |
+| Profil apprenant - Apprenant sans donnees | PASS | {"profileType":"DATA_INSUFFICIENT","profileExplanation":"present"} | {"learnerEmail":"student.profile.nodata@test.local","masteryScore":null,"knowledgeGaps":[],"masteredConceptsCount":0,"weakConceptsCount":0,"tracesCount":0,"completedLabsCount":0,"averageAssessmentScore":null,"totalLearningTime":0,"profileType":"DATA_INSUFFICIENT","profileExplanation":"Le profil sera affine apres davantage d'activites."} |
+| Profil apprenant - Apprenant avec lacunes | PASS | {"profileType":"NEEDS_REMEDIATION","knowledgeGaps":"non-empty"} | {"learnerEmail":"student.profile.gaps@test.local","masteryScore":40.16,"knowledgeGaps":["Variables","Conditions"],"masteredConceptsCount":0,"weakConceptsCount":2,"tracesCount":1,"completedLabsCount":0,"averageAssessmentScore":38.5,"totalLearningTime":300,"profileType":"NEEDS_REMEDIATION","profileExplanation":"Le profil indique des lacunes detectees dans le dernier diagnostic."} |
+| Profil apprenant - Apprenant actif sans lacunes | PASS | {"profileType":"PROGRESSING","knowledgeGaps":"empty","masteryScore":"calculable"} | {"learnerEmail":"student.profile.progressing@test.local","masteryScore":81.49,"knowledgeGaps":[],"masteredConceptsCount":2,"weakConceptsCount":0,"tracesCount":2,"completedLabsCount":0,"averageAssessmentScore":80,"totalLearningTime":540,"profileType":"PROGRESSING","profileExplanation":"Le profil indique une progression active."} |
+| Profil apprenant - Apprenant avec tres bonnes performances | PASS | {"profileType":"HIGH_PERFORMING","nextAction":"COMPLETED","masteryScore":"calculable"} | {"nextAction":"COMPLETED","learnerProfile":{"learnerEmail":"student.profile.high@test.local","masteryScore":95.12,"knowledgeGaps":[],"masteredConceptsCount":7,"weakConceptsCount":0,"tracesCount":4,"completedLabsCount":0,"averageAssessmentScore":95.75,"totalLearningTime":1020,"profileType":"HIGH_PERFORMING","profileExplanation":"Le profil indique une bonne maitrise des concepts evalues."}} |
 
-## V4 - Apprenant sans donnees - PASS
+## Profil apprenant - Apprenant sans donnees - PASS
 
 Assertions:
 - PASS profileType: expected `DATA_INSUFFICIENT`, actual `DATA_INSUFFICIENT`
@@ -23,7 +23,7 @@ Assertions:
 Learner profile:
 ```json
 {
-  "learnerEmail": "student.v4.nodata@test.local",
+  "learnerEmail": "student.profile.nodata@test.local",
   "masteryScore": null,
   "knowledgeGaps": [],
   "masteredConceptsCount": 0,
@@ -37,7 +37,7 @@ Learner profile:
 }
 ```
 
-## V4 - Apprenant avec lacunes - PASS
+## Profil apprenant - Apprenant avec lacunes - PASS
 
 Assertions:
 - PASS profileType: expected `NEEDS_REMEDIATION`, actual `NEEDS_REMEDIATION`
@@ -48,7 +48,7 @@ Assertions:
 Learner profile:
 ```json
 {
-  "learnerEmail": "student.v4.gaps@test.local",
+  "learnerEmail": "student.profile.gaps@test.local",
   "masteryScore": 40.16,
   "knowledgeGaps": [
     "Variables",
@@ -56,16 +56,16 @@ Learner profile:
   ],
   "masteredConceptsCount": 0,
   "weakConceptsCount": 2,
-  "tracesCount": 2,
+  "tracesCount": 1,
   "completedLabsCount": 0,
   "averageAssessmentScore": 38.5,
-  "totalLearningTime": 600,
+  "totalLearningTime": 300,
   "profileType": "NEEDS_REMEDIATION",
   "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
 }
 ```
 
-## V4 - Apprenant actif sans lacunes - PASS
+## Profil apprenant - Apprenant actif sans lacunes - PASS
 
 Assertions:
 - PASS profileType: expected `PROGRESSING`, actual `PROGRESSING`
@@ -76,21 +76,21 @@ Assertions:
 Learner profile:
 ```json
 {
-  "learnerEmail": "student.v4.progressing@test.local",
-  "masteryScore": 81.38,
+  "learnerEmail": "student.profile.progressing@test.local",
+  "masteryScore": 81.49,
   "knowledgeGaps": [],
   "masteredConceptsCount": 2,
   "weakConceptsCount": 0,
-  "tracesCount": 4,
+  "tracesCount": 2,
   "completedLabsCount": 0,
   "averageAssessmentScore": 80,
-  "totalLearningTime": 1080,
+  "totalLearningTime": 540,
   "profileType": "PROGRESSING",
   "profileExplanation": "Le profil indique une progression active."
 }
 ```
 
-## V4 - Apprenant avec tres bonnes performances - PASS
+## Profil apprenant - Apprenant avec tres bonnes performances - PASS
 
 Assertions:
 - PASS nextAction: expected `COMPLETED`, actual `COMPLETED`
@@ -101,15 +101,15 @@ Assertions:
 Learner profile:
 ```json
 {
-  "learnerEmail": "student.v4.high@test.local",
-  "masteryScore": 95.14,
+  "learnerEmail": "student.profile.high@test.local",
+  "masteryScore": 95.12,
   "knowledgeGaps": [],
   "masteredConceptsCount": 7,
   "weakConceptsCount": 0,
-  "tracesCount": 8,
+  "tracesCount": 4,
   "completedLabsCount": 0,
   "averageAssessmentScore": 95.75,
-  "totalLearningTime": 2040,
+  "totalLearningTime": 1020,
   "profileType": "HIGH_PERFORMING",
   "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
 }

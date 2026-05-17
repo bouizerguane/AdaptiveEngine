@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, Loader2, Lock, Sparkles } from 'lucide-react';
+import { AlertTriangle, BookOpen, ClipboardList, Loader2, Lock, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { contentApi, courseApi, evaluationApi, graphApi, labApi, labTrackingApi, masteryApi, trackingApi, tutoringApi } from '../api/apiClient';
 import { learnerApi } from '../api/learnerApi';
@@ -58,6 +58,35 @@ const tutoringEventFromAction = (nextAction) => {
     return 'GENERAL';
 };
 
+const actionLabels = {
+    PASS_DIAGNOSTIC: 'Diagnostic requis',
+    REMEDIATION: 'Revision',
+    LEARN: 'Apprentissage',
+    COMPLETED: 'Cours termine',
+};
+
+const profileTypeLabels = {
+    DATA_INSUFFICIENT: 'Donnees insuffisantes',
+    NEEDS_REMEDIATION: 'Remediation necessaire',
+    PROGRESSING: 'Progression active',
+    HIGH_PERFORMING: 'Tres bonne maitrise',
+};
+
+const strategyTypeLabels = {
+    RECOVERY: 'Approche de remediation',
+    SUPPORTIVE: 'Approche guidee',
+    STANDARD: 'Approche standard',
+    ADVANCED: 'Approche avancee',
+};
+
+const tabs = [
+    { id: 'course', label: 'Cours' },
+    { id: 'adaptive', label: 'Parcours adaptatif' },
+    { id: 'remediation', label: 'Remediation' },
+    { id: 'evaluations', label: 'Evaluations' },
+    { id: 'progress', label: 'Progression' },
+];
+
 export default function LearnerCourseDetail() {
     const { courseId } = useParams();
     const [searchParams] = useSearchParams();
@@ -68,8 +97,9 @@ export default function LearnerCourseDetail() {
     const [selectedLab, setSelectedLab] = useState(null);
     const [recommendation, setRecommendation] = useState(null);
     const [adaptivePath, setAdaptivePath] = useState(null);
-    const [adaptivePathFailed, setAdaptivePathFailed] = useState(false);
     const [diagnostic, setDiagnostic] = useState(null);
+    const [courseValidation, setCourseValidation] = useState(null);
+    const [courseValidationTrace, setCourseValidationTrace] = useState(null);
     const [diagnosticDone, setDiagnosticDone] = useState(true);
     const [conceptStatuses, setConceptStatuses] = useState({});
     const [remediations, setRemediations] = useState([]);
@@ -82,6 +112,7 @@ export default function LearnerCourseDetail() {
     const [externalDiagnosticResults, setExternalDiagnosticResults] = useState([]);
     const [tutoringFeedbacks, setTutoringFeedbacks] = useState({});
     const [strategyTutoringFeedback, setStrategyTutoringFeedback] = useState(null);
+    const [activeTab, setActiveTab] = useState('course');
 
     const concepts = useMemo(() => flattenConcepts(course), [course]);
 
@@ -89,7 +120,7 @@ export default function LearnerCourseDetail() {
         const loadCourse = async () => {
             setLoading(true);
             try {
-                const [courseRes, recommendationRes, adaptivePathRes, diagnosticsRes, statusesRes] = await Promise.all([
+                const [courseRes, recommendationRes, adaptivePathRes, diagnosticsRes, statusesRes, evaluationsRes] = await Promise.all([
                     courseApi.getCourseTree(courseId),
                     user?.email
                         ? learnerApi.getNextRecommendation(user.email, courseId).catch(() => ({ data: null }))
@@ -106,19 +137,35 @@ export default function LearnerCourseDetail() {
                     user?.email
                         ? learnerApi.getLearningStatus(user.email, courseId).catch(() => ({ data: [] }))
                         : Promise.resolve({ data: [] }),
+                    evaluationApi.getCourseEvaluations(courseId).catch(() => ({ data: [] })),
                 ]);
                 const tree = normalizeCourseTree(courseRes.data);
                 const diagnostics = diagnosticsRes.data || [];
+                const evaluations = evaluationsRes.data || [];
                 const initialDiagnostic = diagnostics.find(item => item.typeEvaluation === 'DIAGNOSTIC_ENTREE')
                     || diagnostics.find(item => item.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT')
                     || null;
+                const validationEvaluation = evaluations.find(item =>
+                    item.typeEvaluation === 'VALIDATION'
+                    && ((item.targetType || 'COURSE') === 'COURSE')
+                    && (item.targetId === courseId || item.courseId === courseId)
+                ) || null;
                 const statusMap = Object.fromEntries((statusesRes.data || []).map(item => [item.conceptId, item]));
                 setCourse(tree);
                 setRecommendation(recommendationRes.data);
                 setAdaptivePath(adaptivePathRes.data);
-                setAdaptivePathFailed(adaptivePathRes.failed);
                 setDiagnostic(initialDiagnostic);
+                setCourseValidation(validationEvaluation);
                 setConceptStatuses(statusMap);
+                if (validationEvaluation?.id && user?.email) {
+                    const validationTraceRes = await trackingApi
+                        .getTracesByUserAndEvaluation(user.email, validationEvaluation.id)
+                        .catch(() => ({ data: [] }));
+                    const traces = validationTraceRes.data || [];
+                    setCourseValidationTrace(traces[traces.length - 1] || null);
+                } else {
+                    setCourseValidationTrace(null);
+                }
                 let latestFailedResults = [];
 
                 if (initialDiagnostic && user?.email) {
@@ -328,7 +375,6 @@ export default function LearnerCourseDetail() {
     const failedConceptsStillMissing = failedDiagnosticConcepts.filter(item => effectiveConceptStatuses[item.conceptId]?.status !== 'MASTERED');
     const canRetakeDiagnostic = diagnosticDone && failedDiagnosticConcepts.length > 0 && failedConceptsStillMissing.length === 0;
     const canTakeFormative = !selectedBlocked && !!formativeEvaluation && (selectedStatus === 'MASTERED' || conceptProgress.labSubmitted);
-    const showAdaptiveBanner = !!adaptivePath && !adaptivePathFailed;
     const adaptiveInternalReviews = (adaptivePath?.conceptsToReview || []).filter(item => item.type !== 'EXTERNAL');
     const displayedReviewConcepts = adaptiveInternalReviews.length > 0
         ? adaptiveInternalReviews.map(item => ({
@@ -337,6 +383,20 @@ export default function LearnerCourseDetail() {
             score: item.score,
         }))
         : failedDiagnosticConcepts;
+    const masteredConceptCount = concepts.filter(concept => effectiveConceptStatuses[concept.id]?.status === 'MASTERED').length;
+    const learnableConceptCount = concepts.filter(concept => effectiveConceptStatuses[concept.id]?.status === 'LEARNABLE').length;
+    const blockedConceptCount = concepts.filter(concept => effectiveConceptStatuses[concept.id]?.status === 'BLOCKED').length;
+    const globalProgressPercent = concepts.length > 0 ? Math.round((masteredConceptCount / concepts.length) * 100) : 0;
+    const hasRemediationItems = displayedReviewConcepts.length > 0
+        || externalDiagnosticResults.filter(item => !item.mastered).length > 0
+        || externalConceptPrerequisites.length > 0
+        || remediations.length > 0;
+    const allConceptsMastered = concepts.length > 0 && masteredConceptCount === concepts.length;
+    const courseCompleted = adaptiveNextAction === 'COMPLETED' || allConceptsMastered;
+    const validationScore = courseValidationTrace?.scoreObtenu;
+    const validationPassed = validationScore !== undefined
+        ? Number(validationScore) >= Number(courseValidation?.seuilReussite || 70)
+        : false;
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -349,7 +409,7 @@ export default function LearnerCourseDetail() {
                     <p className="mt-2 max-w-3xl text-slate-500">{course.description || 'Aucune description disponible.'}</p>
                 </div>
 
-                {adaptiveNextAction === 'LEARN' && adaptiveNextConceptType === 'INTERNAL' && (
+                {activeTab === 'course' && adaptiveNextAction === 'LEARN' && adaptiveNextConceptType === 'INTERNAL' && (
                     <button
                         onClick={() => {
                             const recommended = concepts.find(item => item.id === adaptiveNextConceptId);
@@ -363,194 +423,263 @@ export default function LearnerCourseDetail() {
                 )}
             </div>
 
-            {showAdaptiveBanner && (
-                <div className={`rounded-lg border p-4 text-sm ${
-                    adaptiveNextAction === 'PASS_DIAGNOSTIC' ? 'border-indigo-200 bg-indigo-50 text-indigo-800'
-                        : adaptiveNextAction === 'REMEDIATION' ? 'border-amber-200 bg-amber-50 text-amber-900'
-                            : adaptiveNextAction === 'COMPLETED' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                                : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                }`}>
-                    <p className="font-bold">
-                        {adaptiveNextAction === 'PASS_DIAGNOSTIC' && 'Diagnostic initial requis'}
-                        {adaptiveNextAction === 'REMEDIATION' && 'Concept a reviser'}
-                        {adaptiveNextAction === 'LEARN' && 'Prochain concept recommande'}
-                        {adaptiveNextAction === 'COMPLETED' && 'Cours termine'}
-                    </p>
-                    <p className="mt-1">{adaptivePath.decisionExplanation || adaptivePath.recommendationReason}</p>
-                    {adaptiveNextConcept && (
-                        <div className="mt-3 space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
-                                    {adaptiveNextConceptName}
-                                </span>
-                                {adaptiveNextScore !== null && (
-                                    <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-bold">
-                                        Score adaptatif : {adaptiveNextScore}%
-                                    </span>
-                                )}
-                                {adaptiveNextConceptType === 'EXTERNAL' ? (
-                                    <Link
-                                        to={`/learner/external-concepts/${adaptiveNextConceptId}?sourceCourseId=${courseId}`}
-                                        className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                                    >
-                                        Ouvrir le prerequis externe
-                                    </Link>
-                                ) : (
-                                    <button
-                                        onClick={() => {
-                                            const concept = concepts.find(item => item.id === adaptiveNextConceptId);
-                                            if (concept) setSelectedConcept(concept);
-                                        }}
-                                        className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                                    >
-                                        Ouvrir le concept
-                                    </button>
-                                )}
-                            </div>
-                            {(adaptivePath.decisionExplanation || adaptiveExplanationReasons.length > 0) && (
-                                <div className="rounded-lg border border-white/60 bg-white/70 p-3">
-                                    <p className="font-bold">Pourquoi ce concept ?</p>
-                                    {adaptiveExplanationReasons.length > 0 ? (
-                                        <ul className="mt-2 space-y-1">
-                                            {adaptiveExplanationReasons.map(reason => (
-                                                <li key={reason}>- {reason}</li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="mt-1">{adaptivePath.decisionExplanation}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex min-w-max gap-1">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+                                activeTab === tab.id
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
-            )}
+            </div>
 
-            {!adaptivePath && recommendation?.conceptId && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                    <p className="font-bold">Recommendation adaptative</p>
-                    <p className="mt-1">{recommendation.reason}</p>
-                </div>
-            )}
-
-            {learnerProfile && (
-                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            {activeTab === 'course' && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <p className="font-bold text-slate-800">Profil apprenant</p>
-                            <p className="mt-1 text-slate-500">{learnerProfile.profileExplanation}</p>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{course.title || 'Cours sans titre'}</h2>
+                            <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">{course.description || 'Aucune description disponible.'}</p>
                         </div>
-                        <span className="inline-flex w-fit rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                            {learnerProfile.profileType || 'DATA_INSUFFICIENT'}
-                        </span>
+                        <div className="min-w-[180px] rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">Progression globale</p>
+                            <p className="mt-1 text-2xl font-bold text-indigo-600">{globalProgressPercent}%</p>
+                            <p className="text-xs text-slate-500">{masteredConceptCount}/{concepts.length} concepts maitrises</p>
+                        </div>
                     </div>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                        {learnerMasteryScore !== null && Number.isFinite(learnerMasteryScore) && (
-                            <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                                Maitrise : {learnerMasteryScore}%
-                            </span>
-                        )}
-                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                            Traces : {learnerProfile.tracesCount ?? 0}
-                        </span>
-                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                            TP completes : {learnerProfile.completedLabsCount ?? 0}
-                        </span>
-                        <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                            Temps : {Math.round((learnerProfile.totalLearningTime || 0) / 60)} min
-                        </span>
-                    </div>
-                    {learnerProfileGaps.length > 0 && (
-                        <div className="mt-4">
-                            <p className="font-semibold text-slate-700">Lacunes detectees</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {learnerProfileGaps.map(gap => (
-                                    <span key={gap} className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-                                        {gap}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {pedagogicalStrategy && (
-                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <p className="font-bold text-slate-800">Strategie pedagogique</p>
-                            <p className="mt-1 text-slate-500">{pedagogicalStrategy.strategyExplanation}</p>
-                        </div>
-                        <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                            {pedagogicalStrategy.strategyType || 'STANDARD'}
-                        </span>
-                    </div>
-                    {pedagogicalSequence.length > 0 && (
-                        <div className="mt-4">
-                            <p className="font-semibold text-slate-700">Sequence recommandee</p>
-                            <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                {pedagogicalSequence.map((step, index) => (
-                                    <li key={`${step}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                                        {index + 1}. {strategyStepLabels[step] || step}
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-                    )}
-                    {pedagogicalStrategy.tutoringMessageHint && (
-                        <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-indigo-900">
-                            <p className="font-semibold">Conseil tutorat</p>
-                            <p className="mt-1 text-xs leading-relaxed">{pedagogicalStrategy.tutoringMessageHint}</p>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {strategyTutoringFeedback && (
-                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <p className="font-bold text-slate-800">Feedback pedagogique</p>
-                            <p className="mt-1 text-slate-500">{strategyTutoringFeedback.message}</p>
-                        </div>
-                        {strategyTutoringFeedback.feedbackType && (
-                            <span className="inline-flex w-fit rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-                                {strategyTutoringFeedback.feedbackType}
-                            </span>
-                        )}
-                    </div>
-                    {Array.isArray(strategyTutoringFeedback.learningSequence) && strategyTutoringFeedback.learningSequence.length > 0 && (
-                        <div className="mt-4">
-                            <p className="font-semibold text-slate-700">Sequence proposee</p>
-                            <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                {strategyTutoringFeedback.learningSequence.map((step, index) => (
-                                    <li key={`${step}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                                        {index + 1}. {strategyStepLabels[step] || step}
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-                    )}
-                    {strategyTutoringFeedback.motivationalMessage && (
-                        <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 font-semibold text-emerald-800">
-                            {strategyTutoringFeedback.motivationalMessage}
+                    {adaptivePath?.decisionExplanation && (
+                        <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+                            {courseCompleted ? 'Cours termine.' : adaptivePath.decisionExplanation}
                         </p>
                     )}
-                    {Array.isArray(strategyTutoringFeedback.recommendedActions) && strategyTutoringFeedback.recommendedActions.length > 0 && (
-                        <div className="mt-4">
-                            <p className="font-semibold text-slate-700">Actions recommandees</p>
-                            <ul className="mt-2 space-y-1 text-slate-600">
-                                {strategyTutoringFeedback.recommendedActions.map(action => (
-                                    <li key={action}>- {action}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                 </div>
             )}
 
-            {diagnosticLocked ? (
+            {activeTab === 'adaptive' && (
+                <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Votre accompagnement personnalise</h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Les informations ci-dessous regroupent la recommandation, votre situation actuelle et le conseil d'accompagnement.
+                        </p>
+                    </div>
+
+                    <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Prochaine etape</p>
+                        <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{actionLabels[adaptiveNextAction] || 'Parcours en cours'}</p>
+                                <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
+                                    {adaptiveNextConcept ? adaptiveNextConceptName : courseCompleted ? 'Cours termine' : 'Aucune recommandation disponible'}
+                                </p>
+                                {adaptiveNextScore !== null && (
+                                    <p className="mt-1 text-sm font-semibold text-emerald-700">Score adaptatif : {adaptiveNextScore}%</p>
+                                )}
+                            </div>
+                            {adaptiveNextAction === 'PASS_DIAGNOSTIC' && diagnostic?.targetId && (
+                                <Link to={`/student/quiz/${diagnostic.targetId}`} className="inline-flex w-fit items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">
+                                    <ClipboardList size={16} />
+                                    Passer le diagnostic
+                                </Link>
+                            )}
+                            {adaptiveNextConcept && adaptiveNextConceptType === 'EXTERNAL' && (
+                                <Link to={`/learner/external-concepts/${adaptiveNextConceptId}?sourceCourseId=${courseId}`} className="inline-flex w-fit rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">
+                                    Ouvrir le prerequis
+                                </Link>
+                            )}
+                            {adaptiveNextConcept && adaptiveNextConceptType !== 'EXTERNAL' && (
+                                <button
+                                    onClick={() => {
+                                        const concept = concepts.find(item => item.id === adaptiveNextConceptId);
+                                        if (concept) {
+                                            setSelectedConcept(concept);
+                                            setActiveTab('course');
+                                        }
+                                    }}
+                                    className="inline-flex w-fit rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white"
+                                >
+                                    Ouvrir le concept
+                                </button>
+                            )}
+                        </div>
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Pourquoi cette recommandation ?</p>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{adaptivePath?.decisionExplanation || 'La recommandation sera affichee apres analyse du parcours.'}</p>
+                        {adaptiveExplanationReasons.length > 0 && (
+                            <ul className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                {adaptiveExplanationReasons.map(reason => (
+                                    <li key={reason}>- {reason}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Votre situation actuelle</p>
+                        {learnerProfile ? (
+                            <>
+                                <p className="mt-2 text-sm font-semibold text-indigo-700">
+                                    {profileTypeLabels[learnerProfile.profileType] || "Situation en cours d'analyse"}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{learnerProfile.profileExplanation}</p>
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    {learnerMasteryScore !== null && Number.isFinite(learnerMasteryScore) && (
+                                        <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Maitrise : {learnerMasteryScore}%</span>
+                                    )}
+                                    <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Activites : {learnerProfile.tracesCount ?? 0}</span>
+                                    <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">TP completes : {learnerProfile.completedLabsCount ?? 0}</span>
+                                    <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Temps : {Math.round((learnerProfile.totalLearningTime || 0) / 60)} min</span>
+                                </div>
+                                {learnerProfileGaps.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {learnerProfileGaps.map(gap => (
+                                            <span key={gap} className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">{gap}</span>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <p className="mt-2 text-sm text-slate-500">Votre situation sera precisee apres les premieres activites.</p>
+                        )}
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Approche recommandee</p>
+                        <p className="mt-2 text-sm font-semibold text-emerald-700">
+                            {strategyTypeLabels[pedagogicalStrategy?.strategyType] || 'Approche standard'}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{pedagogicalStrategy?.strategyExplanation || 'Une progression normale est proposee pour ce cours.'}</p>
+                        {pedagogicalSequence.length > 0 && (
+                            <ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                {pedagogicalSequence.map((step, index) => (
+                                    <li key={`${step}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                        {index + 1}. {strategyStepLabels[step] || step}
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Conseil personnalise</p>
+                        {strategyTutoringFeedback ? (
+                            <div className="mt-2 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                                <p>{strategyTutoringFeedback.message}</p>
+                                {strategyTutoringFeedback.motivationalMessage && (
+                                    <p className="rounded-lg bg-emerald-50 p-3 font-semibold text-emerald-800">{strategyTutoringFeedback.motivationalMessage}</p>
+                                )}
+                                {Array.isArray(strategyTutoringFeedback.recommendedActions) && strategyTutoringFeedback.recommendedActions.length > 0 && (
+                                    <ul className="space-y-1">
+                                        {strategyTutoringFeedback.recommendedActions.map(action => (
+                                            <li key={action}>- {action}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="mt-2 text-sm text-slate-500">{pedagogicalStrategy?.tutoringMessageHint || 'Le conseil personnalise apparaitra lorsque le service de tutorat sera disponible.'}</p>
+                        )}
+                    </section>
+                </div>
+            )}
+
+            {activeTab === 'evaluations' && !diagnosticLocked && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-100">Diagnostic initial</p>
+                            <p className="mt-1 text-slate-600 dark:text-slate-300">
+                                {diagnosticDone
+                                    ? 'Diagnostic effectue. Le parcours peut utiliser vos resultats pour proposer la suite.'
+                                    : 'Le diagnostic initial doit etre passe avant de commencer le parcours.'}
+                            </p>
+                        </div>
+                        {diagnostic?.targetId && (
+                            <Link to={`/student/quiz/${diagnostic.targetId}${diagnosticDone ? '?retake=1' : ''}`} className="inline-flex w-fit items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700">
+                                <ClipboardList size={15} />
+                                {diagnosticDone ? 'Repasser le diagnostic' : 'Passer le diagnostic'}
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'evaluations' && selectedConcept && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-100">Evaluation formative</p>
+                            <p className="mt-1 text-slate-600 dark:text-slate-300">
+                                {formativeEvaluation
+                                    ? `Evaluation disponible pour ${conceptLabel(selectedConcept)}.`
+                                    : `Aucune evaluation formative disponible pour ${conceptLabel(selectedConcept)}.`}
+                            </p>
+                            {formativeEvaluation && !canTakeFormative && !selectedBlocked && (
+                                <p className="mt-1 text-xs font-semibold text-amber-700">Realisez d'abord le TP associe au concept.</p>
+                            )}
+                        </div>
+                        {formativeEvaluation && canTakeFormative && (
+                            <Link to={`/student/quiz/${selectedConcept.id}`} className="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800">
+                                <ClipboardList size={15} />
+                                Passer l'evaluation
+                            </Link>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'evaluations' && !diagnosticLocked && (
+                <div className={`rounded-lg border p-5 text-sm shadow-sm ${
+                    courseCompleted ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-200 bg-white text-slate-700'
+                }`}>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="font-bold text-slate-800">Validation finale du cours</p>
+                            <p className="mt-1 text-slate-600">
+                                {courseCompleted
+                                    ? 'Tous les concepts requis sont maitrises. Vous pouvez passer la validation finale du cours.'
+                                    : `${masteredConceptCount}/${concepts.length} concepts maitrises. La validation finale sera accessible une fois le parcours termine.`}
+                            </p>
+                            {courseValidationTrace && (
+                                <p className={`mt-2 font-semibold ${validationPassed ? 'text-emerald-700' : 'text-red-700'}`}>
+                                    Dernier score final : {validationScore}% - {validationPassed ? 'reussite' : 'echec'}
+                                </p>
+                            )}
+                        </div>
+                        {courseValidation?.targetId ? (
+                            courseCompleted ? (
+                                <Link
+                                    to={`/student/quiz/${courseValidation.targetId}`}
+                                    className="inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800"
+                                >
+                                    <ClipboardList size={15} />
+                                    Passer la validation
+                                </Link>
+                            ) : (
+                                <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500">
+                                    <Lock size={14} />
+                                    Verrouillee
+                                </span>
+                            )
+                        ) : (
+                            <span className="inline-flex w-fit rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800">
+                                Aucune validation finale configuree.
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'evaluations' && diagnosticLocked ? (
                 <div className="rounded-lg border border-indigo-200 bg-white p-8 text-center shadow-sm">
                     <ClipboardList className="mx-auto mb-3 text-indigo-600" size={42} />
                     <h2 className="text-xl font-bold text-slate-800">Diagnostic initial</h2>
@@ -571,14 +700,14 @@ export default function LearnerCourseDetail() {
                         </p>
                     )}
                 </div>
-            ) : diagnostic && diagnosticDone && !adaptivePath && recommendation?.conceptId ? (
+            ) : activeTab === 'adaptive' && diagnostic && diagnosticDone && !adaptivePath && recommendation?.conceptId ? (
                 <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
                     <p className="font-bold">Votre parcours personnalisé</p>
                     <p className="mt-1">Premier concept recommande : {recommendation.label}</p>
                 </div>
             ) : null}
 
-            {diagnostic && diagnosticDone && displayedReviewConcepts.length > 0 && (
+            {activeTab === 'remediation' && diagnostic && diagnosticDone && displayedReviewConcepts.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
@@ -613,7 +742,7 @@ export default function LearnerCourseDetail() {
                 </div>
             )}
 
-            {diagnostic && diagnosticDone && externalDiagnosticResults.filter(item => !item.mastered).length > 0 && (
+            {activeTab === 'remediation' && diagnostic && diagnosticDone && externalDiagnosticResults.filter(item => !item.mastered).length > 0 && (
                 <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
                     <p className="font-bold text-slate-800">Prerequis externes a revoir</p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -626,7 +755,7 @@ export default function LearnerCourseDetail() {
                 </div>
             )}
 
-            {diagnostic && diagnosticDone && externalConceptPrerequisites.length > 0 && (
+            {activeTab === 'remediation' && diagnostic && diagnosticDone && externalConceptPrerequisites.length > 0 && (
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-5 text-sm">
                     <h2 className="font-bold text-sky-900">Prérequis externe à réviser</h2>
                     <p className="mt-1 text-sky-800">
@@ -667,7 +796,7 @@ export default function LearnerCourseDetail() {
                 </div>
             )}
 
-            {remediations.length > 0 && (
+            {activeTab === 'remediation' && remediations.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
                     <h2 className="font-bold text-amber-900">Remediation recommandee</h2>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -677,7 +806,7 @@ export default function LearnerCourseDetail() {
                                 <p className="mt-1 text-slate-500">Score diagnostic : {item.score}%</p>
                                 {tutoringFeedbacks[item.conceptId] && (
                                     <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3 text-amber-900">
-                                        <p className="font-semibold">Feedback pedagogique</p>
+                                        <p className="font-semibold">Conseil de revision</p>
                                         <p className="mt-1 text-xs leading-relaxed">{tutoringFeedbacks[item.conceptId].message}</p>
                                         {Array.isArray(tutoringFeedbacks[item.conceptId].actions) && (
                                             <ul className="mt-2 space-y-1 text-xs text-amber-800">
@@ -715,7 +844,57 @@ export default function LearnerCourseDetail() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
+            {activeTab === 'remediation' && !hasRemediationItems && (
+                <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    Aucune remediation n'est necessaire pour le moment.
+                </div>
+            )}
+
+            {activeTab === 'progress' && (
+                <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Progression</h2>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Progression globale</p>
+                            <p className="mt-1 text-2xl font-bold text-indigo-600">{globalProgressPercent}%</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Concepts maitrises</p>
+                            <p className="mt-1 text-2xl font-bold text-emerald-600">{masteredConceptCount}</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Concepts a apprendre</p>
+                            <p className="mt-1 text-2xl font-bold text-indigo-600">{learnableConceptCount}</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Concepts bloques</p>
+                            <p className="mt-1 text-2xl font-bold text-amber-600">{blockedConceptCount}</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Traces</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{learnerProfile?.tracesCount ?? 0}</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">TP completes</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{learnerProfile?.completedLabsCount ?? 0}</p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Score moyen</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">
+                                {learnerProfile?.averageAssessmentScore !== null && learnerProfile?.averageAssessmentScore !== undefined
+                                    ? `${Math.round(Number(learnerProfile.averageAssessmentScore))}%`
+                                    : '-'}
+                            </p>
+                        </span>
+                        <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+                            <p className="text-xs font-semibold text-slate-500">Temps total</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{Math.round((learnerProfile?.totalLearningTime || 0) / 60)} min</p>
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'course' && <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
                 <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="mb-4 flex items-center gap-2 font-bold text-slate-800">
                         <BookOpen size={18} />
@@ -870,7 +1049,7 @@ export default function LearnerCourseDetail() {
                         </div>
                     )}
                 </main>
-            </div>
+            </div>}
         </div>
     );
 }

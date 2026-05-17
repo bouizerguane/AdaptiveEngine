@@ -134,15 +134,15 @@ export default function AdminDashboard() {
             {/* EN-TÊTE */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Administration Système</h1>
-                    <p className="text-slate-500 mt-2 text-lg">
-                        Console d'administration globale. Gérez ici les accès, la sécurité et les paramètres du moteur adaptatif.
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Administration systeme</h1>
+                    <p className="text-slate-500 mt-2 text-lg dark:text-slate-400">
+                        Console d'administration globale. Gerez ici les acces, la securite et les parametres de la plateforme.
                     </p>
                 </div>
                 <button
                     onClick={handleRefresh}
                     disabled={refreshing}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                     <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
                     Actualiser
@@ -153,13 +153,13 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* CARTE 1 – Utilisateurs */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition">
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
                             <Users size={24} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800">Utilisateurs Actifs</h2>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Utilisateurs actifs</h2>
                             {!loading && (
                                 <span className="text-xs text-slate-400 font-medium">
                                     Total : {(stats.teachers + stats.students).toLocaleString('fr-FR')} comptes
@@ -196,15 +196,15 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* CARTE 2 – Microservices */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition">
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
                             <Server size={24} />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800">État des Microservices</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Etat des services</h2>
                     </div>
-                    <p className="text-slate-500 text-sm flex-1">
-                        Statut en temps réel de chaque service : IAM, Knowledge Graph, Gateway, Content et Tracking.
+                    <p className="text-slate-500 text-sm flex-1 dark:text-slate-400">
+                        Statut de chaque service principal via la gateway.
                     </p>
                     {loading ? (
                         <div className="h-6 w-28 bg-slate-100 animate-pulse rounded" />
@@ -231,15 +231,15 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* CARTE 3 – Graphe de connaissances */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition">
+                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-4 hover:shadow-md transition dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
                             <Cpu size={24} />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800">Performances IA</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Graphe pedagogique</h2>
                     </div>
-                    <p className="text-slate-500 text-sm flex-1">
-                        Métriques du Knowledge Graph. Temps de calcul des parcours adaptatifs (Tutoring Engine).
+                    <p className="text-slate-500 text-sm flex-1 dark:text-slate-400">
+                        Cours, concepts et latence moyenne des services disponibles.
                     </p>
                     {loading ? (
                         <div className="h-6 w-32 bg-slate-100 animate-pulse rounded" />
@@ -272,9 +272,9 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-slate-100 bg-slate-50">
-                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden dark:border-slate-700 dark:bg-slate-900">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
                             <Activity size={18} className="text-slate-500" />
                             Activite recente
                         </h2>
@@ -286,14 +286,14 @@ export default function AdminDashboard() {
                                 <p className="text-xs text-slate-500">{item.detail}</p>
                             </div>
                         )) : (
-                            <div className="p-8 text-center text-slate-400">Aucune activite recente</div>
+                            <div className="p-8 text-center text-slate-400">Aucune activite recente.</div>
                         )}
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-slate-100 bg-slate-50">
-                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden dark:border-slate-700 dark:bg-slate-900">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
                             <AlertTriangle size={18} className="text-slate-500" />
                             Alertes systeme
                         </h2>
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                         )) : (
-                            <div className="p-8 text-center text-slate-400">Aucune alerte critique</div>
+                            <div className="p-8 text-center text-slate-400">Aucune alerte critique.</div>
                         )}
                     </div>
                 </div>
@@ -316,9 +316,9 @@ export default function AdminDashboard() {
 
             {/* SANTÉ DÉTAILLÉE DES SERVICES */}
             {services.length > 0 && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-slate-100 bg-slate-50">
-                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden dark:border-slate-700 dark:bg-slate-900">
+                    <div className="p-5 border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
                             <Server size={18} className="text-slate-500" />
                             Santé des Services
                         </h2>
@@ -347,11 +347,11 @@ export default function AdminDashboard() {
             )}
 
             {/* DEMANDES D'INSCRIPTION EN ATTENTE */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden dark:border-slate-700 dark:bg-slate-900">
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">Demandes d'inscription en attente</h2>
-                        <p className="text-sm text-slate-500">Ces utilisateurs ne peuvent pas se connecter tant que vous ne les approuvez pas.</p>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Demandes d'inscription en attente</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Ces utilisateurs ne peuvent pas se connecter tant que vous ne les approuvez pas.</p>
                     </div>
                     <span className={`font-bold py-1 px-3 rounded-full text-sm ${
                         pendingUsers.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
                     ) : pendingUsers.length === 0 ? (
                         <div className="p-8 text-center text-slate-400 flex flex-col items-center">
                             <CheckCircle size={48} className="text-slate-300 mb-4" />
-                            <p>Aucune demande en attente. Tout est à jour !</p>
+                            <p>Aucune demande en attente. Tout est a jour.</p>
                         </div>
                     ) : (
                         <table className="w-full text-left border-collapse">
@@ -430,11 +430,11 @@ function MiniStat({ icon, label, value, color }) {
         emerald: 'bg-emerald-50 text-emerald-600',
     };
     return (
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${classes[color] || classes.indigo}`}>{icon}</div>
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3 dark:border-slate-700 dark:bg-slate-900">
+            <div className={`p-2 rounded-lg ${classes[color] || classes.indigo}`}>{icon}</div>
             <div>
-                <p className="text-xs font-semibold text-slate-500">{label}</p>
-                <p className="text-xl font-black text-slate-800">{value}</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="text-xl font-black text-slate-800 dark:text-slate-100">{value}</p>
             </div>
         </div>
     );

@@ -1,18 +1,18 @@
 {
   "metadata": {
-    "generatedAt": "2026-05-17T13:46:18.394Z",
+    "generatedAt": "2026-05-17T19:33:23.224Z",
     "apiBaseUrl": "http://localhost:8080/api",
     "kmsFormula": "KMS_u = sum(W_i * S_u,i) / sum(W_i), W_i = poidsCognitif if available else 1"
   },
   "learners": {
-    "noData": "student.v4.nodata@test.local",
-    "gaps": "student.v4.gaps@test.local",
-    "progressing": "student.v4.progressing@test.local",
-    "high": "student.v4.high@test.local"
+    "noData": "student.profile.nodata@test.local",
+    "gaps": "student.profile.gaps@test.local",
+    "progressing": "student.profile.progressing@test.local",
+    "high": "student.profile.high@test.local"
   },
   "cases": [
     {
-      "name": "V4 - Apprenant sans donnees",
+      "name": "Profil apprenant - Apprenant sans donnees",
       "status": "PASS",
       "assertions": [
         {
@@ -46,7 +46,7 @@
         "profileExplanation": "present"
       },
       "actual": {
-        "learnerEmail": "student.v4.nodata@test.local",
+        "learnerEmail": "student.profile.nodata@test.local",
         "masteryScore": null,
         "knowledgeGaps": [],
         "masteredConceptsCount": 0,
@@ -59,7 +59,7 @@
         "profileExplanation": "Le profil sera affine apres davantage d'activites."
       },
       "adaptivePathResponse": {
-        "learnerEmail": "student.v4.nodata@test.local",
+        "learnerEmail": "student.profile.nodata@test.local",
         "courseId": "ae-runtime-course-algo",
         "courseTitle": "Introduction à l'Algorithmique",
         "diagnosticPassed": false,
@@ -201,9 +201,9 @@
         "traceCount": 0,
         "submittedLabCount": 0,
         "decisionExplanation": "Le diagnostic initial doit etre passe avant de recommander un parcours personnalise.",
-        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
-          "learnerEmail": "student.v4.nodata@test.local",
+          "learnerEmail": "student.profile.nodata@test.local",
           "masteryScore": null,
           "knowledgeGaps": [],
           "masteredConceptsCount": 0,
@@ -232,7 +232,7 @@
       }
     },
     {
-      "name": "V4 - Apprenant avec lacunes",
+      "name": "Profil apprenant - Apprenant avec lacunes",
       "status": "PASS",
       "assertions": [
         {
@@ -269,7 +269,7 @@
         "knowledgeGaps": "non-empty"
       },
       "actual": {
-        "learnerEmail": "student.v4.gaps@test.local",
+        "learnerEmail": "student.profile.gaps@test.local",
         "masteryScore": 40.16,
         "knowledgeGaps": [
           "Variables",
@@ -277,15 +277,15 @@
         ],
         "masteredConceptsCount": 0,
         "weakConceptsCount": 2,
-        "tracesCount": 2,
+        "tracesCount": 1,
         "completedLabsCount": 0,
         "averageAssessmentScore": 38.5,
-        "totalLearningTime": 600,
+        "totalLearningTime": 300,
         "profileType": "NEEDS_REMEDIATION",
         "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
       },
       "adaptivePathResponse": {
-        "learnerEmail": "student.v4.gaps@test.local",
+        "learnerEmail": "student.profile.gaps@test.local",
         "courseId": "ae-runtime-course-algo",
         "courseTitle": "Introduction à l'Algorithmique",
         "diagnosticPassed": true,
@@ -476,29 +476,29 @@
         },
         "recommendationReason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.",
         "latestDiagnostic": {
-          "idTrace": 65,
+          "idTrace": 165,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
-          "studentEmail": "student.v4.gaps@test.local",
-          "learnerEmail": "student.v4.gaps@test.local",
-          "userId": "student.v4.gaps@test.local",
-          "evaluationId": "runtime-v4-diagnostic-ae-runtime-course-algo-1779025579554",
+          "studentEmail": "student.profile.gaps@test.local",
+          "learnerEmail": "student.profile.gaps@test.local",
+          "userId": "student.profile.gaps@test.local",
+          "evaluationId": "runtime-profile-diagnostic-ae-runtime-course-algo-1779046406692",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 38.5,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T13:46:19",
-          "feedbackGenere": "Runtime Adaptive V4 diagnostic simulation",
+          "horodatage": "2026-05-17T19:33:26",
+          "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":false,\"score\":35},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":false,\"score\":42}]"
         },
-        "traceCount": 2,
+        "traceCount": 1,
         "submittedLabCount": 0,
         "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
-        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
-          "learnerEmail": "student.v4.gaps@test.local",
+          "learnerEmail": "student.profile.gaps@test.local",
           "masteryScore": 40.16,
           "knowledgeGaps": [
             "Variables",
@@ -506,10 +506,10 @@
           ],
           "masteredConceptsCount": 0,
           "weakConceptsCount": 2,
-          "tracesCount": 2,
+          "tracesCount": 1,
           "completedLabsCount": 0,
           "averageAssessmentScore": 38.5,
-          "totalLearningTime": 600,
+          "totalLearningTime": 300,
           "profileType": "NEEDS_REMEDIATION",
           "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
         },
@@ -532,7 +532,7 @@
       }
     },
     {
-      "name": "V4 - Apprenant actif sans lacunes",
+      "name": "Profil apprenant - Apprenant actif sans lacunes",
       "status": "PASS",
       "assertions": [
         {
@@ -567,20 +567,20 @@
         "masteryScore": "calculable"
       },
       "actual": {
-        "learnerEmail": "student.v4.progressing@test.local",
-        "masteryScore": 81.38,
+        "learnerEmail": "student.profile.progressing@test.local",
+        "masteryScore": 81.49,
         "knowledgeGaps": [],
         "masteredConceptsCount": 2,
         "weakConceptsCount": 0,
-        "tracesCount": 4,
+        "tracesCount": 2,
         "completedLabsCount": 0,
         "averageAssessmentScore": 80,
-        "totalLearningTime": 1080,
+        "totalLearningTime": 540,
         "profileType": "PROGRESSING",
         "profileExplanation": "Le profil indique une progression active."
       },
       "adaptivePathResponse": {
-        "learnerEmail": "student.v4.progressing@test.local",
+        "learnerEmail": "student.profile.progressing@test.local",
         "courseId": "ae-runtime-course-algo",
         "courseTitle": "Introduction à l'Algorithmique",
         "diagnosticPassed": true,
@@ -744,37 +744,37 @@
         },
         "recommendationReason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.",
         "latestDiagnostic": {
-          "idTrace": 67,
+          "idTrace": 166,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
-          "studentEmail": "student.v4.progressing@test.local",
-          "learnerEmail": "student.v4.progressing@test.local",
-          "userId": "student.v4.progressing@test.local",
-          "evaluationId": "runtime-v4-diagnostic-ae-runtime-course-algo-1779025579866",
+          "studentEmail": "student.profile.progressing@test.local",
+          "learnerEmail": "student.profile.progressing@test.local",
+          "userId": "student.profile.progressing@test.local",
+          "evaluationId": "runtime-profile-diagnostic-ae-runtime-course-algo-1779046407035",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 82,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T13:46:19",
-          "feedbackGenere": "Runtime Adaptive V4 diagnostic simulation",
+          "horodatage": "2026-05-17T19:33:27",
+          "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":82},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":82}]"
         },
-        "traceCount": 4,
+        "traceCount": 2,
         "submittedLabCount": 0,
         "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
-        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
-          "learnerEmail": "student.v4.progressing@test.local",
-          "masteryScore": 81.38,
+          "learnerEmail": "student.profile.progressing@test.local",
+          "masteryScore": 81.49,
           "knowledgeGaps": [],
           "masteredConceptsCount": 2,
           "weakConceptsCount": 0,
-          "tracesCount": 4,
+          "tracesCount": 2,
           "completedLabsCount": 0,
           "averageAssessmentScore": 80,
-          "totalLearningTime": 1080,
+          "totalLearningTime": 540,
           "profileType": "PROGRESSING",
           "profileExplanation": "Le profil indique une progression active."
         },
@@ -795,7 +795,7 @@
       }
     },
     {
-      "name": "V4 - Apprenant avec tres bonnes performances",
+      "name": "Profil apprenant - Apprenant avec tres bonnes performances",
       "status": "PASS",
       "assertions": [
         {
@@ -832,21 +832,21 @@
       "actual": {
         "nextAction": "COMPLETED",
         "learnerProfile": {
-          "learnerEmail": "student.v4.high@test.local",
-          "masteryScore": 95.14,
+          "learnerEmail": "student.profile.high@test.local",
+          "masteryScore": 95.12,
           "knowledgeGaps": [],
           "masteredConceptsCount": 7,
           "weakConceptsCount": 0,
-          "tracesCount": 8,
+          "tracesCount": 4,
           "completedLabsCount": 0,
           "averageAssessmentScore": 95.75,
-          "totalLearningTime": 2040,
+          "totalLearningTime": 1020,
           "profileType": "HIGH_PERFORMING",
           "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
         }
       },
       "adaptivePathResponse": {
-        "learnerEmail": "student.v4.high@test.local",
+        "learnerEmail": "student.profile.high@test.local",
         "courseId": "ae-runtime-course-algo",
         "courseTitle": "Introduction à l'Algorithmique",
         "diagnosticPassed": true,
@@ -956,37 +956,37 @@
         },
         "recommendationReason": "Tous les concepts disponibles sont maitrises ou aucun concept n'est disponible.",
         "latestDiagnostic": {
-          "idTrace": 70,
+          "idTrace": 168,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
-          "studentEmail": "student.v4.high@test.local",
-          "learnerEmail": "student.v4.high@test.local",
-          "userId": "student.v4.high@test.local",
-          "evaluationId": "runtime-v4-diagnostic-ae-runtime-course-algo-1779025580212",
+          "studentEmail": "student.profile.high@test.local",
+          "learnerEmail": "student.profile.high@test.local",
+          "userId": "student.profile.high@test.local",
+          "evaluationId": "runtime-profile-diagnostic-ae-runtime-course-algo-1779046407372",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 95,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T13:46:20",
-          "feedbackGenere": "Runtime Adaptive V4 diagnostic simulation",
+          "horodatage": "2026-05-17T19:33:27",
+          "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-entrees-sorties\",\"conceptName\":\"Entrées/Sorties\",\"name\":\"Entrées/Sorties\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-boucles\",\"conceptName\":\"Boucles\",\"name\":\"Boucles\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-tableaux\",\"conceptName\":\"Tableaux\",\"name\":\"Tableaux\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-fonctions\",\"conceptName\":\"Fonctions\",\"name\":\"Fonctions\",\"mastered\":true,\"score\":95}]"
         },
-        "traceCount": 8,
+        "traceCount": 4,
         "submittedLabCount": 0,
         "decisionExplanation": "Le parcours est termine : aucun concept accessible ne reste a apprendre.",
-        "scoringVersion": "V3_RULE_BASED_EXPLAINABLE",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
-          "learnerEmail": "student.v4.high@test.local",
-          "masteryScore": 95.14,
+          "learnerEmail": "student.profile.high@test.local",
+          "masteryScore": 95.12,
           "knowledgeGaps": [],
           "masteredConceptsCount": 7,
           "weakConceptsCount": 0,
-          "tracesCount": 8,
+          "tracesCount": 4,
           "completedLabsCount": 0,
           "averageAssessmentScore": 95.75,
-          "totalLearningTime": 2040,
+          "totalLearningTime": 1020,
           "profileType": "HIGH_PERFORMING",
           "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
         },
@@ -1011,6 +1011,6 @@
     "passed": 4,
     "failed": 0,
     "errors": [],
-    "durationMs": 2234
+    "durationMs": 4638
   }
 }

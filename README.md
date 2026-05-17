@@ -29,6 +29,16 @@ RabbitMQ est utilise comme canal evenementiel complementaire. Les appels REST re
 | `adaptive-engine-service` | Orchestration du parcours adaptatif | `8085` |
 | `tutoring-service` | Feedbacks pedagogiques simples et consommation d'evenements | `8086` |
 
+## Moteur adaptatif final
+
+Le moteur adaptatif final combine :
+
+- scoring explicable ;
+- profil apprenant ;
+- strategie pedagogique ;
+- feedback tutorat ;
+- validation runtime.
+
 ## Bases de donnees
 
 | Conteneur | Usage | Ports |
@@ -57,7 +67,7 @@ La gateway expose les routes suivantes sur `http://localhost:8080` :
 /api/tutoring/**  -> tutoring-service
 ```
 
-## RabbitMQ V1
+## RabbitMQ
 
 RabbitMQ est ajoute comme canal evenementiel complementaire. Il ne remplace pas les appels REST existants : les soumissions de TP continuent a etre enregistrees par `tracking-service` via REST et l'evenement est publie ensuite.
 
@@ -269,7 +279,7 @@ X-User-Role
 
 - Les microservices restent accessibles sans authentification forte s'ils sont exposes directement hors reseau Docker. En usage normal, le point d'entree doit rester `gateway-service`.
 - Certains appels frontend conservent encore des parametres d'identite (`learnerEmail`, `teacherEmail`, `userId`) pour compatibilite, mais les backends privilegient les headers injectes par la gateway.
-- RabbitMQ V1 est complementaire uniquement; REST reste la source principale et aucun traitement metier ne depend encore du broker.
+- RabbitMQ est complementaire uniquement; REST reste la source principale et aucun traitement metier ne depend encore du broker.
 - `adaptive-engine-service` et `tutoring-service` consomment les evenements RabbitMQ en lecture seule pour preparer l'evolution evenementielle.
 - Pas de moteur ML/LSTM implemente dans ce depot.
 - Pas de tests automatises detectes.

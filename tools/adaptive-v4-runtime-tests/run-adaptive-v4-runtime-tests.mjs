@@ -17,10 +17,10 @@ const ADMIN_PASSWORD = process.env.ADAPTIVE_ADMIN_PASSWORD || process.env.ADMIN_
 const TEST_PASSWORD = 'moh123';
 
 const learners = {
-  noData: 'student.v4.nodata@test.local',
-  gaps: 'student.v4.gaps@test.local',
-  progressing: 'student.v4.progressing@test.local',
-  high: 'student.v4.high@test.local',
+  noData: 'student.profile.nodata@test.local',
+  gaps: 'student.profile.gaps@test.local',
+  progressing: 'student.profile.progressing@test.local',
+  high: 'student.profile.high@test.local',
 };
 
 const report = {
@@ -80,7 +80,7 @@ async function main() {
 }
 
 async function runNoDataCase(session, course) {
-  const test = createCase('V4 - Apprenant sans donnees', {
+  const test = createCase('Profil apprenant - Apprenant sans donnees', {
     expected: { profileType: 'DATA_INSUFFICIENT', profileExplanation: 'present' },
   });
 
@@ -102,7 +102,7 @@ async function runNoDataCase(session, course) {
 }
 
 async function runNeedsRemediationCase(session, course, concepts) {
-  const test = createCase('V4 - Apprenant avec lacunes', {
+  const test = createCase('Profil apprenant - Apprenant avec lacunes', {
     expected: { profileType: 'NEEDS_REMEDIATION', knowledgeGaps: 'non-empty' },
   });
 
@@ -130,7 +130,7 @@ async function runNeedsRemediationCase(session, course, concepts) {
 }
 
 async function runProgressingCase(session, course, concepts) {
-  const test = createCase('V4 - Apprenant actif sans lacunes', {
+  const test = createCase('Profil apprenant - Apprenant actif sans lacunes', {
     expected: { profileType: 'PROGRESSING', knowledgeGaps: 'empty', masteryScore: 'calculable' },
   });
 
@@ -155,7 +155,7 @@ async function runProgressingCase(session, course, concepts) {
 }
 
 async function runHighPerformingCase(session, course, concepts) {
-  const test = createCase('V4 - Apprenant avec tres bonnes performances', {
+  const test = createCase('Profil apprenant - Apprenant avec tres bonnes performances', {
     expected: { profileType: 'HIGH_PERFORMING', nextAction: 'COMPLETED', masteryScore: 'calculable' },
   });
 
@@ -200,8 +200,8 @@ async function signupIfNeeded(email) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      nom: 'V4',
-      prenom: email.split('@')[0].replace('student.v4.', ''),
+      nom: 'Profil',
+      prenom: email.split('@')[0].replace('student.profile.', ''),
       email,
       password: TEST_PASSWORD,
       role: 'STUDENT',
@@ -222,12 +222,12 @@ async function simulateDiagnostic(session, course, conceptResults) {
     userId: session.email,
     learnerEmail: session.email,
     studentEmail: session.email,
-    evaluationId: `runtime-v4-diagnostic-${course.id}-${Date.now()}`,
+    evaluationId: `runtime-profile-diagnostic-${course.id}-${Date.now()}`,
     typeEvaluation: 'DIAGNOSTIC_ENTREE',
     scoreObtenu: average(conceptResults.map((item) => item.score)),
     tempsConsultation: 300,
     horodatage: new Date().toISOString().slice(0, 19),
-    feedbackGenere: 'Runtime Adaptive V4 diagnostic simulation',
+    feedbackGenere: 'Runtime adaptive diagnostic simulation',
     masterySource: 'DIAGNOSTIC_ENTREE',
     conceptResults: JSON.stringify(conceptResults),
   }, session.token);
@@ -253,12 +253,12 @@ async function simulateConceptTrace(session, course, concept, score) {
     userId: session.email,
     learnerEmail: session.email,
     studentEmail: session.email,
-    evaluationId: `runtime-v4-formative-${course.id}-${concept.id}-${Date.now()}`,
+    evaluationId: `runtime-profile-formative-${course.id}-${concept.id}-${Date.now()}`,
     typeEvaluation: 'FORMATIVE',
     scoreObtenu: score,
     tempsConsultation: 240,
     horodatage: new Date().toISOString().slice(0, 19),
-    feedbackGenere: 'Runtime Adaptive V4 formative simulation',
+    feedbackGenere: 'Runtime adaptive formative simulation',
     masterySource: 'QUIZ_DIRECT',
   }, session.token);
 }
@@ -266,7 +266,7 @@ async function simulateConceptTrace(session, course, concept, score) {
 async function enroll(session, course) {
   await apiPost(`/graph/courses/${encodeURIComponent(course.id)}/enroll`, {
     learnerEmail: session.email,
-    nom: 'V4',
+    nom: 'Profil',
     prenom: session.email.split('@')[0],
   }, session.token);
 }
@@ -410,7 +410,7 @@ function writeReports() {
 
 function renderMarkdownReport(data) {
   const lines = [];
-  lines.push('# Adaptive Engine V4 Runtime Test Report');
+  lines.push('# Profil apprenant - Runtime Test Report');
   lines.push('');
   lines.push(`Generated at: ${data.metadata.generatedAt}`);
   lines.push(`API: ${data.metadata.apiBaseUrl}`);
