@@ -1,0 +1,7 @@
+model,actual,predicted_0,predicted_1
+dummy_most_frequent,0,0,32
+dummy_most_frequent,1,0,43
+logistic_regression,0,25,7
+logistic_regression,1,10,33
+random_forest,0,23,9
+random_forest,1,13,30

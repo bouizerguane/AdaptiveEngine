@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Contrôleur interne responsable de la gestion de la maîtrise (mastery) dans le Knowledge Graph.
  *
- * Deux types de validation sont distingués pour le moteur adaptatif LSTM :
+ * Plusieurs sources de validation sont distinguées pour le moteur adaptatif rule-based explicable :
  *   - DIAGNOSTIC_MODULE : tous les concepts d'un module validés par diagnostic (saut de niveau)
  *   - LAB               : Capacité d'Application — concept validé par TP + soumission GitHub
  *   - QUIZ_DIRECT       : Connaissance — concept validé par quiz FORMATIVE/VALIDATION réussi
@@ -41,7 +41,7 @@ public class MasteryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isStudent(userRole)) {
             return ResponseEntity.status(403).body(Map.of(
-                    "error", "Role STUDENT requis pour valider une maitrise."
+                    "error", "Rôle STUDENT requis pour valider une maîtrise."
             ));
         }
         String moduleId = body.get("moduleId");
@@ -85,7 +85,7 @@ public class MasteryController {
      *
      * Le basis 'LAB' signifie "Capacité d'Application" — l'étudiant a FAIT le TP.
      * Le basis 'QUIZ_DIRECT' signifie "Connaissance" — l'étudiant sait la théorie.
-     * Cette distinction permet au moteur LSTM de modéliser le profil de compétence complet.
+     * Cette distinction alimente le profil apprenant et prépare des données exploitables pour de futurs modèles ML.
      *
      * @param body JSON : { "conceptId": "...", "userId": "...", "basis": "LAB" }
      */
@@ -96,7 +96,7 @@ public class MasteryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isStudent(userRole)) {
             return ResponseEntity.status(403).body(Map.of(
-                    "error", "Role STUDENT requis pour valider une maitrise."
+                    "error", "Rôle STUDENT requis pour valider une maîtrise."
             ));
         }
         String conceptId = body.get("conceptId");

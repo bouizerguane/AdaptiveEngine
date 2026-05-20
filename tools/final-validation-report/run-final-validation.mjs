@@ -27,6 +27,11 @@ const sources = [
     title: 'feedback tutorat',
     path: 'tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json',
   },
+  {
+    component: 'Rafraichissement evenementiel persistant',
+    title: 'rafraichissement evenementiel persistant',
+    path: 'tools/runtime-validation/event-driven-refresh-tests/event-driven-refresh-test-report.json',
+  },
 ];
 
 const outputJsonPath = path.join(__dirname, 'final-validation-report.json');
@@ -71,6 +76,7 @@ const finalReport = {
     learnerProfile: extractLearnerProfileExample(reports, 'Profil apprenant'),
     pedagogicalStrategy: extractPedagogicalStrategyExample(reports, 'Strategie pedagogique'),
     tutoringFeedback: extractTutoringFeedbackExample(reports),
+    pathFreshness: extractPathFreshnessExample(reports),
   },
   limits: [
     'Les mecanismes valides sont rule-based.',
@@ -81,8 +87,8 @@ const finalReport = {
   ],
   pfeInterpretation: {
     whatTestsDemonstrate: [
-      'Les tests demontrent que les endpoints runtime exposent les champs attendus pour le scoring explicable, le profil apprenant, la strategie pedagogique et le feedback tutorat.',
-      'Ils demontrent que les decisions, profils, strategies et feedbacks sont coherents avec les cas simules dans les rapports existants.',
+      'Les tests demontrent que les endpoints runtime exposent les champs attendus pour le scoring explicable, le profil apprenant, la strategie pedagogique, le feedback tutorat et le rafraichissement evenementiel persistant.',
+      'Ils demontrent que les decisions, profils, strategies, feedbacks et indicateurs de fraicheur sont coherents avec les cas simules dans les rapports existants.',
       'Ils demontrent une non-regression observable sur les couches successives deja testees.',
     ],
     whatTestsDoNotDemonstrate: [
@@ -188,6 +194,12 @@ function extractTutoringFeedbackExample(loadedReports) {
   });
 }
 
+function extractPathFreshnessExample(loadedReports) {
+  return findFirstExample(preferComponent(loadedReports, 'Rafraichissement evenementiel persistant'), (test) =>
+    test.actual?.afterEvent || test.adaptivePathResponse?.pathFreshness
+  );
+}
+
 function findFirstExample(loadedReports, selector) {
   for (const report of loadedReports) {
     for (const test of report.cases) {
@@ -262,6 +274,7 @@ function renderMarkdown(report) {
   appendJson(lines, 'learnerProfile', report.importantExamples.learnerProfile);
   appendJson(lines, 'pedagogicalStrategy', report.importantExamples.pedagogicalStrategy);
   appendJson(lines, 'tutoring feedback', report.importantExamples.tutoringFeedback);
+  appendJson(lines, 'pathFreshness', report.importantExamples.pathFreshness);
   lines.push('## Limites');
   lines.push('');
   for (const limit of report.limits) lines.push(`- ${limit}`);

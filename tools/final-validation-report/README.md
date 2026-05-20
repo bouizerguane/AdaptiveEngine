@@ -9,6 +9,7 @@ tools/adaptive-v3-runtime-tests/adaptive-v3-test-report.json
 tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.json
 tools/adaptive-v5-runtime-tests/adaptive-v5-test-report.json
 tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json
+tools/runtime-validation/event-driven-refresh-tests/event-driven-refresh-test-report.json
 ```
 
 ## Execution

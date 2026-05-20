@@ -2,8 +2,10 @@ package com.ale.adaptive.service;
 
 import com.ale.adaptive.dto.AdaptiveConceptDto;
 import com.ale.adaptive.dto.AdaptivePathResponse;
+import com.ale.adaptive.dto.LearningPathStepDto;
 import com.ale.adaptive.dto.LearnerProfileDto;
 import com.ale.adaptive.dto.PedagogicalStrategyDto;
+import com.ale.adaptive.dto.PathFreshnessDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +38,25 @@ import java.util.stream.Collectors;
 public class AdaptivePathService {
 
     private static final String SCORING_VERSION = "RULE_BASED_EXPLAINABLE";
+    /**
+     * Prototype heuristic for the post-activity rule engine: three observed failures on the same concept
+     * indicate a persistent difficulty that should be highlighted in the personalized learning path.
+     */
+    private static final int REPEATED_FAILURE_THRESHOLD = 3;
+    /**
+     * Prototype heuristics inspired by mastery-learning literature: high mastery can only have a
+     * controlled effect on READY steps of the personalized learning path. It never changes the
+     * main decision, the adaptive score, or prerequisite constraints.
+     */
+    private static final double HIGH_MASTERY_SCORE_THRESHOLD = 80.0;
+    private static final double HIGH_ASSESSMENT_THRESHOLD = 80.0;
+    private static final int HIGH_MASTERED_CONCEPTS_THRESHOLD = 2;
+    private static final int MAX_KNOWLEDGE_GAPS_FOR_HIGH_MASTERY = 0;
+    private static final double HIGH_MASTERY_READY_SCORE_PROXIMITY = 0.05;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final AdaptiveRefreshStateService refreshStateService;
 
     @Value("${services.graph.url}")
     private String graphServiceUrl;
@@ -47,6 +65,7 @@ public class AdaptivePathService {
     private String trackingServiceUrl;
 
     public AdaptivePathResponse buildPath(String learnerEmail, String courseId) {
+        PathFreshnessDto pathFreshness = refreshStateService.persistentOrFallbackFreshness(learnerEmail, courseId);
         Map<String, Object> courseTree = getMap(graphServiceUrl + "/api/graph/courses/" + courseId + "/tree");
         Set<String> conceptsWithDeclaredPrerequisites = buildConceptsWithDeclaredPrerequisites(courseTree);
         List<Map<String, Object>> learningStatuses = getList(UriComponentsBuilder
@@ -125,6 +144,18 @@ public class AdaptivePathService {
                 decision
         );
         PedagogicalStrategyDto pedagogicalStrategy = buildPedagogicalStrategy(learnerProfile, decision);
+        List<LearningPathStepDto> recommendedLearningPath = buildRecommendedLearningPath(
+                review,
+                learnable,
+                blocked,
+                mastered,
+                conceptsById,
+                conceptPositions,
+                learnerProfile,
+                failedDiagnosticConceptIds,
+                traces,
+                labs
+        );
 
         log.info("[AdaptiveEngine] decision = {}", decision.nextAction());
         log.info("[AdaptiveEngine] nextConcept = {}", decision.nextConcept() == null
@@ -132,7 +163,7 @@ public class AdaptivePathService {
                 : decision.nextConcept().getConceptId() + " / " + decision.nextConcept().getConceptName()
                 + " / " + decision.nextConcept().getType());
 
-        return AdaptivePathResponse.builder()
+        AdaptivePathResponse response = AdaptivePathResponse.builder()
                 .learnerEmail(learnerEmail)
                 .courseId(courseId)
                 .courseTitle(firstNonBlank(stringValue(courseTree.get("title")), stringValue(courseTree.get("titre")), "Cours sans titre"))
@@ -141,6 +172,7 @@ public class AdaptivePathService {
                 .learnableConcepts(learnable)
                 .blockedConcepts(blocked)
                 .conceptsToReview(review)
+                .recommendedLearningPath(recommendedLearningPath)
                 .nextAction(decision.nextAction())
                 .nextConcept(decision.nextConcept())
                 .learningPhase(decision.learningPhase())
@@ -153,7 +185,182 @@ public class AdaptivePathService {
                 .scoringVersion(SCORING_VERSION)
                 .learnerProfile(learnerProfile)
                 .pedagogicalStrategy(pedagogicalStrategy)
+                .pathFreshness(pathFreshness)
                 .build();
+
+        persistRecommendationTrace(response, traces, labs);
+
+        if (pathFreshness != null && pathFreshness.isRefreshedAfterEvent()) {
+            refreshStateService.consumePersistentRefreshSafely(learnerEmail, courseId);
+        }
+
+        return response;
+    }
+
+    private void persistRecommendationTrace(
+            AdaptivePathResponse response,
+            List<Map<String, Object>> traces,
+            List<Map<String, Object>> labs) {
+        if (response == null || isBlank(response.getLearnerEmail()) || isBlank(response.getCourseId())) {
+            return;
+        }
+
+        AdaptiveConceptDto nextConcept = response.getNextConcept();
+        LearnerProfileDto learnerProfile = response.getLearnerProfile();
+        PedagogicalStrategyDto pedagogicalStrategy = response.getPedagogicalStrategy();
+        Map<String, Double> scoreBreakdown = nextConcept == null || nextConcept.getScoreBreakdown() == null
+                ? Map.of()
+                : nextConcept.getScoreBreakdown();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("learnerEmail", response.getLearnerEmail());
+        payload.put("courseId", response.getCourseId());
+        payload.put("conceptId", nextConcept == null ? null : nextConcept.getConceptId());
+        payload.put("prerequisiteScore", scoreBreakdown.get("prerequisiteScore"));
+        payload.put("diagnosticWeaknessScore", scoreBreakdown.get("diagnosticWeaknessScore"));
+        payload.put("historicalPerformanceScore", scoreBreakdown.get("historicalPerformanceScore"));
+        payload.put("pedagogicalOrderScore", scoreBreakdown.get("pedagogicalOrderScore"));
+        payload.put("engagementScore", scoreBreakdown.get("engagementScore"));
+        payload.put("masteryScore", learnerProfile == null ? null : learnerProfile.getMasteryScore());
+        payload.put("learningTime", learnerProfile == null ? null : learnerProfile.getTotalLearningTime());
+        payload.put("tracesCount", learnerProfile == null ? null : learnerProfile.getTracesCount());
+        payload.put("completedLabsCount", learnerProfile == null ? null : learnerProfile.getCompletedLabsCount());
+        payload.put("averageAssessmentScore", learnerProfile == null ? null : learnerProfile.getAverageAssessmentScore());
+        payload.put("knowledgeGapsCount", learnerProfile == null || learnerProfile.getKnowledgeGaps() == null
+                ? 0
+                : learnerProfile.getKnowledgeGaps().size());
+        payload.put("profileType", learnerProfile == null ? null : learnerProfile.getProfileType());
+        payload.put("pedagogicalStrategy", pedagogicalStrategy == null ? null : pedagogicalStrategy.getStrategyType());
+        payload.put("recommendationContext", recommendationContext(response.getNextAction()));
+        payload.put("lastActivityType", lastActivityType(traces, labs));
+        payload.put("lastActivityScore", lastActivityScore(traces, labs));
+        payload.put("repeatedFailuresCount", maxRepeatedFailuresCount(response));
+        payload.put("persistentDifficulty", hasPersistentDifficulty(response) ? true : null);
+        payload.put("highMasteryProgression", hasHighMasteryProgression(response) ? true : null);
+        payload.put("readyConceptsCount", countPathStatus(response, "READY"));
+        payload.put("lockedConceptsCount", countPathStatus(response, "LOCKED"));
+        payload.put("completedConceptsCount", countPathStatus(response, "COMPLETED"));
+        payload.put("recommendedPathSize", response.getRecommendedLearningPath() == null
+                ? 0
+                : response.getRecommendedLearningPath().size());
+        payload.put("adaptiveScore", nextConcept == null ? null : nextConcept.getAdaptiveScore());
+        payload.put("recommendedConcept", nextConcept == null ? null : nextConcept.getConceptName());
+        payload.put("nextAction", response.getNextAction());
+        payload.put("remediationTriggered", "REMEDIATION".equals(response.getNextAction()));
+        payload.put("recommendationReason", firstNonBlank(response.getDecisionExplanation(), response.getRecommendationReason()));
+        payload.put("conceptCompleted", null);
+        payload.put("conceptCompletedAfterRecommendation", null);
+        payload.put("quizScoreAfterRecommendation", null);
+        payload.put("labSubmittedAfterRecommendation", null);
+        payload.put("remediationSuccess", hasRemediationSuccess(response) ? true : null);
+        payload.put("remediationSucceeded", hasRemediationSuccess(response) ? true : null);
+        payload.put("learnerDropped", null);
+        payload.put("recommendationAccepted", null);
+
+        try {
+            restTemplate.postForObject(trackingServiceUrl + "/api/tracking/recommendation-traces", payload, Map.class);
+        } catch (RestClientException ex) {
+            log.warn("[RecommendationTrace] persistence skipped learner={} course={} reason={}",
+                    response.getLearnerEmail(), response.getCourseId(), ex.getMessage());
+        }
+    }
+
+    private boolean hasRemediationSuccess(AdaptivePathResponse response) {
+        return response != null
+                && response.getRecommendedLearningPath() != null
+                && response.getRecommendedLearningPath().stream()
+                        .anyMatch(step -> Boolean.TRUE.equals(step.getRemediationSuccess()));
+    }
+
+    private String recommendationContext(String nextAction) {
+        return switch (firstNonBlank(nextAction, "")) {
+            case "PASS_DIAGNOSTIC" -> "DIAGNOSTIC";
+            case "REMEDIATION" -> "REMEDIATION";
+            case "COMPLETED" -> "VALIDATION";
+            default -> "LEARN";
+        };
+    }
+
+    private String lastActivityType(List<Map<String, Object>> traces, List<Map<String, Object>> labs) {
+        Map<String, Object> latestTrace = latestTrace(traces);
+        Map<String, Object> latestLab = latestLab(labs);
+        LocalDateTime traceDate = latestTrace == null ? null : toLocalDateTime(latestTrace.get("horodatage"));
+        LocalDateTime labDate = latestLab == null ? null : toLocalDateTime(latestLab.get("completedAt"));
+        if (labDate != null && (traceDate == null || labDate.isAfter(traceDate))) {
+            return "LAB";
+        }
+        if (latestTrace == null) {
+            return null;
+        }
+        String type = firstNonBlank(stringValue(latestTrace.get("typeEvaluation")), stringValue(latestTrace.get("masterySource")), "");
+        if (type.contains("DIAGNOSTIC")) return "DIAGNOSTIC";
+        if (type.contains("VALIDATION")) return "VALIDATION";
+        if (type.contains("REMEDIATION")) return "REMEDIATION";
+        return "QUIZ";
+    }
+
+    private Double lastActivityScore(List<Map<String, Object>> traces, List<Map<String, Object>> labs) {
+        Map<String, Object> latestTrace = latestTrace(traces);
+        Map<String, Object> latestLab = latestLab(labs);
+        LocalDateTime traceDate = latestTrace == null ? null : toLocalDateTime(latestTrace.get("horodatage"));
+        LocalDateTime labDate = latestLab == null ? null : toLocalDateTime(latestLab.get("completedAt"));
+        if (latestTrace == null || (labDate != null && (traceDate == null || labDate.isAfter(traceDate)))) {
+            return null;
+        }
+        return doubleValue(latestTrace.get("scoreObtenu"));
+    }
+
+    private Map<String, Object> latestTrace(List<Map<String, Object>> traces) {
+        if (traces == null || traces.isEmpty()) {
+            return null;
+        }
+        return traces.stream()
+                .max(Comparator.comparing(trace -> toLocalDateTime(trace.get("horodatage")), Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElse(null);
+    }
+
+    private Map<String, Object> latestLab(List<Map<String, Object>> labs) {
+        if (labs == null || labs.isEmpty()) {
+            return null;
+        }
+        return labs.stream()
+                .filter(this::isCompletedLab)
+                .max(Comparator.comparing(lab -> toLocalDateTime(lab.get("completedAt")), Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElse(null);
+    }
+
+    private Integer maxRepeatedFailuresCount(AdaptivePathResponse response) {
+        if (response == null || response.getRecommendedLearningPath() == null) {
+            return null;
+        }
+        return response.getRecommendedLearningPath().stream()
+                .map(LearningPathStepDto::getRepeatedFailuresCount)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(null);
+    }
+
+    private boolean hasPersistentDifficulty(AdaptivePathResponse response) {
+        return response != null
+                && response.getRecommendedLearningPath() != null
+                && response.getRecommendedLearningPath().stream()
+                        .anyMatch(step -> Boolean.TRUE.equals(step.getPersistentDifficulty()));
+    }
+
+    private boolean hasHighMasteryProgression(AdaptivePathResponse response) {
+        return response != null
+                && response.getRecommendedLearningPath() != null
+                && response.getRecommendedLearningPath().stream()
+                        .anyMatch(step -> Boolean.TRUE.equals(step.getHighMasteryProgression()));
+    }
+
+    private int countPathStatus(AdaptivePathResponse response, String status) {
+        if (response == null || response.getRecommendedLearningPath() == null) {
+            return 0;
+        }
+        return (int) response.getRecommendedLearningPath().stream()
+                .filter(step -> status.equals(step.getStatus()))
+                .count();
     }
 
     private PedagogicalStrategyDto buildPedagogicalStrategy(LearnerProfileDto learnerProfile, AdaptiveDecision decision) {
@@ -171,10 +378,10 @@ public class AdaptivePathService {
                 || hasKnowledgeGaps) {
             return strategy(
                     "RECOVERY",
-                    "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+                    "Le système privilégie une stratégie de récupération car des lacunes ont été détectées.",
                     List.of("RESOURCE", "REVIEW", "LAB", "FORMATIVE"),
                     strategyConstraints(learnerProfile, decision),
-                    "Proposer une explication simplifiee et rappeler les prerequis."
+                    "Proposer une explication simplifiée et rappeler les prérequis."
             );
         }
 
@@ -182,29 +389,29 @@ public class AdaptivePathService {
                 && ("LEARN".equals(decision.nextAction()) || "COMPLETED".equals(decision.nextAction()))) {
             return strategy(
                     "ADVANCED",
-                    "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+                    "Le système propose une stratégie avancée car le profil indique une bonne maîtrise.",
                     List.of("RESOURCE", "CHALLENGE", "FORMATIVE"),
                     strategyConstraints(learnerProfile, decision),
-                    "Proposer un defi ou une activite d'approfondissement."
+                    "Proposer un défi ou une activité d'approfondissement."
             );
         }
 
         if ("DATA_INSUFFICIENT".equals(profileType) || (tracesCount == 0 && completedLabsCount == 0)) {
             return strategy(
                     "SUPPORTIVE",
-                    "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+                    "Le système propose une progression guidée car les données d'apprentissage sont encore limitées.",
                     List.of("RESOURCE", "LAB", "FORMATIVE"),
                     strategyConstraints(learnerProfile, decision),
-                    "Encourager l'apprenant et proposer une activite guidee."
+                    "Encourager l'apprenant et proposer une activité guidée."
             );
         }
 
         return strategy(
                 "STANDARD",
-                "Le systeme applique une progression standard basee sur le parcours recommande.",
+                "Le système applique une progression standard basée sur le parcours recommandé.",
                 List.of("RESOURCE", "LAB", "FORMATIVE"),
                 strategyConstraints(learnerProfile, decision),
-                "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation."
+                "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
         );
     }
 
@@ -227,16 +434,16 @@ public class AdaptivePathService {
         List<String> constraints = new ArrayList<>();
         constraints.add("Respecter la decision principale du moteur: " + decision.nextAction() + ".");
         if (decision.nextConcept() != null && decision.nextConcept().getConceptName() != null) {
-            constraints.add("Appliquer la strategie au concept recommande: " + decision.nextConcept().getConceptName() + ".");
+            constraints.add("Appliquer la stratégie au concept recommandé: " + decision.nextConcept().getConceptName() + ".");
         }
         if (learnerProfile != null && learnerProfile.getKnowledgeGaps() != null && !learnerProfile.getKnowledgeGaps().isEmpty()) {
-            constraints.add("Traiter les lacunes detectees avant d'avancer.");
+            constraints.add("Traiter les lacunes détectées avant d'avancer.");
         }
         if (learnerProfile != null && "DATA_INSUFFICIENT".equals(learnerProfile.getProfileType())) {
             constraints.add("Collecter davantage de traces avant d'affiner la personnalisation.");
         }
         if (constraints.isEmpty()) {
-            constraints.add("Conserver la progression recommandee par le parcours adaptatif.");
+            constraints.add("Conserver la progression recommandée par le parcours adaptatif.");
         }
         return constraints;
     }
@@ -319,10 +526,10 @@ public class AdaptivePathService {
 
     private String profileExplanation(String profileType) {
         return switch (profileType) {
-            case "NEEDS_REMEDIATION" -> "Le profil indique des lacunes detectees dans le dernier diagnostic.";
+            case "NEEDS_REMEDIATION" -> "Le profil indique des lacunes détectées dans le dernier diagnostic.";
             case "PROGRESSING" -> "Le profil indique une progression active.";
-            case "HIGH_PERFORMING" -> "Le profil indique une bonne maitrise des concepts evalues.";
-            default -> "Le profil sera affine apres davantage d'activites.";
+            case "HIGH_PERFORMING" -> "Le profil indique une bonne maîtrise des concepts évalués.";
+            default -> "Le profil sera affiné après davantage d'activités.";
         };
     }
 
@@ -428,29 +635,31 @@ public class AdaptivePathService {
     }
 
     private String buildReason(AdaptiveDecision decision) {
+        String conceptName = conceptLabel(decision.nextConcept());
         if ("PASS_DIAGNOSTIC".equals(decision.nextAction())) {
-            return "Le diagnostic initial doit etre passe avant de generer le parcours.";
+            return "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé.";
         }
         if ("REMEDIATION".equals(decision.nextAction())) {
-            return "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.";
+            return "Le concept " + conceptName + " est prioritaire car il n'a pas ete maîtrise lors du dernier diagnostic.";
         }
         if ("LEARN".equals(decision.nextAction())) {
-            return "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.";
+            return "Le concept " + conceptName + " est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu.";
         }
-        return "Tous les concepts disponibles sont maitrises ou aucun concept n'est disponible.";
+        return "Le cours est considéré terminé car aucun concept accessible ne reste à apprendre dans le parcours actuel.";
     }
 
     private String buildDecisionExplanation(AdaptiveDecision decision) {
+        String conceptName = conceptLabel(decision.nextConcept());
         if ("PASS_DIAGNOSTIC".equals(decision.nextAction())) {
-            return "Le diagnostic initial doit etre passe avant de recommander un parcours personnalise.";
+            return "Le système doit d'abord disposer d'un diagnostic pour situer le niveau initial de l'apprenant et adapter la suite du parcours.";
         }
         if ("REMEDIATION".equals(decision.nextAction())) {
-            return "La priorite est donnee au concept non maitrise lors du dernier diagnostic.";
+            return "Une activité de remédiation est proposée sur " + conceptName + " en raison de lacunes identifiées dans le dernier diagnostic.";
         }
         if ("LEARN".equals(decision.nextAction())) {
-            return "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.";
+            return "Le concept " + conceptName + " est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.";
         }
-        return "Le parcours est termine : aucun concept accessible ne reste a apprendre.";
+        return "Le parcours est terminé : les concepts requis sont maîtrisés ou aucun nouveau concept accessible n'est disponible.";
     }
 
     private Map<String, Object> buildRecommendationMap(AdaptiveDecision decision) {
@@ -465,6 +674,461 @@ public class AdaptivePathService {
         }
         recommendation.put("reason", buildReason(decision));
         return recommendation;
+    }
+
+    private List<LearningPathStepDto> buildRecommendedLearningPath(
+            List<AdaptiveConceptDto> conceptsToReview,
+            List<AdaptiveConceptDto> learnableConcepts,
+            List<AdaptiveConceptDto> blockedConcepts,
+            List<AdaptiveConceptDto> masteredConcepts,
+            Map<String, AdaptiveConceptDto> conceptsById,
+            Map<String, Integer> conceptPositions,
+            LearnerProfileDto learnerProfile,
+            Set<String> failedDiagnosticConceptIds,
+            List<Map<String, Object>> traces,
+            List<Map<String, Object>> labs) {
+        List<LearningPathStepDto> steps = new ArrayList<>();
+        Set<String> addedConceptIds = new java.util.LinkedHashSet<>();
+        int[] order = {1};
+        Map<String, Integer> repeatedFailuresByConcept = detectRepeatedFailures(traces, labs);
+        Set<String> masteredConceptIds = masteredConcepts == null
+                ? Set.of()
+                : masteredConcepts.stream()
+                        .map(AdaptiveConceptDto::getConceptId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        List<AdaptiveConceptDto> reviewWithPersistentFailures = mergePersistentFailureConcepts(
+                conceptsToReview,
+                conceptsById,
+                masteredConceptIds,
+                repeatedFailuresByConcept);
+        Set<String> remediationSuccessConceptIds = detectRemediationSuccessConcepts(
+                failedDiagnosticConceptIds,
+                repeatedFailuresByConcept,
+                masteredConceptIds,
+                traces);
+        boolean highMasteryDetected = detectHighMastery(
+                learnerProfile,
+                failedDiagnosticConceptIds,
+                repeatedFailuresByConcept);
+
+        addPathSteps(steps, addedConceptIds, order, reviewWithPersistentFailures, "TO_REVIEW", conceptPositions, repeatedFailuresByConcept, remediationSuccessConceptIds);
+        addPathSteps(steps, addedConceptIds, order, learnableConcepts, "READY", conceptPositions, Map.of(), Set.of(), highMasteryDetected);
+        addPathSteps(steps, addedConceptIds, order, sortByPedagogicalOrder(blockedConcepts, conceptPositions), "LOCKED", conceptPositions);
+        addPathSteps(steps, addedConceptIds, order, sortByPedagogicalOrder(masteredConcepts, conceptPositions), "COMPLETED", conceptPositions, repeatedFailuresByConcept, remediationSuccessConceptIds);
+
+        return steps;
+    }
+
+    private void addPathSteps(
+            List<LearningPathStepDto> steps,
+            Set<String> addedConceptIds,
+            int[] order,
+            List<AdaptiveConceptDto> concepts,
+            String status,
+            Map<String, Integer> conceptPositions) {
+        addPathSteps(steps, addedConceptIds, order, concepts, status, conceptPositions, Map.of());
+    }
+
+    private void addPathSteps(
+            List<LearningPathStepDto> steps,
+            Set<String> addedConceptIds,
+            int[] order,
+            List<AdaptiveConceptDto> concepts,
+            String status,
+            Map<String, Integer> conceptPositions,
+            Map<String, Integer> repeatedFailuresByConcept) {
+        addPathSteps(steps, addedConceptIds, order, concepts, status, conceptPositions, repeatedFailuresByConcept, Set.of());
+    }
+
+    private void addPathSteps(
+            List<LearningPathStepDto> steps,
+            Set<String> addedConceptIds,
+            int[] order,
+            List<AdaptiveConceptDto> concepts,
+            String status,
+            Map<String, Integer> conceptPositions,
+            Map<String, Integer> repeatedFailuresByConcept,
+            Set<String> remediationSuccessConceptIds) {
+        addPathSteps(steps, addedConceptIds, order, concepts, status, conceptPositions, repeatedFailuresByConcept, remediationSuccessConceptIds, false);
+    }
+
+    private void addPathSteps(
+            List<LearningPathStepDto> steps,
+            Set<String> addedConceptIds,
+            int[] order,
+            List<AdaptiveConceptDto> concepts,
+            String status,
+            Map<String, Integer> conceptPositions,
+            Map<String, Integer> repeatedFailuresByConcept,
+            Set<String> remediationSuccessConceptIds,
+            boolean highMasteryDetected) {
+        if (concepts == null || concepts.isEmpty()) {
+            return;
+        }
+
+        List<AdaptiveConceptDto> orderedConcepts;
+        if ("READY".equals(status)) {
+            orderedConcepts = sortReadyConcepts(concepts, conceptPositions, highMasteryDetected);
+        } else if ("TO_REVIEW".equals(status)) {
+            orderedConcepts = sortReviewConcepts(concepts, conceptPositions, repeatedFailuresByConcept);
+        } else {
+            orderedConcepts = concepts;
+        }
+
+        for (AdaptiveConceptDto concept : orderedConcepts) {
+            String conceptId = concept == null ? null : concept.getConceptId();
+            if (conceptId == null || !addedConceptIds.add(conceptId)) {
+                continue;
+            }
+            int repeatedFailuresCount = repeatedFailuresByConcept.getOrDefault(conceptId, 0);
+            boolean persistentDifficulty = "TO_REVIEW".equals(status)
+                    && repeatedFailuresCount >= REPEATED_FAILURE_THRESHOLD;
+            boolean remediationSuccess = "COMPLETED".equals(status)
+                    && remediationSuccessConceptIds.contains(conceptId);
+            boolean highMasteryProgression = "READY".equals(status) && highMasteryDetected;
+            steps.add(LearningPathStepDto.builder()
+                    .order(order[0]++)
+                    .conceptId(conceptId)
+                    .conceptName(concept.getConceptName())
+                    .status(status)
+                    .adaptiveScore(concept.getAdaptiveScore())
+                    .explanationReasons(pathStepExplanationReasons(concept, status, repeatedFailuresCount, remediationSuccess, highMasteryProgression))
+                    .repeatedFailuresCount(repeatedFailuresCount > 0 ? repeatedFailuresCount : null)
+                    .persistentDifficulty(persistentDifficulty ? true : null)
+                    .remediationSuccess(remediationSuccess ? true : null)
+                    .highMasteryProgression(highMasteryProgression ? true : null)
+                    .build());
+        }
+    }
+
+    private List<AdaptiveConceptDto> sortReadyConcepts(
+            List<AdaptiveConceptDto> concepts,
+            Map<String, Integer> conceptPositions) {
+        return sortReadyConcepts(concepts, conceptPositions, false);
+    }
+
+    private List<AdaptiveConceptDto> sortReadyConcepts(
+            List<AdaptiveConceptDto> concepts,
+            Map<String, Integer> conceptPositions,
+            boolean highMasteryDetected) {
+        List<AdaptiveConceptDto> normallyOrdered = concepts.stream()
+                .sorted(Comparator
+                        .comparing(AdaptiveConceptDto::getAdaptiveScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(concept -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE)))
+                .toList();
+
+        if (!highMasteryDetected || normallyOrdered.size() < 2) {
+            return normallyOrdered;
+        }
+
+        double bestScore = normallyOrdered.stream()
+                .map(AdaptiveConceptDto::getAdaptiveScore)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(Double.NaN);
+        if (Double.isNaN(bestScore)) {
+            return normallyOrdered;
+        }
+
+        List<AdaptiveConceptDto> closeReadyConcepts = normallyOrdered.stream()
+                .filter(concept -> isCloseToBestReadyScore(concept, bestScore))
+                .sorted(Comparator
+                        .comparing((AdaptiveConceptDto concept) -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE))
+                        .reversed()
+                        .thenComparing(AdaptiveConceptDto::getAdaptiveScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+        List<AdaptiveConceptDto> remainingConcepts = normallyOrdered.stream()
+                .filter(concept -> !isCloseToBestReadyScore(concept, bestScore))
+                .toList();
+        List<AdaptiveConceptDto> controlledProgression = new ArrayList<>(closeReadyConcepts);
+        controlledProgression.addAll(remainingConcepts);
+        return controlledProgression;
+    }
+
+    private boolean isCloseToBestReadyScore(AdaptiveConceptDto concept, double bestScore) {
+        Double score = concept == null ? null : concept.getAdaptiveScore();
+        return score != null && bestScore - score <= HIGH_MASTERY_READY_SCORE_PROXIMITY;
+    }
+
+    private boolean detectHighMastery(
+            LearnerProfileDto learnerProfile,
+            Set<String> failedDiagnosticConceptIds,
+            Map<String, Integer> repeatedFailuresByConcept) {
+        if (learnerProfile == null) {
+            return false;
+        }
+        int knowledgeGapsCount = learnerProfile.getKnowledgeGaps() == null
+                ? 0
+                : learnerProfile.getKnowledgeGaps().size();
+        boolean hasDiagnosticWeakness = failedDiagnosticConceptIds != null && !failedDiagnosticConceptIds.isEmpty();
+        boolean hasPersistentDifficulty = repeatedFailuresByConcept != null
+                && repeatedFailuresByConcept.values().stream().anyMatch(count -> count >= REPEATED_FAILURE_THRESHOLD);
+        if (knowledgeGapsCount > MAX_KNOWLEDGE_GAPS_FOR_HIGH_MASTERY
+                || hasDiagnosticWeakness
+                || hasPersistentDifficulty) {
+            return false;
+        }
+
+        boolean highMasteryScore = learnerProfile.getMasteryScore() != null
+                && learnerProfile.getMasteryScore() >= HIGH_MASTERY_SCORE_THRESHOLD;
+        boolean highAssessmentAverage = learnerProfile.getAverageAssessmentScore() != null
+                && learnerProfile.getAverageAssessmentScore() >= HIGH_ASSESSMENT_THRESHOLD;
+        boolean severalMasteredConcepts = learnerProfile.getMasteredConceptsCount() >= HIGH_MASTERED_CONCEPTS_THRESHOLD;
+        return highMasteryScore || highAssessmentAverage || severalMasteredConcepts;
+    }
+
+    private List<AdaptiveConceptDto> mergePersistentFailureConcepts(
+            List<AdaptiveConceptDto> conceptsToReview,
+            Map<String, AdaptiveConceptDto> conceptsById,
+            Set<String> masteredConceptIds,
+            Map<String, Integer> repeatedFailuresByConcept) {
+        Map<String, AdaptiveConceptDto> merged = new LinkedHashMap<>();
+        if (conceptsToReview != null) {
+            for (AdaptiveConceptDto concept : conceptsToReview) {
+                if (concept != null && concept.getConceptId() != null) {
+                    merged.put(concept.getConceptId(), concept);
+                }
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : repeatedFailuresByConcept.entrySet()) {
+            String conceptId = entry.getKey();
+            if (entry.getValue() < REPEATED_FAILURE_THRESHOLD
+                    || masteredConceptIds.contains(conceptId)
+                    || merged.containsKey(conceptId)) {
+                continue;
+            }
+            AdaptiveConceptDto base = conceptsById.getOrDefault(conceptId, unknownConcept(conceptId));
+            merged.put(conceptId, AdaptiveConceptDto.builder()
+                    .conceptId(conceptId)
+                    .conceptName(base.getConceptName())
+                    .courseId(base.getCourseId())
+                    .type(base.getType())
+                    .moduleTitle(base.getModuleTitle())
+                    .chapitreTitle(base.getChapitreTitle())
+                    .status("TO_REVIEW")
+                    .missingPrerequisiteIds(List.of())
+                    .build());
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private List<AdaptiveConceptDto> sortReviewConcepts(
+            List<AdaptiveConceptDto> concepts,
+            Map<String, Integer> conceptPositions,
+            Map<String, Integer> repeatedFailuresByConcept) {
+        return concepts.stream()
+                .sorted(Comparator
+                        .comparing((AdaptiveConceptDto concept) ->
+                                repeatedFailuresByConcept.getOrDefault(concept.getConceptId(), 0) >= REPEATED_FAILURE_THRESHOLD
+                                        ? 0
+                                        : 1)
+                        .thenComparing(concept -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE)))
+                .toList();
+    }
+
+    private Set<String> detectRemediationSuccessConcepts(
+            Set<String> failedDiagnosticConceptIds,
+            Map<String, Integer> repeatedFailuresByConcept,
+            Set<String> masteredConceptIds,
+            List<Map<String, Object>> traces) {
+        Set<String> remediationCandidates = new java.util.LinkedHashSet<>();
+        if (failedDiagnosticConceptIds != null) {
+            remediationCandidates.addAll(failedDiagnosticConceptIds);
+        }
+        repeatedFailuresByConcept.entrySet().stream()
+                .filter(entry -> entry.getValue() >= REPEATED_FAILURE_THRESHOLD)
+                .map(Map.Entry::getKey)
+                .forEach(remediationCandidates::add);
+
+        return remediationCandidates.stream()
+                .filter(masteredConceptIds::contains)
+                .filter(conceptId -> hasSuccessfulActivity(conceptId, traces) || masteredConceptIds.contains(conceptId))
+                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+    }
+
+    private boolean hasSuccessfulActivity(String conceptId, List<Map<String, Object>> traces) {
+        if (conceptId == null || traces == null) {
+            return false;
+        }
+        return traces.stream().anyMatch(trace -> isSuccessfulTraceForConcept(conceptId, trace));
+    }
+
+    private boolean isSuccessfulTraceForConcept(String conceptId, Map<String, Object> trace) {
+        String directConceptId = firstNonBlank(stringValue(trace.get("conceptId")), stringValue(trace.get("targetId")));
+        Double score = doubleValue(trace.get("scoreObtenu"));
+        if (conceptId.equals(directConceptId) && score != null && score >= 60.0 && isConceptTrace(stringValue(trace.get("targetType")), trace)) {
+            return true;
+        }
+        for (Map<String, Object> result : readNestedConceptResults(trace)) {
+            String resultConceptId = stringValue(result.get("conceptId"));
+            Double conceptScore = doubleValue(result.get("score"));
+            boolean mastered = Boolean.TRUE.equals(result.get("mastered"));
+            if (conceptId.equals(resultConceptId) && (mastered || (conceptScore != null && conceptScore >= 60.0))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<String, Integer> detectRepeatedFailures(List<Map<String, Object>> traces, List<Map<String, Object>> labs) {
+        Map<String, Integer> failuresByConcept = new LinkedHashMap<>();
+        if (traces != null) {
+            for (Map<String, Object> trace : traces) {
+                countFailedTrace(failuresByConcept, trace);
+            }
+        }
+        if (labs != null) {
+            for (Map<String, Object> lab : labs) {
+                countFailedLab(failuresByConcept, lab);
+            }
+        }
+        return failuresByConcept;
+    }
+
+    private void countFailedTrace(Map<String, Integer> failuresByConcept, Map<String, Object> trace) {
+        Double score = doubleValue(trace.get("scoreObtenu"));
+        String targetType = stringValue(trace.get("targetType"));
+        String directConceptId = firstNonBlank(stringValue(trace.get("conceptId")), stringValue(trace.get("targetId")));
+        if (score != null && score < 60.0 && directConceptId != null && isConceptTrace(targetType, trace)) {
+            incrementFailure(failuresByConcept, directConceptId);
+        }
+        for (Map<String, Object> result : readNestedConceptResults(trace)) {
+            String conceptId = stringValue(result.get("conceptId"));
+            if (conceptId == null) {
+                continue;
+            }
+            Double conceptScore = doubleValue(result.get("score"));
+            boolean failed = Boolean.FALSE.equals(result.get("mastered")) || (conceptScore != null && conceptScore < 60.0);
+            if (failed) {
+                incrementFailure(failuresByConcept, conceptId);
+            }
+        }
+    }
+
+    private boolean isConceptTrace(String targetType, Map<String, Object> trace) {
+        return "CONCEPT".equalsIgnoreCase(targetType)
+                || !isBlank(stringValue(trace.get("conceptId")));
+    }
+
+    private void countFailedLab(Map<String, Integer> failuresByConcept, Map<String, Object> lab) {
+        String status = stringValue(lab.get("status"));
+        if (!isFailedLabStatus(status)) {
+            return;
+        }
+        String conceptId = firstNonBlank(stringValue(lab.get("conceptId")), stringValue(lab.get("targetId")));
+        if (conceptId != null) {
+            incrementFailure(failuresByConcept, conceptId);
+        }
+    }
+
+    private boolean isFailedLabStatus(String status) {
+        if (status == null) {
+            return false;
+        }
+        String normalized = status.trim().toUpperCase();
+        return "FAILED".equals(normalized)
+                || "FAIL".equals(normalized)
+                || "REJECTED".equals(normalized)
+                || "NOT_VALIDATED".equals(normalized)
+                || "INCOMPLETE".equals(normalized);
+    }
+
+    private void incrementFailure(Map<String, Integer> failuresByConcept, String conceptId) {
+        failuresByConcept.merge(conceptId, 1, Integer::sum);
+    }
+
+    private List<Map<String, Object>> readNestedConceptResults(Map<String, Object> trace) {
+        Object raw = trace.get("conceptResults");
+        if (raw instanceof String json && !json.isBlank()) {
+            try {
+                Object parsed = objectMapper.readValue(json, Object.class);
+                return extractConceptResults(parsed);
+            } catch (Exception ignored) {
+                return List.of();
+            }
+        }
+        return extractConceptResults(raw);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> extractConceptResults(Object value) {
+        if (value instanceof Map<?, ?> map && map.containsKey("concepts")) {
+            return mapList(((Map<String, Object>) map).get("concepts"));
+        }
+        return mapListOrSingle(value);
+    }
+
+    private List<AdaptiveConceptDto> sortByPedagogicalOrder(
+            List<AdaptiveConceptDto> concepts,
+            Map<String, Integer> conceptPositions) {
+        if (concepts == null || concepts.isEmpty()) {
+            return List.of();
+        }
+        return concepts.stream()
+                .sorted(Comparator.comparing(concept -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE)))
+                .toList();
+    }
+
+    private List<String> pathStepExplanationReasons(AdaptiveConceptDto concept, String status, int repeatedFailuresCount) {
+        return pathStepExplanationReasons(concept, status, repeatedFailuresCount, false);
+    }
+
+    private List<String> pathStepExplanationReasons(
+            AdaptiveConceptDto concept,
+            String status,
+            int repeatedFailuresCount,
+            boolean remediationSuccess) {
+        return pathStepExplanationReasons(concept, status, repeatedFailuresCount, remediationSuccess, false);
+    }
+
+    private List<String> pathStepExplanationReasons(
+            AdaptiveConceptDto concept,
+            String status,
+            int repeatedFailuresCount,
+            boolean remediationSuccess,
+            boolean highMasteryProgression) {
+        if ("TO_REVIEW".equals(status) && repeatedFailuresCount >= REPEATED_FAILURE_THRESHOLD) {
+            List<String> reasons = new ArrayList<>();
+            reasons.add("Le concept " + conceptLabel(concept) + " est prioritaire car " + repeatedFailuresCount
+                    + " difficult\u00e9s successives ont \u00e9t\u00e9 observ\u00e9es dans vos activit\u00e9s r\u00e9centes.");
+            reasons.add("Une rem\u00e9diation renforc\u00e9e est propos\u00e9e afin de consolider ce concept avant de poursuivre le parcours.");
+            return reasons;
+        }
+        if ("COMPLETED".equals(status) && remediationSuccess) {
+            List<String> reasons = new ArrayList<>();
+            if (repeatedFailuresCount >= REPEATED_FAILURE_THRESHOLD) {
+                reasons.add("Apr\u00e8s plusieurs difficult\u00e9s successives, ce concept semble d\u00e9sormais consolid\u00e9.");
+            }
+            reasons.add("La rem\u00e9diation semble r\u00e9ussie car ce concept est d\u00e9sormais ma\u00eetris\u00e9 apr\u00e8s une activit\u00e9 r\u00e9cente.");
+            return reasons;
+        }
+        if ("READY".equals(status) && highMasteryProgression) {
+            List<String> reasons = new ArrayList<>(pathStepExplanationReasons(concept, status));
+            reasons.add("Votre progression r\u00e9cente indique une bonne ma\u00eetrise des concepts pr\u00e9c\u00e9dents.");
+            reasons.add("Les prochaines activit\u00e9s recommand\u00e9es sont l\u00e9g\u00e8rement prioris\u00e9es afin de maintenir votre progression p\u00e9dagogique.");
+            return reasons.stream().distinct().toList();
+        }
+        return pathStepExplanationReasons(concept, status);
+    }
+
+    private List<String> pathStepExplanationReasons(AdaptiveConceptDto concept, String status) {
+        String label = conceptLabel(concept);
+        if ("TO_REVIEW".equals(status)) {
+            return List.of("Le concept " + label + " est placé en remédiation car une lacune a été détectée lors du dernier diagnostic.");
+        }
+        if ("READY".equals(status)) {
+            List<String> reasons = concept.getExplanationReasons();
+            if (reasons != null && !reasons.isEmpty()) {
+                return reasons;
+            }
+            return List.of("Le concept " + label + " est accessible car les prérequis requis sont satisfaits.");
+        }
+        if ("LOCKED".equals(status)) {
+            return List.of("Le concept " + label + " est verrouillé car certains prérequis ne sont pas encore maîtrisés.");
+        }
+        return List.of("Le concept " + label + " est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel.");
     }
 
     private List<AdaptiveConceptDto> scoreAndSortLearnableConcepts(
@@ -534,6 +1198,7 @@ public class AdaptivePathService {
                 .adaptiveScore(adaptiveScore)
                 .scoreBreakdown(scoreBreakdown)
                 .explanationReasons(buildLearnExplanationReasons(
+                        concept.getConceptName(),
                         prerequisiteScore,
                         diagnosticWeaknessScore,
                         historicalPerformanceScore,
@@ -555,7 +1220,10 @@ public class AdaptivePathService {
                 .missingPrerequisiteIds(concept.getMissingPrerequisiteIds())
                 .adaptiveScore(concept.getAdaptiveScore())
                 .scoreBreakdown(concept.getScoreBreakdown())
-                .explanationReasons(List.of("Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."))
+                .explanationReasons(List.of(
+                        "Le concept " + conceptLabel(concept) + " est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+                        "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
+                ))
                 .build();
     }
 
@@ -614,37 +1282,39 @@ public class AdaptivePathService {
     }
 
     private List<String> buildLearnExplanationReasons(
+            String conceptName,
             double prerequisiteScore,
             double diagnosticWeaknessScore,
             double historicalPerformanceScore,
             double pedagogicalOrderScore,
             double engagementScore) {
         List<String> reasons = new ArrayList<>();
+        String label = conceptLabel(conceptName);
         if (prerequisiteScore >= 1.0) {
-            reasons.add("Tous les prerequis de ce concept sont satisfaits.");
+            reasons.add("Le concept " + label + " est accessible car les prérequis requis sont satisfaits.");
         } else if (prerequisiteScore >= 0.5) {
-            reasons.add("Ce concept peut etre aborde sans prerequis declares.");
+            reasons.add("Le concept " + label + " peut être abordé car aucun prérequis bloquant n'est déclaré.");
         }
         if (diagnosticWeaknessScore >= 1.0) {
-            reasons.add("Le dernier diagnostic indique que ce concept doit etre renforce.");
+            reasons.add("Le dernier diagnostic signale que " + label + " nécessite un renforcement.");
         } else if (diagnosticWeaknessScore >= 0.7) {
-            reasons.add("Un prerequis proche a ete fragile lors du diagnostic.");
+            reasons.add("La recommandation tient compte d'un prérequis proche fragilisé lors du diagnostic.");
         }
         if (pedagogicalOrderScore >= 0.5) {
-            reasons.add("Ce concept suit l'ordre pedagogique recommande.");
+            reasons.add("Ce choix respecte l'ordre pédagogique prévu dans le cours.");
         }
         if (historicalPerformanceScore >= 0.7) {
-            reasons.add("Votre historique recent montre une progression suffisante.");
+            reasons.add("L'historique récent montre une progression suffisante pour aborder cette étape.");
         } else if (historicalPerformanceScore <= 0.4) {
-            reasons.add("Le moteur garde une progression prudente car les scores precedents sont faibles.");
+            reasons.add("Cette recommandation tient compte des difficultés observées dans les activités précédentes.");
         }
         if (engagementScore >= 1.0) {
-            reasons.add("Votre activite recente sur les TP permet d'aborder ce concept maintenant.");
+            reasons.add("L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage.");
         } else if (engagementScore <= 0.3) {
-            reasons.add("La recommandation tient compte des difficultes ou abandons recents.");
+            reasons.add("Le système privilégie un apprentissage progressif adapté au rythme observé.");
         }
         if (reasons.isEmpty()) {
-            reasons.add("Ce concept est accessible et constitue la prochaine etape la plus pertinente.");
+            reasons.add("Le concept " + label + " constitue la prochaine étape accessible la plus pertinente.");
         }
         return reasons;
     }
@@ -850,6 +1520,20 @@ public class AdaptivePathService {
 
     private String stringValue(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private String conceptLabel(AdaptiveConceptDto concept) {
+        return conceptLabel(concept == null ? null : concept.getConceptName());
+    }
+
+    private String conceptLabel(String conceptName) {
+        return conceptName == null || conceptName.isBlank()
+                ? "ce concept"
+                : "'" + conceptName + "'";
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private record AdaptiveDecision(String nextAction, AdaptiveConceptDto nextConcept, String learningPhase) {

@@ -13,7 +13,7 @@ const CourseCard = ({ course, enrolled, onEnroll, onDetails, busy }) => (
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{course.title || 'Cours sans titre'}</h2>
                 <div className="mt-2 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <User size={16} />
-                    <span>{teacherLabel(course) ? `Enseignant : ${teacherLabel(course)}` : 'Enseignant non renseigne'}</span>
+                    <span>{teacherLabel(course) ? `Enseignant : ${teacherLabel(course)}` : 'Enseignant non renseigné'}</span>
                 </div>
             </div>
             {enrolled && (
@@ -31,7 +31,7 @@ const CourseCard = ({ course, enrolled, onEnroll, onDetails, busy }) => (
         <div className="grid grid-cols-2 gap-2">
             <button onClick={() => onDetails(course)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                 <Info size={16} />
-                Details
+                Détails
             </button>
             <button
                 onClick={() => onEnroll(course.id)}
@@ -43,7 +43,7 @@ const CourseCard = ({ course, enrolled, onEnroll, onDetails, busy }) => (
                 }`}
             >
                 {busy ? <Loader2 size={16} className="animate-spin" /> : enrolled ? <CheckCircle2 size={16} /> : <BookOpen size={16} />}
-                {enrolled ? 'Deja inscrit' : "S'inscrire"}
+                {enrolled ? 'Déjà inscrit' : "S'inscrire"}
             </button>
         </div>
     </article>
@@ -89,14 +89,14 @@ export default function LearnerCourses() {
         setBusyCourseId(courseId);
         try {
             await learnerApi.enrollInCourse(courseId, user);
-            toast.success('Inscription enregistree.');
+            toast.success('Inscription enregistrée.');
             await loadCourses(query);
             setDetailsCourse(null);
         } catch (err) {
             const backendMessage = err?.response?.data?.message
                 || err?.response?.data?.error
                 || err?.message
-                || "L'inscription n'a pas pu etre enregistree.";
+                || "L'inscription n'a pas pu être enregistrée.";
             setError(backendMessage);
             toast.error(backendMessage);
         } finally {
@@ -157,19 +157,19 @@ export default function LearnerCourses() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setDetailsCourse(null)}>
                     <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900" onClick={event => event.stopPropagation()}>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{detailsCourse.title || 'Cours sans titre'}</h2>
-                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Enseignant : {teacherLabel(detailsCourse) || 'Non renseigne'}</p>
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Enseignant : {teacherLabel(detailsCourse) || 'Non renseigné'}</p>
                         <div className="mt-5 space-y-4 text-sm text-slate-700 dark:text-slate-300">
                             <section>
                                 <h3 className="font-bold text-slate-800 dark:text-slate-100">Description</h3>
                                 <p className="mt-1 whitespace-pre-line">{detailsCourse.description || 'Aucune description disponible.'}</p>
                             </section>
                             <section>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Objectifs pedagogiques</h3>
-                                <p className="mt-1 whitespace-pre-line">{detailsCourse.objectifs || 'Objectifs non renseignes.'}</p>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Objectifs pédagogiques</h3>
+                                <p className="mt-1 whitespace-pre-line">{detailsCourse.objectifs || 'Objectifs non renseignés.'}</p>
                             </section>
                             <section>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Prerequis textuels</h3>
-                                <p className="mt-1 whitespace-pre-line">{detailsCourse.prerequisTextuels || 'Prerequis non renseignes.'}</p>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Prérequis textuels</h3>
+                                <p className="mt-1 whitespace-pre-line">{detailsCourse.prerequisTextuels || 'Prérequis non renseignés.'}</p>
                             </section>
                         </div>
                         <div className="mt-6 flex justify-end gap-2">

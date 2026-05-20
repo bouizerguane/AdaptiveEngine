@@ -21,6 +21,19 @@ const SUBMISSION_STEP = {
     orderIndex: 9999,
 };
 
+const adaptiveRefreshKey = (courseId) => `adaptive-refresh:${courseId}`;
+
+const markAdaptiveRefresh = (courseId, source) => {
+    if (!courseId || courseId === 'external-review' || typeof sessionStorage === 'undefined') return;
+    sessionStorage.setItem(adaptiveRefreshKey(courseId), JSON.stringify({ source, at: Date.now() }));
+};
+
+const courseReturnUrl = (courseId, conceptId) => {
+    const search = new URLSearchParams({ adaptiveRefresh: String(Date.now()) });
+    if (conceptId) search.set('focusConcept', conceptId);
+    return `/learner/courses/${courseId}?${search.toString()}`;
+};
+
 export default function StudentLab() {
     const { labId } = useParams();
     const navigate = useNavigate();
@@ -67,7 +80,7 @@ export default function StudentLab() {
             const effectiveConceptId = forcedConceptId || loadedLab.targetId || loadedLab.conceptId || labId;
             const [subRes, evaluationRes] = await Promise.all([
                 labTrackingApi.getByLabAndUser(loadedLab.id, userId).catch(() => ({ data: null })),
-                evaluationApi.getEvaluation(effectiveConceptId).catch(() => ({ data: null })),
+                evaluationApi.getEvaluation(effectiveConceptId, 'FORMATIVE').catch(() => ({ data: null })),
             ]);
             const sortedSteps = [...(loadedLab.steps || [])].sort((a, b) => a.orderIndex - b.orderIndex);
             setLab(loadedLab);
@@ -172,10 +185,11 @@ export default function StudentLab() {
             };
             // 1. Persister la soumission
             await labTrackingApi.submit(payload);
+            markAdaptiveRefresh(effectiveCourseId, 'lab');
 
             const successMsg = isTeacher
                 ? 'Test enseignant enregistré (non comptabilisé dans les statistiques).'
-                : 'TP soumis avec succes. Vous pouvez maintenant passer l evaluation formative pour valider le concept.';
+                : "TP soumis avec succès. Vous pouvez maintenant passer l'évaluation formative pour valider le concept.";
 
             setDialog({
                 isOpen: true, type: 'success',
@@ -206,13 +220,15 @@ export default function StudentLab() {
     const isLastStep  = currentIdx === steps.length - 1;
     const backCourseId = sourceCourseId || lab?.courseId || '';
     const currentConceptId = forcedConceptId || lab?.targetId || lab?.conceptId || labId;
-    const backToCourse = () => backCourseId ? navigate(`/learner/courses/${backCourseId}`) : navigate('/learner/my-courses');
+    const backToCourse = () => backCourseId && backCourseId !== 'external-review'
+        ? navigate(courseReturnUrl(backCourseId, currentConceptId))
+        : navigate('/learner/my-courses');
 
     return (
         <div className="max-w-4xl mx-auto py-6 px-4 space-y-5">
             <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-wrap items-center gap-2">
-                    <Link to={backCourseId ? `/learner/courses/${backCourseId}` : '/learner/my-courses'} className="font-semibold text-indigo-600 hover:text-indigo-700">
+                    <Link to={backCourseId && backCourseId !== 'external-review' ? courseReturnUrl(backCourseId, currentConceptId) : '/learner/my-courses'} className="font-semibold text-indigo-600 hover:text-indigo-700">
                         {context.courseTitle || 'Retour au cours'}
                     </Link>
                     <span>/</span>
@@ -317,11 +333,11 @@ export default function StudentLab() {
                                             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition"
                                         >
                                             <ClipboardList size={15} />
-                                            Passer l'evaluation formative
+                                            Passer l'évaluation formative
                                         </Link>
                                     ) : (
                                         <p className="text-sm font-semibold text-slate-500">
-                                            Aucune evaluation formative disponible pour ce concept.
+                                            Aucune évaluation formative disponible pour ce concept.
                                         </p>
                                     )}
                                 </div>

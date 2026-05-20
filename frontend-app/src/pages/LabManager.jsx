@@ -32,7 +32,7 @@ import {
     Terminal, Settings, Clock, Eraser, Bold, Italic, Strikethrough,
     List, ListOrdered, Code, Underline as UnderlineIcon, Link as LinkIcon,
     AlignLeft, AlignCenter, AlignRight, Table as TableIcon, Github,
-    Eye, Layout, Palette, Highlighter, Sigma, Quote, Minus, Combine, PanelTop,
+    Eye, Layout, Palette, Highlighter, Quote, Minus, Combine, PanelTop,
     Subscript as SubscriptIcon, Superscript as SuperscriptIcon
 } from 'lucide-react';
 import { labApi, courseApi, graphApi } from '../api/apiClient';
@@ -113,20 +113,27 @@ function SortableStep({ step, isActive, onSelect, onDelete }) {
 /* ─── Tiptap MenuBar ─────────────────────────────────────────────── */
 const MenuBar = ({ editor }) => {
     const [showChars, setShowChars] = useState(false);
-    const SPECIAL_CHARS = ['α', 'β', 'γ', '∞', '∑', 'Δ', '≈', '≠', 'π', 'θ', 'μ', 'Ω', '±', '≤', '≥', '√'];
+    const [inlineInput, setInlineInput] = useState(null);
+    const SPECIAL_CHARS = ['≤', '≥', '≠', '±', '×', '÷', '√', '∑', '∫', 'π', 'α', 'β', 'γ', 'Δ', '∞', '→', '←', '↔', '∈', '∉', '∅', '∧', '∨', '∀', '∃', '²', '³'];
 
     if (!editor) return null;
 
     const addLink = () => {
-        const url = prompt('URL du lien (ex: https://...) :');
-        if (url) editor.chain().focus().setLink({ href: url, target: '_blank' }).run();
+        setInlineInput({
+            type: 'link',
+            title: 'Insérer un lien',
+            placeholder: 'https://example.com',
+            value: editor.getAttributes('link').href || '',
+        });
     };
 
-    const insertEquation = () => {
-        const { from, to } = editor.state.selection;
-        const text = editor.state.doc.textBetween(from, to, ' ');
-        if (text) { editor.chain().focus().insertContent(`$${text}$`).run(); }
-        else { const eq = prompt("Saisissez l'équation :"); if (eq) editor.chain().focus().insertContent(`$${eq}$`).run(); }
+    const submitInlineInput = () => {
+        const value = inlineInput?.value?.trim();
+        if (!value) return;
+        if (inlineInput.type === 'link') {
+            editor.chain().focus().setLink({ href: value, target: '_blank' }).run();
+        }
+        setInlineInput(null);
     };
 
     const btnClass = (isActive = false) => isActive ? "p-1.5 rounded transition-all bg-indigo-100 text-indigo-700" : "p-1.5 rounded transition-all text-slate-600 hover:bg-indigo-50 hover:text-indigo-600";
@@ -157,11 +164,10 @@ const MenuBar = ({ editor }) => {
                     <button onClick={() => editor.chain().focus().toggleSuperscript().run()} className={btnClass(editor.isActive('superscript'))} title="Exposant"><SuperscriptIcon size={14} /></button>
                     <button onClick={() => editor.chain().focus().toggleSubscript().run()} className={btnClass(editor.isActive('subscript'))} title="Indice"><SubscriptIcon size={14} /></button>
                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <button onClick={insertEquation} className={btnClass()} title="Insérer une Équation"><Sigma size={14} /></button>
                     <div className="relative">
                         <button onClick={() => setShowChars(!showChars)} className={btnClass()} title="Caractères Spéciaux">Ω</button>
                         {showChars && (
-                            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-lg p-2 w-48 z-50 grid grid-cols-4 gap-1">
+                            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-lg p-2 w-64 z-50 grid grid-cols-5 gap-1">
                                 {SPECIAL_CHARS.map(char => (
                                     <button key={char} onClick={() => { editor.chain().focus().insertContent(char).run(); setShowChars(false); }} className="p-1.5 hover:bg-indigo-50 rounded text-slate-700 font-medium text-center">{char}</button>
                                 ))}
@@ -201,6 +207,36 @@ const MenuBar = ({ editor }) => {
                     <button onClick={addLink} className={btnClass(editor.isActive('link'))} title="Lien Hypertexte"><LinkIcon size={14} /></button>
                 </div>
             </div>
+            {inlineInput && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2">
+                    <label className="text-xs font-semibold text-slate-600">{inlineInput.title}</label>
+                    <input
+                        type="text"
+                        value={inlineInput.value}
+                        onChange={(event) => setInlineInput({ ...inlineInput, value: event.target.value })}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') submitInlineInput();
+                            if (event.key === 'Escape') setInlineInput(null);
+                        }}
+                        placeholder={inlineInput.placeholder}
+                        className="min-w-[220px] flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                    />
+                    <button
+                        type="button"
+                        onClick={submitInlineInput}
+                        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+                    >
+                        Insérer
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setInlineInput(null)}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                        Annuler
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

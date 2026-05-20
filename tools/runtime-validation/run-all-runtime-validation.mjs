@@ -24,6 +24,10 @@ const steps = [
     script: 'tools/tutoring-v6-runtime-tests/run-tutoring-v6-runtime-tests.mjs',
   },
   {
+    label: 'Rafraichissement evenementiel persistant',
+    script: 'tools/runtime-validation/event-driven-refresh-tests/run-event-driven-refresh-tests.mjs',
+  },
+  {
     label: 'Validation fonctionnelle finale',
     script: 'tools/final-validation-report/run-final-validation.mjs',
   },

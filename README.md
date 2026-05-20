@@ -1,58 +1,103 @@
 # AdaptiveEngine
 
-Plateforme d'apprentissage adaptatif organisee en microservices Spring Boot et une application React/Vite.
+AdaptiveEngine est une plateforme pédagogique adaptative organisée en microservices Spring Boot, avec une interface React/Vite. Le système actuel est un moteur adaptatif rule-based explicable : il exploite le graphe de prérequis, les traces d'apprentissage, les diagnostics, les TP et le profil apprenant. Le projet est préparé pour une future phase ML grâce à la journalisation `RecommendationTrace`, mais aucun modèle ML réel n'est intégré pour le moment.
 
-## Architecture
+## 1. Architecture microservices
 
 ```text
-frontend-app -> gateway-service -> iam-service
-                              -> knowledge-graph-service
-                              -> content-service
-                              -> tracking-service
-                              -> adaptive-engine-service
-                              -> tutoring-service
-
-Consul assure la decouverte des services pour la gateway et les appels internes load-balances.
-RabbitMQ est utilise comme canal evenementiel complementaire. Les appels REST restent le flux principal.
+frontend-app
+   -> gateway-service
+      -> iam-service
+      -> knowledge-graph-service
+      -> content-service
+      -> tracking-service
+      -> adaptive-engine-service
+      -> tutoring-service
 ```
 
-## Services
-
-| Service | Role | Port |
+| Service | Rôle réel | Port |
 | --- | --- | --- |
-| `frontend-app` | Interface React/Vite servie par Nginx en Docker | `5173` |
-| `gateway-service` | Point d'entree API, routes `lb://` via Consul | `8080` |
-| `iam-service` | Authentification JWT, utilisateurs, roles, parametres systeme | `8081` |
-| `knowledge-graph-service` | Graphe pedagogique, cours/modules/chapitres/concepts, maitrise | `8082` |
-| `content-service` | Contenus, evaluations, labs, uploads media | `8083` |
-| `tracking-service` | Traces d'apprentissage, soumissions de labs, dashboard enseignant | `8084` |
-| `adaptive-engine-service` | Orchestration du parcours adaptatif | `8085` |
-| `tutoring-service` | Feedbacks pedagogiques simples et consommation d'evenements | `8086` |
+| `gateway-service` | Point d'entrée API, routage Spring Cloud Gateway via Consul | `8080` |
+| `iam-service` | Authentification JWT, utilisateurs, rôles, paramètres système | `8081` |
+| `knowledge-graph-service` | Cours, modules, chapitres, concepts, prérequis, maîtrise Neo4j | `8082` |
+| `content-service` | Ressources, évaluations, questions, labs, uploads médias | `8083` |
+| `tracking-service` | Traces, soumissions TP, événements de fraîcheur, RecommendationTrace, analytics enseignant | `8084` |
+| `adaptive-engine-service` | Génération du parcours adaptatif, profil apprenant, PLP, remédiation explicable | `8085` |
+| `tutoring-service` | Feedback pédagogique contextualisé | `8086` |
+| `frontend-app` | Interface React/Vite servie en Docker | `5173` |
 
-## Moteur adaptatif final
+## 2. Bases de données
 
-Le moteur adaptatif final combine :
+| Base | Usage |
+| --- | --- |
+| PostgreSQL IAM | Utilisateurs, rôles, comptes de test, paramètres IAM |
+| PostgreSQL Tracking | Traces, soumissions de TP, événements adaptatifs persistés, RecommendationTrace |
+| MongoDB Content | Ressources, évaluations, questions, labs |
+| Neo4j Knowledge Graph | Graphe de cours/concepts/prérequis et état de maîtrise |
 
-- scoring explicable ;
-- profil apprenant ;
-- strategie pedagogique ;
-- feedback tutorat ;
-- validation runtime.
+## 3. Infrastructure
 
-## Bases de donnees
+La stack locale utilise Docker Compose avec :
 
-| Conteneur | Usage | Ports |
-| --- | --- | --- |
-| `postgres-iam` | Base IAM `iam_db` | interne Docker |
-| `postgres-tracking` | Base tracking `tracking_db` | `5434:5432` |
-| `neo4j-graph` | Graphe pedagogique Neo4j | `7474`, `7687` |
-| `mongodb-content` | Contenus, evaluations, labs | interne Docker |
-| `consul` | Service discovery | `8500` |
-| `rabbitmq` | Broker evenementiel complementaire + management UI | `5672`, `15672` |
+- `consul-server` pour la découverte de services ;
+- `rabbitmq` pour les événements `quiz.completed` et `lab.submitted` ;
+- `postgres-iam` et `postgres-tracking` ;
+- `mongodb-content` ;
+- `neo4j-graph` ;
+- les sept microservices backend ;
+- `frontend-app`.
 
-## Routes Gateway
+Interfaces utiles :
 
-La gateway expose les routes suivantes sur `http://localhost:8080` :
+```text
+Frontend:      http://localhost:5173
+API Gateway:   http://localhost:8080
+Consul UI:     http://localhost:8500
+Neo4j Browser: http://localhost:7474
+RabbitMQ UI:   http://localhost:15672
+```
+
+## 4. Fonctionnalités principales
+
+- gestion des utilisateurs et authentification JWT ;
+- gestion des cours, modules, chapitres, concepts et prérequis ;
+- gestion des ressources pédagogiques avec image, vidéo et PDF sous forme de lien ouvrable ;
+- évaluations de positionnement, formatives et validation finale de cours ;
+- suivi des traces d'apprentissage et soumissions de TP ;
+- Learner Profile calculé à la demande ;
+- Personalized Learning Path avec statuts `TO_REVIEW`, `READY`, `LOCKED`, `COMPLETED` ;
+- remédiation explicable ;
+- feedback tutorat contextualisé ;
+- règles post-activité :
+  - Repeated Failure ;
+  - Remediation Success ;
+  - High Mastery ;
+- `RecommendationTrace` ML-ready avec protection anti-duplication ;
+- export du dataset de recommandations.
+
+## 5. Moteur adaptatif
+
+Le moteur actuel est :
+
+- rule-based ;
+- explicable ;
+- fondé sur le graphe de connaissances ;
+- learner-aware ;
+- basé sur un scoring multicritère pondéré.
+
+Il ne contient pas de TensorFlow, PyTorch, LSTM, RL, GNN ou autre modèle ML. La préparation ML repose uniquement sur la collecte de traces structurées permettant de constituer un futur dataset.
+
+## 6. Endpoints utiles
+
+Tous les appels applicatifs passent par la gateway :
+
+```text
+GET  http://localhost:8080/api/adaptive/path?courseId=...
+GET  http://localhost:8080/api/tracking/recommendation-traces/export
+POST http://localhost:8080/api/tutoring/feedback
+```
+
+Routes principales :
 
 ```text
 /api/auth/**      -> iam-service
@@ -67,221 +112,57 @@ La gateway expose les routes suivantes sur `http://localhost:8080` :
 /api/tutoring/**  -> tutoring-service
 ```
 
-## RabbitMQ
+## 7. Commandes de lancement
 
-RabbitMQ est ajoute comme canal evenementiel complementaire. Il ne remplace pas les appels REST existants : les soumissions de TP continuent a etre enregistrees par `tracking-service` via REST et l'evenement est publie ensuite.
-
-Interface de gestion :
-
-```text
-RabbitMQ Management UI: http://localhost:15672
-```
-
-Variables d'environnement :
-
-```text
-RABBITMQ_USER=admin
-RABBITMQ_PASSWORD=change_me_rabbitmq_password
-GATEWAY_STARTUP_DELAY_SECONDS=30
-```
-
-`GATEWAY_STARTUP_DELAY_SECONDS` laisse le temps aux services applicatifs de terminer leur enregistrement Consul avant que la gateway accepte du trafic. Cela reduit les erreurs `503 Service Unavailable` juste apres un `docker compose up --build`.
-
-Evenements publies :
-
-```text
-exchange: adaptive.events
-routingKey: lab.submitted
-queue consommateur: tutoring.lab-submitted
-queue consommateur: adaptive.lab-submitted
-
-routingKey: quiz.completed
-queue consommateur: tutoring.quiz-completed
-queue consommateur: adaptive.quiz-completed
-```
-
-Payload `lab.submitted` :
-
-```json
-{
-  "learnerEmail": "student@test.com",
-  "courseId": "course-id",
-  "conceptId": "concept-id",
-  "labId": "lab-id",
-  "status": "COMPLETED",
-  "timestamp": "2026-05-10T12:00:00"
-}
-```
-
-Payload `quiz.completed` :
-
-```json
-{
-  "learnerEmail": "student@test.com",
-  "courseId": "course-id",
-  "targetId": "concept-id",
-  "targetType": "CONCEPT",
-  "evaluationId": "evaluation-id",
-  "typeEvaluation": "FORMATIVE",
-  "score": 85.0,
-  "masterySource": "QUIZ_DIRECT",
-  "conceptResults": "[...]",
-  "timestamp": "2026-05-10T12:00:00"
-}
-```
-
-Si RabbitMQ est indisponible, la soumission TP reste valide. `tracking-service` journalise seulement un warning `event publish failed`.
-
-`adaptive-engine-service` ecoute aussi `lab.submitted` et `quiz.completed` en lecture seule. Cette ecoute prepare une future adaptation evenementielle, mais ne declenche pas encore de recalcul automatique et ne modifie aucune base.
-
-### Probleme RabbitMQ - cookie Erlang et volume Docker
-
-RabbitMQ stocke un fichier interne `.erlang.cookie` dans son volume de donnees. Si un ancien volume Docker a ete cree avec de mauvais droits, le conteneur peut sortir avec :
-
-```text
-Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces
-```
-
-En developpement, supprimer uniquement le volume RabbitMQ permet de repartir proprement. RabbitMQ reste un canal evenementiel complementaire : les donnees metier sont dans PostgreSQL, MongoDB et Neo4j.
-
-```bash
-docker compose down
-docker volume rm adaptiveengine_rabbitmq_data
-docker compose up --build
-```
-
-## Configuration locale
-
-1. Copier le modele d'environnement :
+Copier le fichier d'environnement :
 
 ```bash
 copy .env.example .env
 ```
 
-2. Remplacer les valeurs `change_me_*` dans `.env`.
-
-3. Demarrer l'ensemble de la stack :
+Démarrer la plateforme :
 
 ```bash
-docker compose up --build
+docker compose up --build -d
+docker compose ps
 ```
 
-## Probleme MongoDB - identifiants et volume Docker
-
-MongoDB cree ses utilisateurs uniquement lors de la premiere initialisation du volume Docker. Si les identifiants Mongo changent ensuite dans `.env`, le volume existant garde les anciens utilisateurs.
-
-Symptomes possibles dans `content-service` :
-
-```text
-POST /api/content/save        -> 500
-POST /api/content/evaluations -> 500
-POST /api/content/labs        -> 500
-Authentication failed
-```
-
-Solution en developpement : reinitialiser uniquement le volume MongoDB, puis relancer la stack.
+Build backend, depuis la racine si Maven parent est disponible ou depuis chaque service :
 
 ```bash
-docker compose down
-docker volume rm adaptiveengine_mongo_data
-docker compose up --build
+mvn -q -DskipTests package
 ```
 
-Attention : cette commande supprime les donnees MongoDB existantes, donc les contenus, evaluations et labs deja enregistres. Elle ne supprime pas le code du projet.
-
-4. Acceder aux interfaces :
-
-```text
-Frontend:      http://localhost:5173
-API Gateway:   http://localhost:8080
-Consul UI:     http://localhost:8500
-Neo4j Browser: http://localhost:7474
-RabbitMQ UI:   http://localhost:15672
-```
-
-## Lancement local hors Docker
-
-Demarrer d'abord l'infrastructure avec Docker, puis lancer chaque service depuis son dossier :
-
-```bash
-mvn spring-boot:run
-```
-
-Pour le frontend :
+Build frontend :
 
 ```bash
 cd frontend-app
-npm install
-npm run dev
+npm run build
 ```
 
-Par defaut, le frontend utilise `VITE_API_URL` si defini, sinon `http://localhost:8080/api`.
+## 8. Comptes de test
 
-## Compte admin de developpement
+Les comptes de test dépendent du seed IAM présent au démarrage. Vérifier `iam-service/src/main/java/com/ale/iam/DataSeeder.java` pour la liste exacte des comptes créés dans votre dépôt courant.
 
-Au premier demarrage, `iam-service` cree un compte :
+## 9. Configuration
 
-```text
-Email: admin@system.com
-Mot de passe: valeur de ADMIN_DEFAULT_PASSWORD
-```
+Les variables locales sont décrites dans `.env.example`. Ne pas versionner de vrais secrets dans `.env`.
 
-Ne pas utiliser la valeur de demonstration en production.
+Variables importantes :
 
-Si le volume PostgreSQL IAM existe deja, le compte `admin@system.com` peut conserver un ancien mot de passe. Dans ce cas, trois options existent en developpement :
+- `JWT_SECRET`
+- variables PostgreSQL IAM et Tracking ;
+- variables MongoDB ;
+- variables Neo4j ;
+- variables RabbitMQ ;
+- `VITE_API_URL`
+- `GATEWAY_STARTUP_DELAY_SECONDS`
 
-1. Utiliser l'ancien mot de passe si vous le connaissez.
-2. Activer temporairement le reset au demarrage :
+## 10. Limites connues
 
-```env
-ADMIN_RESET_ON_STARTUP=true
-```
-
-Puis redemarrer `iam-service` :
-
-```bash
-docker compose up --build -d iam-service
-```
-
-Le service met alors a jour le mot de passe avec `ADMIN_DEFAULT_PASSWORD`, force le role `ADMIN` et garde `estApprouve=true`. Le log attendu est :
-
-```text
-Default admin password reset because ADMIN_RESET_ON_STARTUP=true
-```
-
-Apres verification de la connexion, remettre :
-
-```env
-ADMIN_RESET_ON_STARTUP=false
-```
-
-3. En developpement uniquement, supprimer le volume PostgreSQL IAM pour repartir d'une base vide. Cette option supprime les utilisateurs IAM existants.
-
-## Securite actuelle
-
-- Le JWT est emis par `iam-service`.
-- Le JWT est valide dans `gateway-service` par un filtre global.
-- La gateway extrait l'email et le role du token, puis propage les headers internes :
-
-```text
-X-User-Email
-X-User-Role
-```
-
-- Les routes critiques sont protegees par role au niveau gateway :
-  - `ADMIN` : `/api/admin/**`, `/api/graph/admin/**`, `/api/content/admin/**`
-  - `TEACHER` / `ADMIN` : dashboard enseignant, gestion des inscriptions, creation/modification cours/contenus/evaluations/TP
-  - `STUDENT` : inscription a un cours, traces, soumission TP, validation de sa propre maitrise
-- Les endpoints non explicitement autorises sont refuses par defaut par la gateway.
-- Les microservices gardent des controles simples sur les endpoints sensibles et utilisent `X-User-Email` en priorite lorsque le header est present.
-
-## Limites connues
-
-- Les microservices restent accessibles sans authentification forte s'ils sont exposes directement hors reseau Docker. En usage normal, le point d'entree doit rester `gateway-service`.
-- Certains appels frontend conservent encore des parametres d'identite (`learnerEmail`, `teacherEmail`, `userId`) pour compatibilite, mais les backends privilegient les headers injectes par la gateway.
-- RabbitMQ est complementaire uniquement; REST reste la source principale et aucun traitement metier ne depend encore du broker.
-- `adaptive-engine-service` et `tutoring-service` consomment les evenements RabbitMQ en lecture seule pour preparer l'evolution evenementielle.
-- Pas de moteur ML/LSTM implemente dans ce depot.
-- Pas de tests automatises detectes.
-- Pas de documentation OpenAPI/Swagger.
-- Les dossiers generes (`node_modules`, `target`, `dist`) et uploads locaux doivent rester exclus du controle de version.
+- aucun modèle ML réel n'est encore intégré ;
+- le système est ML-ready via `RecommendationTrace`, mais l'entraînement et l'inférence sont à venir ;
+- Swagger/OpenAPI n'est pas généralisé sur tous les services ;
+- le monitoring avancé reste à ajouter ;
+- pas de WebSocket ni de push temps réel : le recalcul adaptatif est déclenché au retour/navigation via appels API ;
+- RabbitMQ complète le flux REST, mais ne remplace pas l'orchestration principale.

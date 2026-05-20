@@ -1,30 +1,30 @@
 # Scoring explicable - Runtime Test Report
 
-Generated at: 2026-05-17T19:33:19.994Z
+Generated at: 2026-05-20T08:36:52.703Z
 API: http://localhost:8080/api
-Duration: 3050 ms
+Duration: 19376 ms
 
 | Case | Status | Expected | Actual |
 | --- | --- | --- | --- |
-| Case A1 - Apprenant fort avec lacune | PASS | {"nextAction":"REMEDIATION","nextConceptContains":"Fonctions","explanationReasons":"non-empty","decisionExplanation":"non-empty"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Fonctions","type":"INTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."]},"decisionExplanation":"La priorite est donnee au concept non maitrise lors du dernier diagnostic.","scoringVersion":"RULE_BASED_EXPLAINABLE"} |
-| Case A2 - Apprenant fort sans lacune | PASS | {"nextAction":"LEARN","nextConcept":"non-null","nextConceptStatus":"LEARNABLE","adaptiveScore":"present","scoreBreakdown":"present","explanationReasons":"non-empty","learnableConceptsSorted":"adaptiveScore descending"} | {"nextAction":"LEARN","nextConcept":{"conceptName":"Tableaux","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Votre historique recent montre une progression suffisante."]},"learnableScores":[{"conceptName":"Tableaux","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7}},{"conceptName":"Entrées/Sorties","adaptiveScore":0.58,"scoreBreakdown":{"prerequisiteScore":0.5,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.71,"engagementScore":0.7}}],"decisionExplanation":"Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.","scoringVersion":"RULE_BASED_EXPLAINABLE"} |
-| Case B - Apprenant faible | PASS | {"nextAction":"REMEDIATION","nextConcept":"Variables","explanation":"present"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Variables","type":"INTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."]},"decisionExplanation":"La priorite est donnee au concept non maitrise lors du dernier diagnostic."} |
-| Case C - Concept externe | PASS | {"nextAction":"REMEDIATION","nextConceptType":"EXTERNAL","nextConceptName":"Pointeurs","frontendRoute":"/learner/external-concepts/:conceptId"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Pointeurs","type":"EXTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."]},"expectedFrontendRoute":"/learner/external-concepts/external-pointeurs-runtime-test","decisionExplanation":"La priorite est donnee au concept non maitrise lors du dernier diagnostic."} |
-| Case D - Engagement influence ranking | PASS | {"activeEngagementScore":"> passiveEngagementScore","activeAdaptiveScore":"> passiveAdaptiveScore for same recommendation context"} | {"active":{"learnerEmail":"student.scoring.engagement@test.local","nextConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.76,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.57,"engagementScore":1},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante.","Votre activite recente sur les TP permet d'aborder ce concept maintenant."]},"engagementScore":1,"adaptiveScore":0.76},"passive":{"learnerEmail":"student.scoring.external@test.local","comparedConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":0.7,"pedagogicalOrderScore":0.57,"engagementScore":0.7},"explanationReasons":["Tous les prerequis de ce concept sont satisfaits.","Ce concept suit l'ordre pedagogique recommande.","Votre historique recent montre une progression suffisante."]},"engagementScore":0.7,"adaptiveScore":0.69},"scoreDifference":0.07} |
+| Case A1 - Apprenant fort avec lacune | PASS | {"nextAction":"REMEDIATION","nextConceptContains":"Fonctions","explanationReasons":"non-empty","decisionExplanation":"non-empty"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Fonctions","type":"INTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Le concept 'Fonctions' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.","Cette remédiation vise à consolider une lacune avant de poursuivre la progression."]},"decisionExplanation":"Une activité de remédiation est proposée sur 'Fonctions' en raison de lacunes identifiées dans le dernier diagnostic.","scoringVersion":"RULE_BASED_EXPLAINABLE"} |
+| Case A2 - Apprenant fort sans lacune | PASS | {"nextAction":"LEARN","nextConcept":"non-null","nextConceptStatus":"LEARNABLE","adaptiveScore":"present","scoreBreakdown":"present","explanationReasons":"non-empty","learnableConceptsSorted":"adaptiveScore descending"} | {"nextAction":"LEARN","nextConcept":{"conceptName":"Tableaux","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7},"explanationReasons":["Le concept 'Tableaux' est accessible car les prérequis requis sont satisfaits.","L'historique récent montre une progression suffisante pour aborder cette étape."]},"learnableScores":[{"conceptName":"Tableaux","adaptiveScore":0.69,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.29,"engagementScore":0.7}},{"conceptName":"Entrées/Sorties","adaptiveScore":0.58,"scoreBreakdown":{"prerequisiteScore":0.5,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.71,"engagementScore":0.7}}],"decisionExplanation":"Le concept 'Tableaux' est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.","scoringVersion":"RULE_BASED_EXPLAINABLE"} |
+| Case B - Apprenant faible | PASS | {"nextAction":"REMEDIATION","nextConcept":"Variables","explanation":"present"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Variables","type":"INTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Le concept 'Variables' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.","Cette remédiation vise à consolider une lacune avant de poursuivre la progression."]},"decisionExplanation":"Une activité de remédiation est proposée sur 'Variables' en raison de lacunes identifiées dans le dernier diagnostic."} |
+| Case C - Concept externe | PASS | {"nextAction":"REMEDIATION","nextConceptType":"EXTERNAL","nextConceptName":"Pointeurs","frontendRoute":"/learner/external-concepts/:conceptId"} | {"nextAction":"REMEDIATION","nextConcept":{"conceptName":"Pointeurs","type":"EXTERNAL","status":"TO_REVIEW","adaptiveScore":null,"scoreBreakdown":null,"explanationReasons":["Le concept 'Pointeurs' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.","Cette remédiation vise à consolider une lacune avant de poursuivre la progression."]},"expectedFrontendRoute":"/learner/external-concepts/external-pointeurs-runtime-test","decisionExplanation":"Une activité de remédiation est proposée sur 'Pointeurs' en raison de lacunes identifiées dans le dernier diagnostic."} |
+| Case D - Engagement influence ranking | PASS | {"activeEngagementScore":"> passiveEngagementScore","activeAdaptiveScore":"> passiveAdaptiveScore for same recommendation context"} | {"active":{"learnerEmail":"student.scoring.engagement@test.local","nextConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.76,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":1,"pedagogicalOrderScore":0.57,"engagementScore":1},"explanationReasons":["Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.","Ce choix respecte l'ordre pédagogique prévu dans le cours.","L'historique récent montre une progression suffisante pour aborder cette étape.","L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."]},"engagementScore":1,"adaptiveScore":0.76},"passive":{"learnerEmail":"student.scoring.external@test.local","comparedConcept":{"conceptName":"Conditions","type":"INTERNAL","status":"LEARNABLE","adaptiveScore":0.65,"scoreBreakdown":{"prerequisiteScore":1,"diagnosticWeaknessScore":0.3,"historicalPerformanceScore":0.7,"pedagogicalOrderScore":0.57,"engagementScore":0.3},"explanationReasons":["Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.","Ce choix respecte l'ordre pédagogique prévu dans le cours.","L'historique récent montre une progression suffisante pour aborder cette étape.","Le système privilégie un apprentissage progressif adapté au rythme observé."]},"engagementScore":0.3,"adaptiveScore":0.65},"scoreDifference":0.11} |
 
 ## Case A1 - Apprenant fort avec lacune - PASS
 
 Assertions:
 - PASS nextAction: expected `REMEDIATION`, actual `REMEDIATION`
 - PASS nextConcept contains Fonctions: expected `contains Fonctions`, actual `Fonctions`
-- PASS explanationReasons: expected `non-empty`, actual `Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic.`
-- PASS decisionExplanation: expected `non-empty`, actual `La priorite est donnee au concept non maitrise lors du dernier diagnostic.`
+- PASS explanationReasons: expected `non-empty`, actual `Le concept 'Fonctions' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.,Cette remédiation vise à consolider une lacune avant de poursuivre la progression.`
+- PASS decisionExplanation: expected `non-empty`, actual `Une activité de remédiation est proposée sur 'Fonctions' en raison de lacunes identifiées dans le dernier diagnostic.`
 
 Score breakdown / explanations:
 ```json
 {
   "nextAction": "REMEDIATION",
-  "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+  "decisionExplanation": "Une activité de remédiation est proposée sur 'Fonctions' en raison de lacunes identifiées dans le dernier diagnostic.",
   "nextConcept": {
     "conceptName": "Fonctions",
     "type": "INTERNAL",
@@ -32,7 +32,8 @@ Score breakdown / explanations:
     "adaptiveScore": null,
     "scoreBreakdown": null,
     "explanationReasons": [
-      "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+      "Le concept 'Fonctions' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+      "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
     ]
   },
   "learnableConcepts": [
@@ -49,8 +50,8 @@ Score breakdown / explanations:
         "engagementScore": 0.7
       },
       "explanationReasons": [
-        "Tous les prerequis de ce concept sont satisfaits.",
-        "Votre historique recent montre une progression suffisante."
+        "Le concept 'Tableaux' est accessible car les prérequis requis sont satisfaits.",
+        "L'historique récent montre une progression suffisante pour aborder cette étape."
       ]
     },
     {
@@ -66,9 +67,9 @@ Score breakdown / explanations:
         "engagementScore": 0.7
       },
       "explanationReasons": [
-        "Ce concept peut etre aborde sans prerequis declares.",
-        "Ce concept suit l'ordre pedagogique recommande.",
-        "Votre historique recent montre une progression suffisante."
+        "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+        "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+        "L'historique récent montre une progression suffisante pour aborder cette étape."
       ]
     }
   ]
@@ -83,14 +84,14 @@ Assertions:
 - PASS nextConcept.status: expected `LEARNABLE`, actual `LEARNABLE`
 - PASS adaptiveScore present: expected `true`, actual `true`
 - PASS scoreBreakdown present: expected `true`, actual `true`
-- PASS explanationReasons: expected `non-empty`, actual `Tous les prerequis de ce concept sont satisfaits.,Votre historique recent montre une progression suffisante.`
+- PASS explanationReasons: expected `non-empty`, actual `Le concept 'Tableaux' est accessible car les prérequis requis sont satisfaits.,L'historique récent montre une progression suffisante pour aborder cette étape.`
 - PASS learnableConcepts sorted by adaptiveScore desc: expected `true`, actual `true`
 
 Score breakdown / explanations:
 ```json
 {
   "nextAction": "LEARN",
-  "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+  "decisionExplanation": "Le concept 'Tableaux' est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.",
   "nextConcept": {
     "conceptName": "Tableaux",
     "type": "INTERNAL",
@@ -104,8 +105,8 @@ Score breakdown / explanations:
       "engagementScore": 0.7
     },
     "explanationReasons": [
-      "Tous les prerequis de ce concept sont satisfaits.",
-      "Votre historique recent montre une progression suffisante."
+      "Le concept 'Tableaux' est accessible car les prérequis requis sont satisfaits.",
+      "L'historique récent montre une progression suffisante pour aborder cette étape."
     ]
   },
   "learnableConcepts": [
@@ -122,8 +123,8 @@ Score breakdown / explanations:
         "engagementScore": 0.7
       },
       "explanationReasons": [
-        "Tous les prerequis de ce concept sont satisfaits.",
-        "Votre historique recent montre une progression suffisante."
+        "Le concept 'Tableaux' est accessible car les prérequis requis sont satisfaits.",
+        "L'historique récent montre une progression suffisante pour aborder cette étape."
       ]
     },
     {
@@ -139,9 +140,9 @@ Score breakdown / explanations:
         "engagementScore": 0.7
       },
       "explanationReasons": [
-        "Ce concept peut etre aborde sans prerequis declares.",
-        "Ce concept suit l'ordre pedagogique recommande.",
-        "Votre historique recent montre une progression suffisante."
+        "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+        "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+        "L'historique récent montre une progression suffisante pour aborder cette étape."
       ]
     }
   ]
@@ -153,14 +154,14 @@ Score breakdown / explanations:
 Assertions:
 - PASS nextAction: expected `REMEDIATION`, actual `REMEDIATION`
 - PASS nextConcept = Variables: expected `contains Variables`, actual `Variables`
-- PASS explanationReasons: expected `non-empty`, actual `Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic.`
-- PASS decisionExplanation: expected `non-empty`, actual `La priorite est donnee au concept non maitrise lors du dernier diagnostic.`
+- PASS explanationReasons: expected `non-empty`, actual `Le concept 'Variables' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.,Cette remédiation vise à consolider une lacune avant de poursuivre la progression.`
+- PASS decisionExplanation: expected `non-empty`, actual `Une activité de remédiation est proposée sur 'Variables' en raison de lacunes identifiées dans le dernier diagnostic.`
 
 Score breakdown / explanations:
 ```json
 {
   "nextAction": "REMEDIATION",
-  "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+  "decisionExplanation": "Une activité de remédiation est proposée sur 'Variables' en raison de lacunes identifiées dans le dernier diagnostic.",
   "nextConcept": {
     "conceptName": "Variables",
     "type": "INTERNAL",
@@ -168,7 +169,8 @@ Score breakdown / explanations:
     "adaptiveScore": null,
     "scoreBreakdown": null,
     "explanationReasons": [
-      "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+      "Le concept 'Variables' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+      "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
     ]
   },
   "learnableConcepts": [
@@ -176,37 +178,39 @@ Score breakdown / explanations:
       "conceptName": "Variables",
       "type": "INTERNAL",
       "status": "LEARNABLE",
-      "adaptiveScore": 0.68,
+      "adaptiveScore": 0.64,
       "scoreBreakdown": {
         "prerequisiteScore": 0.5,
         "diagnosticWeaknessScore": 1,
         "historicalPerformanceScore": 0.4,
         "pedagogicalOrderScore": 0.86,
-        "engagementScore": 0.7
+        "engagementScore": 0.3
       },
       "explanationReasons": [
-        "Ce concept peut etre aborde sans prerequis declares.",
-        "Le dernier diagnostic indique que ce concept doit etre renforce.",
-        "Ce concept suit l'ordre pedagogique recommande.",
-        "Le moteur garde une progression prudente car les scores precedents sont faibles."
+        "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+        "Le dernier diagnostic signale que 'Variables' nécessite un renforcement.",
+        "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+        "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+        "Le système privilégie un apprentissage progressif adapté au rythme observé."
       ]
     },
     {
       "conceptName": "Entrées/Sorties",
       "type": "INTERNAL",
       "status": "LEARNABLE",
-      "adaptiveScore": 0.49,
+      "adaptiveScore": 0.45,
       "scoreBreakdown": {
         "prerequisiteScore": 0.5,
         "diagnosticWeaknessScore": 0.3,
         "historicalPerformanceScore": 0.4,
         "pedagogicalOrderScore": 0.71,
-        "engagementScore": 0.7
+        "engagementScore": 0.3
       },
       "explanationReasons": [
-        "Ce concept peut etre aborde sans prerequis declares.",
-        "Ce concept suit l'ordre pedagogique recommande.",
-        "Le moteur garde une progression prudente car les scores precedents sont faibles."
+        "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+        "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+        "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+        "Le système privilégie un apprentissage progressif adapté au rythme observé."
       ]
     }
   ]
@@ -225,7 +229,7 @@ Score breakdown / explanations:
 ```json
 {
   "nextAction": "REMEDIATION",
-  "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+  "decisionExplanation": "Une activité de remédiation est proposée sur 'Pointeurs' en raison de lacunes identifiées dans le dernier diagnostic.",
   "nextConcept": {
     "conceptName": "Pointeurs",
     "type": "EXTERNAL",
@@ -233,7 +237,8 @@ Score breakdown / explanations:
     "adaptiveScore": null,
     "scoreBreakdown": null,
     "explanationReasons": [
-      "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+      "Le concept 'Pointeurs' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+      "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
     ]
   },
   "learnableConcepts": []
@@ -262,28 +267,29 @@ Score breakdown / explanations:
       "engagementScore": 1
     },
     "explanationReasons": [
-      "Tous les prerequis de ce concept sont satisfaits.",
-      "Ce concept suit l'ordre pedagogique recommande.",
-      "Votre historique recent montre une progression suffisante.",
-      "Votre activite recente sur les TP permet d'aborder ce concept maintenant."
+      "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+      "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+      "L'historique récent montre une progression suffisante pour aborder cette étape.",
+      "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."
     ]
   },
   "passive": {
     "conceptName": "Conditions",
     "type": "INTERNAL",
     "status": "LEARNABLE",
-    "adaptiveScore": 0.69,
+    "adaptiveScore": 0.65,
     "scoreBreakdown": {
       "prerequisiteScore": 1,
       "diagnosticWeaknessScore": 0.3,
       "historicalPerformanceScore": 0.7,
       "pedagogicalOrderScore": 0.57,
-      "engagementScore": 0.7
+      "engagementScore": 0.3
     },
     "explanationReasons": [
-      "Tous les prerequis de ce concept sont satisfaits.",
-      "Ce concept suit l'ordre pedagogique recommande.",
-      "Votre historique recent montre une progression suffisante."
+      "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+      "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+      "L'historique récent montre une progression suffisante pour aborder cette étape.",
+      "Le système privilégie un apprentissage progressif adapté au rythme observé."
     ]
   }
 }

@@ -28,7 +28,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "L'email est deja pris."));
+            return ResponseEntity.badRequest().body(Map.of("message", "L'email est déjà pris."));
         }
 
         AppUser user = new AppUser();
@@ -94,7 +94,7 @@ class SignupRequest {
     private String email;
 
     @NotBlank
-    @Size(min = 6, message = "Le mot de passe doit faire au moins 6 caracteres")
+    @Size(min = 6, message = "Le mot de passe doit faire au moins 6 caractères")
     private String password;
 
     @NotBlank

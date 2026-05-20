@@ -82,6 +82,7 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     private boolean isPublic(String path, HttpMethod method) {
         if (HttpMethod.OPTIONS.equals(method)) return true;
         if (path.equals("/actuator/health") || path.equals("/actuator/info")) return true;
+        if (HttpMethod.GET.equals(method) && path.startsWith("/api/content/uploads/")) return true;
         return HttpMethod.POST.equals(method)
                 && List.of("/api/auth/login", "/api/auth/signup", "/api/auth/register").contains(path);
     }
@@ -102,6 +103,14 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         }
 
         if (path.startsWith("/api/tracking/dashboard/")) {
+            return isTeacher(role) || isAdmin(role);
+        }
+
+        if (path.startsWith("/api/tracking/adaptive-refresh/")) {
+            return isStudent(role) || isTeacher(role) || isAdmin(role);
+        }
+
+        if (path.startsWith("/api/tracking/recommendation-traces/")) {
             return isTeacher(role) || isAdmin(role);
         }
 

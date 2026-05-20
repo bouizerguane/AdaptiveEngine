@@ -21,3 +21,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}
+
+services:
+  iam:
+    url: ${IAM_SERVICE_URL:http://iam-service:8081}

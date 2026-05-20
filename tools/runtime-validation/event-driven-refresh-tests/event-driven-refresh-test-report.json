@@ -1,0 +1,724 @@
+{
+  "metadata": {
+    "generatedAt": "2026-05-20T08:37:19.776Z",
+    "apiBaseUrl": "http://localhost:8080/api",
+    "learnerEmail": "student.refresh.runtime@test.local"
+  },
+  "cases": [
+    {
+      "name": "Rafraichissement apres quiz",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "refreshReason",
+          "expected": "QUIZ_COMPLETED",
+          "actual": "QUIZ_COMPLETED",
+          "status": "PASS"
+        },
+        {
+          "label": "lastEventType",
+          "expected": "quiz.completed",
+          "actual": "quiz.completed",
+          "status": "PASS"
+        },
+        {
+          "label": "refreshedAfterEvent",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        },
+        {
+          "label": "second call consumed refresh",
+          "expected": false,
+          "actual": false,
+          "status": "PASS"
+        },
+        {
+          "label": "tracking pending after consume",
+          "expected": false,
+          "actual": false,
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "refreshedAfterEvent": true,
+        "refreshReason": "QUIZ_COMPLETED",
+        "consumedOnSecondRead": true,
+        "trackingPendingAfterConsume": false
+      },
+      "actual": {
+        "before": {
+          "refreshedAfterEvent": false,
+          "lastEventType": null,
+          "lastEventAt": null,
+          "refreshReason": null,
+          "message": null
+        },
+        "afterEvent": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "quiz.completed",
+          "lastEventAt": "2026-05-20T08:37:21.304409",
+          "refreshReason": "QUIZ_COMPLETED",
+          "message": "Le parcours a été actualisé après votre dernière évaluation."
+        },
+        "secondRead": {
+          "refreshedAfterEvent": false,
+          "lastEventType": null,
+          "lastEventAt": null,
+          "refreshReason": null,
+          "message": null
+        },
+        "trackingPendingAfterConsume": {
+          "pending": false,
+          "id": null,
+          "learnerEmail": "student.refresh.runtime@test.local",
+          "courseId": "ae-runtime-course-algo",
+          "lastEventType": null,
+          "refreshReason": null,
+          "eventAt": null,
+          "consumedAt": null
+        }
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.refresh.runtime@test.local",
+        "courseId": "ae-runtime-course-algo",
+        "courseTitle": "Introduction à l'Algorithmique",
+        "diagnosticPassed": false,
+        "masteredConcepts": [],
+        "learnableConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.63,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.86,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.61,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."
+            ]
+          }
+        ],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-variables"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-types-de-donnees"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-conditions"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-boucles"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "READY",
+            "adaptiveScore": 0.61,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "READY",
+            "adaptiveScore": 0.63,
+            "explanationReasons": [
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Conditions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          }
+        ],
+        "nextAction": "PASS_DIAGNOSTIC",
+        "nextConcept": null,
+        "learningPhase": "DIAGNOSTIC",
+        "nextRecommendation": {
+          "action": "PASS_DIAGNOSTIC",
+          "learningPhase": "DIAGNOSTIC",
+          "reason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé."
+        },
+        "recommendationReason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé.",
+        "latestDiagnostic": {},
+        "traceCount": 7,
+        "submittedLabCount": 6,
+        "decisionExplanation": "Le système doit d'abord disposer d'un diagnostic pour situer le niveau initial de l'apprenant et adapter la suite du parcours.",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
+        "learnerProfile": {
+          "learnerEmail": "student.refresh.runtime@test.local",
+          "masteryScore": 84,
+          "knowledgeGaps": [],
+          "masteredConceptsCount": 0,
+          "weakConceptsCount": 0,
+          "tracesCount": 7,
+          "completedLabsCount": 6,
+          "averageAssessmentScore": 84,
+          "totalLearningTime": 1260,
+          "profileType": "PROGRESSING",
+          "profileExplanation": "Le profil indique une progression active."
+        },
+        "pedagogicalStrategy": {
+          "strategyType": "STANDARD",
+          "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
+          "recommendedSequence": [
+            "RESOURCE",
+            "LAB",
+            "FORMATIVE"
+          ],
+          "constraints": [
+            "Respecter la decision principale du moteur: PASS_DIAGNOSTIC."
+          ],
+          "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "quiz.completed",
+          "lastEventAt": "2026-05-20T08:37:21.304409",
+          "refreshReason": "QUIZ_COMPLETED",
+          "message": "Le parcours a été actualisé après votre dernière évaluation."
+        }
+      }
+    },
+    {
+      "name": "Rafraichissement apres TP",
+      "status": "PASS",
+      "assertions": [
+        {
+          "label": "refreshReason",
+          "expected": "LAB_SUBMITTED",
+          "actual": "LAB_SUBMITTED",
+          "status": "PASS"
+        },
+        {
+          "label": "lastEventType",
+          "expected": "lab.submitted",
+          "actual": "lab.submitted",
+          "status": "PASS"
+        },
+        {
+          "label": "refreshedAfterEvent",
+          "expected": true,
+          "actual": true,
+          "status": "PASS"
+        }
+      ],
+      "errors": [],
+      "expected": {
+        "refreshedAfterEvent": true,
+        "refreshReason": "LAB_SUBMITTED"
+      },
+      "actual": {
+        "afterEvent": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "lab.submitted",
+          "lastEventAt": "2026-05-20T08:37:22.426158",
+          "refreshReason": "LAB_SUBMITTED",
+          "message": "Le parcours a été actualisé après votre dernier TP."
+        },
+        "trackingPendingAfterConsume": {
+          "pending": false,
+          "id": null,
+          "learnerEmail": "student.refresh.runtime@test.local",
+          "courseId": "ae-runtime-course-algo",
+          "lastEventType": null,
+          "refreshReason": null,
+          "eventAt": null,
+          "consumedAt": null
+        }
+      },
+      "adaptivePathResponse": {
+        "learnerEmail": "student.refresh.runtime@test.local",
+        "courseId": "ae-runtime-course-algo",
+        "courseTitle": "Introduction à l'Algorithmique",
+        "diagnosticPassed": false,
+        "masteredConcepts": [],
+        "learnableConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.63,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.86,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."
+            ]
+          },
+          {
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "LEARNABLE",
+            "missingPrerequisiteIds": [],
+            "adaptiveScore": 0.61,
+            "scoreBreakdown": {
+              "prerequisiteScore": 0.5,
+              "diagnosticWeaknessScore": 0.3,
+              "historicalPerformanceScore": 1,
+              "pedagogicalOrderScore": 0.71,
+              "engagementScore": 1
+            },
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage."
+            ]
+          }
+        ],
+        "blockedConcepts": [
+          {
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Bases de l'algorithmique",
+            "chapitreTitle": "Representer et manipuler les donnees",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-variables"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-types-de-donnees"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-conditions"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-boucles"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          },
+          {
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "courseId": "ae-runtime-course-algo",
+            "type": "INTERNAL",
+            "moduleTitle": "Structures de contrôle",
+            "chapitreTitle": "Decider, repeter et organiser",
+            "status": "BLOCKED",
+            "missingPrerequisiteIds": [
+              "ae-runtime-concept-tableaux"
+            ],
+            "adaptiveScore": null,
+            "scoreBreakdown": null,
+            "explanationReasons": null
+          }
+        ],
+        "conceptsToReview": [],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "READY",
+            "adaptiveScore": 0.61,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "READY",
+            "adaptiveScore": 0.63,
+            "explanationReasons": [
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "L'activité récente sur les TP indique une dynamique favorable pour poursuivre l'apprentissage.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Conditions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          }
+        ],
+        "nextAction": "PASS_DIAGNOSTIC",
+        "nextConcept": null,
+        "learningPhase": "DIAGNOSTIC",
+        "nextRecommendation": {
+          "action": "PASS_DIAGNOSTIC",
+          "learningPhase": "DIAGNOSTIC",
+          "reason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé."
+        },
+        "recommendationReason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé.",
+        "latestDiagnostic": {},
+        "traceCount": 7,
+        "submittedLabCount": 7,
+        "decisionExplanation": "Le système doit d'abord disposer d'un diagnostic pour situer le niveau initial de l'apprenant et adapter la suite du parcours.",
+        "scoringVersion": "RULE_BASED_EXPLAINABLE",
+        "learnerProfile": {
+          "learnerEmail": "student.refresh.runtime@test.local",
+          "masteryScore": 84,
+          "knowledgeGaps": [],
+          "masteredConceptsCount": 0,
+          "weakConceptsCount": 0,
+          "tracesCount": 7,
+          "completedLabsCount": 7,
+          "averageAssessmentScore": 84,
+          "totalLearningTime": 1260,
+          "profileType": "PROGRESSING",
+          "profileExplanation": "Le profil indique une progression active."
+        },
+        "pedagogicalStrategy": {
+          "strategyType": "STANDARD",
+          "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
+          "recommendedSequence": [
+            "RESOURCE",
+            "LAB",
+            "FORMATIVE"
+          ],
+          "constraints": [
+            "Respecter la decision principale du moteur: PASS_DIAGNOSTIC."
+          ],
+          "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "lab.submitted",
+          "lastEventAt": "2026-05-20T08:37:22.426158",
+          "refreshReason": "LAB_SUBMITTED",
+          "message": "Le parcours a été actualisé après votre dernier TP."
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "errors": [],
+    "durationMs": 3525
+  }
+}

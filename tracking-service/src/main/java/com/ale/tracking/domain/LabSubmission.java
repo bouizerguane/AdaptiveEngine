@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
  * Persistance des soumissions de Travaux Pratiques (Labs).
  * Table PostgreSQL : lab_submission
  *
- * Le champ {@code status} permet au moteur LSTM de détecter les abandons
- * (STARTED sans COMPLETED) — signal précieux pour identifier les TP trop difficiles.
+ * Le champ {@code status} alimente l'adaptation rule-based et prépare des données exploitables
+ * par de futurs modèles ML pour détecter les abandons (STARTED sans COMPLETED).
  *
  * Le champ {@code timeSpentPerStep} est un JSON sérialisé par le frontend :
  *   ex: {"0": 120, "1": 340, "2": 60}  (secondes par étape)
@@ -69,7 +69,7 @@ public class LabSubmission {
      *   COMPLETED — l'URL GitHub a été soumise et validée.
      *
      * Les enregistrements STARTED sans COMPLETED après X heures
-     * sont des abandons — données clés pour le modèle LSTM.
+     * sont des abandons — données utiles au profil apprenant et à une future analyse ML.
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -86,7 +86,7 @@ public class LabSubmission {
 
     /**
      * Flag indiquant si la soumission est un test enseignant (dogfooding).
-     * Ces entrées sont exclues des statistiques réelles et du moteur LSTM.
+     * Ces entrées sont exclues des statistiques réelles et du moteur adaptatif.
      */
     @Builder.Default
     private boolean isTeacherTest = false;

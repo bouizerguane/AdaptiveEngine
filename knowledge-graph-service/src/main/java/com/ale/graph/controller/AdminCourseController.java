@@ -4,6 +4,7 @@ import com.ale.graph.dto.BulkCourseDeleteRequest;
 import com.ale.graph.domain.Course;
 import com.ale.graph.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +31,9 @@ public class AdminCourseController {
 
     private final CourseRepository courseRepository;
     private final RestTemplate restTemplate;
+
+    @Value("${services.content.url}")
+    private String contentServiceUrl;
 
     @GetMapping
     public ResponseEntity<?> getAllCourses(@RequestHeader(value = "X-User-Role", required = false) String userRole) {
@@ -59,7 +63,7 @@ public class AdminCourseController {
             contentSummary = cleanupContent(courseIds, conceptIds);
         } catch (RestClientException ex) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                    "error", "Nettoyage MongoDB impossible. Les cours Neo4j n'ont pas ete supprimes.",
+                    "error", "Nettoyage MongoDB impossible. Les cours Neo4j n'ont pas été supprimés.",
                     "details", ex.getMessage()
             ));
         }
@@ -70,7 +74,7 @@ public class AdminCourseController {
                 "deletedContents", numberValue(contentSummary.get("deletedContents")),
                 "deletedEvaluations", numberValue(contentSummary.get("deletedEvaluations")),
                 "deletedLabs", numberValue(contentSummary.get("deletedLabs")),
-                "message", "Cours selectionnes supprimes."
+                "message", "Cours sélectionnés supprimés."
         ));
     }
 
@@ -83,7 +87,7 @@ public class AdminCourseController {
         ), headers);
 
         ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                "http://content-service/api/content/admin/courses",
+                contentServiceUrl + "/api/content/admin/courses",
                 HttpMethod.DELETE,
                 entity,
                 new ParameterizedTypeReference<>() {}

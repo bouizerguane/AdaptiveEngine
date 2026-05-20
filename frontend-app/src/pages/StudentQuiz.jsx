@@ -30,14 +30,30 @@ const collectConceptNames = (course) => {
 const evaluationLabels = {
     DIAGNOSTIC_ENTREE: 'Diagnostic initial',
     DIAGNOSTIC_POSITIONNEMENT: 'Diagnostic de positionnement',
-    FORMATIVE: 'Evaluation formative',
+    FORMATIVE: 'Évaluation formative',
     VALIDATION: 'Validation finale',
+    VALIDATION_COURS: 'Validation finale',
 };
 
 const difficultyLabels = {
     EASY: 'Facile',
     MEDIUM: 'Moyen',
-    HARD: 'Avance',
+    HARD: 'Avancé',
+};
+
+const adaptiveRefreshKey = (courseId) => `adaptive-refresh:${courseId}`;
+
+const markAdaptiveRefresh = (courseId, source) => {
+    if (!courseId || typeof sessionStorage === 'undefined') return;
+    sessionStorage.setItem(adaptiveRefreshKey(courseId), JSON.stringify({ source, at: Date.now() }));
+};
+
+const courseReturnUrl = (courseId, params = {}) => {
+    const search = new URLSearchParams({ adaptiveRefresh: String(Date.now()) });
+    Object.entries(params).forEach(([key, value]) => {
+        if (value) search.set(key, value);
+    });
+    return `/learner/courses/${courseId}?${search.toString()}`;
 };
 
 export default function StudentQuiz() {
@@ -69,9 +85,9 @@ export default function StudentQuiz() {
     const [timeLeft, setTimeLeft] = useState(null);   // seconds, null = no limit
     const [dialogConfig, setDialogConfig] = useState({ isOpen: false, type: 'info', title: '', message: '', onConfirm: null });
 
-    /* ─── Load Evaluation ─── */
+    /* ─── Load Évaluation ─── */
     useEffect(() => {
-        evaluationApi.getEvaluation(targetId)
+        evaluationApi.getEvaluation(targetId, searchParams.get('typeEvaluation'))
             .then(r => {
                 const ev = r.data;
                 setEvaluation(ev);
@@ -135,7 +151,7 @@ export default function StudentQuiz() {
                         });
                         const courseConceptIds = Object.keys(collectConceptNames(courseTree));
                         const masteredCount = (learningStatuses || []).filter(item => item.status === 'MASTERED').length;
-                        const courseValidation = ev.typeEvaluation === 'VALIDATION' && (ev.targetType || 'COURSE') === 'COURSE';
+                        const courseValidation = (ev.typeEvaluation === 'VALIDATION' || ev.typeEvaluation === 'VALIDATION_COURS') && (ev.targetType || 'COURSE') === 'COURSE';
                         setValidationProgress({ mastered: masteredCount, total: courseConceptIds.length });
                         setValidationLocked(Boolean(
                             courseValidation
@@ -161,7 +177,7 @@ export default function StudentQuiz() {
 
     /* ─── Anti-Triche: Blur Detection ─── */
     useEffect(() => {
-        if (!evaluation || submitted || evaluation.typeEvaluation !== 'VALIDATION') return;
+        if (!evaluation || submitted || (evaluation.typeEvaluation !== 'VALIDATION' && evaluation.typeEvaluation !== 'VALIDATION_COURS')) return;
         const handleBlur = () => { 
             tabSwitchesRef.current += 1; 
             setDialogConfig({ isOpen: true, type: 'warning', title: 'Action non autorisée', message: 'Attention, vous avez quitté la page de l\'évaluation ! Cette action a été enregistrée et peut affecter votre résultat.' });
@@ -219,7 +235,7 @@ export default function StudentQuiz() {
             return { ...result, score, mastered: score >= evaluation.seuilReussite };
         });
         const externalBuckets = questions.reduce((acc, question, index) => {
-            const label = question.externalPrerequisiteLabel?.trim() || (question.generalQuestion ? 'Question generale sans concept' : '');
+            const label = question.externalPrerequisiteLabel?.trim() || (question.generalQuestion ? 'Question générale sans concept' : '');
             if (!label || question.conceptId) return acc;
             if (!acc[label]) acc[label] = { label, totalQuestions: 0, correctAnswers: 0 };
             acc[label].totalQuestions += 1;
@@ -231,7 +247,7 @@ export default function StudentQuiz() {
             return { ...result, score, mastered: score >= evaluation.seuilReussite };
         });
 
-        // Détermine la source de maîtrise pour l'Adaptive Engine (LSTM)
+        // Détermine la source de maîtrise pour le moteur adaptatif rule-based et le profil apprenant.
         const masterySource = isDiagnostic
             ? evaluation.typeEvaluation
             : (evaluation.typeEvaluation === 'FORMATIVE' || evaluation.typeEvaluation === 'VALIDATION') && passed
@@ -293,6 +309,10 @@ export default function StudentQuiz() {
             }
         }
 
+        if (courseId) {
+            markAdaptiveRefresh(courseId, isDiagnostic ? 'diagnostic' : 'quiz');
+        }
+
         const firstFailedConceptId = conceptResults.find(item => !item.mastered && item.conceptId)?.conceptId || '';
         const firstFailedHasContent = firstFailedConceptId
             ? await contentApi.getConceptContent(firstFailedConceptId).then(response => !!response.data?.htmlContent).catch(() => false)
@@ -317,6 +337,7 @@ export default function StudentQuiz() {
             firstFailedContext,
             recommendationConceptId,
             courseId,
+            targetId: evaluation.targetId,
         };
         setResult(nextResult);
         setSubmitted(true);
@@ -343,17 +364,17 @@ export default function StudentQuiz() {
     /* ─── Loaders ─── */
     if (loading) return (
         <div className="flex h-64 items-center justify-center gap-2 text-slate-500 dark:text-slate-300">
-            <Loader2 className="animate-spin" size={20}/> Chargement de l'evaluation...
+            <Loader2 className="animate-spin" size={20}/> Chargement de l'évaluation...
         </div>
     );
     if (!evaluation) return (
         <div className="flex h-64 items-center justify-center text-slate-500 dark:text-slate-300">
-            <AlertTriangle className="mr-2"/> Aucune evaluation disponible pour ce concept.
+            <AlertTriangle className="mr-2"/> Aucune évaluation disponible pour ce concept.
         </div>
     );
 
     const q = questions[currentIdx];
-    const isValidation = evaluation.typeEvaluation === 'VALIDATION';
+    const isValidation = evaluation.typeEvaluation === 'VALIDATION' || evaluation.typeEvaluation === 'VALIDATION_COURS';
     const isFormative = evaluation.typeEvaluation === 'FORMATIVE';
     const isInitialDiagnostic = ['DIAGNOSTIC_ENTREE', 'DIAGNOSTIC_POSITIONNEMENT'].includes(evaluation.typeEvaluation);
     const currentAnswer = answers[currentIdx];
@@ -365,9 +386,9 @@ export default function StudentQuiz() {
             <div className="max-w-2xl mx-auto py-12 px-4">
                 <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-8 text-center text-indigo-800 shadow-sm dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-100">
                     <ClipboardList className="mx-auto mb-3 text-indigo-600" size={42} />
-                    <h1 className="text-xl font-bold">Diagnostic deja passe</h1>
+                    <h1 className="text-xl font-bold">Diagnostic déjà passé</h1>
                     <p className="mx-auto mt-2 max-w-lg text-sm">
-                        Diagnostic deja passe. Le repassage sera disponible apres maitrise des concepts recommandes.
+                        Diagnostic déjà passé. Le repassage sera disponible après maîtrise des concepts recommandés.
                     </p>
                     <button onClick={() => navigate(-1)} className="mt-5 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700">
                         Retour au cours
@@ -383,10 +404,10 @@ export default function StudentQuiz() {
             <div className="max-w-2xl mx-auto py-12 px-4">
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-8 text-center text-amber-900 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                     <Lock className="mx-auto mb-3 text-amber-600" size={42} />
-                    <h1 className="text-xl font-bold">Validation finale verrouillee</h1>
+                    <h1 className="text-xl font-bold">Validation finale verrouillée</h1>
                     <p className="mx-auto mt-2 max-w-lg text-sm">
-                        Vous devez maitriser les concepts requis avant de passer la validation finale.
-                        Progression actuelle : {validationProgress.mastered}/{validationProgress.total} concepts maitrises.
+                        Vous devez maîtrisér les concepts requis avant de passer la validation finale.
+                        Progression actuelle : {validationProgress.mastered}/{validationProgress.total} concepts maîtrisés.
                     </p>
                     <button
                         onClick={() => context.courseId ? navigate(`/learner/courses/${context.courseId}`) : navigate(-1)}
@@ -407,7 +428,7 @@ export default function StudentQuiz() {
                     <p className="text-5xl font-black mb-1" style={{ color: result.passed ? '#059669' : '#dc2626' }}>{result.scoreObtenu}%</p>
                     <p className="font-semibold text-slate-700 mb-1">{result.correct} / {result.total} correctes</p>
                     {isValidation && tabSwitchesRef.current > 0 && (
-                        <p className="text-xs text-amber-600 mt-2 font-medium">{tabSwitchesRef.current} changement(s) d'onglet detecte(s)</p>
+                        <p className="text-xs text-amber-600 mt-2 font-medium">{tabSwitchesRef.current} changement(s) d'onglet détecté(s)</p>
                     )}
                     <p className="text-slate-500 text-sm mt-3 max-w-sm mx-auto">{result.feedbackGenere}</p>
                     {/* Banniere module validé automatiquement */}
@@ -418,7 +439,7 @@ export default function StudentQuiz() {
                     )}
                     {result.adaptiveResult?.nextRecommendation?.conceptId && (
                         <div className="mt-4 mx-auto max-w-sm px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-700 text-sm text-left">
-                            <p className="font-bold">Votre parcours personnalise</p>
+                            <p className="font-bold">Votre parcours personnalisé</p>
                             <p className="mt-1">{result.adaptiveResult.nextRecommendation.label}</p>
                             <p className="mt-1 text-xs text-indigo-500">{result.adaptiveResult.nextRecommendation.reason}</p>
                         </div>
@@ -427,11 +448,11 @@ export default function StudentQuiz() {
                         <div className="mt-5 grid gap-3 text-left">
                             {result.conceptResults?.length > 0 && (
                                 <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-                                    <p className="font-bold text-slate-800">Resultats par concept</p>
+                                    <p className="font-bold text-slate-800">Résultats par concept</p>
                                     <div className="mt-2 space-y-1">
                                         {result.conceptResults.map(item => (
                                             <p key={item.conceptId} className={item.mastered ? 'text-emerald-700' : 'text-red-700'}>
-                                                {displayConceptName(item.conceptId)} : {item.score}% - {item.mastered ? 'maitrise' : 'non maitrise'}
+                                                {displayConceptName(item.conceptId)} : {item.score}% - {item.mastered ? 'maîtrisé' : 'non maîtrisé'}
                                             </p>
                                         ))}
                                     </div>
@@ -439,11 +460,11 @@ export default function StudentQuiz() {
                             )}
                             {result.externalPrerequisiteResults?.length > 0 && (
                                 <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-                                    <p className="font-bold text-slate-800">Prerequis externes</p>
+                                    <p className="font-bold text-slate-800">Prérequis externes</p>
                                     <div className="mt-2 space-y-1">
                                         {result.externalPrerequisiteResults.map(item => (
                                             <p key={item.label} className={item.mastered ? 'text-emerald-700' : 'text-red-700'}>
-                                                {item.label} : {item.score}% - {item.mastered ? 'maitrise' : 'non maitrise'}
+                                                {item.label} : {item.score}% - {item.mastered ? 'maîtrisé' : 'non maîtrisé'}
                                             </p>
                                         ))}
                                     </div>
@@ -452,7 +473,7 @@ export default function StudentQuiz() {
                         </div>
                     )}
                     {!result.passed && !isInitialDiagnostic && (
-                        <button onClick={() => navigate(-1)}
+                        <button onClick={() => result.courseId ? navigate(courseReturnUrl(result.courseId, { focusConcept: result.targetId })) : navigate(-1)}
                             className="inline-block mt-4 px-5 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition text-sm">
                             Revoir le contenu du concept
                         </button>
@@ -461,28 +482,28 @@ export default function StudentQuiz() {
                         {!result.passed && !isValidation && !isInitialDiagnostic && (
                             <button onClick={() => { setSubmitted(false); setAnswers({}); setResult(null); setCurrentIdx(0); startTimeRef.current = Date.now(); if (evaluation.tempsImparti > 0) setTimeLeft(evaluation.tempsImparti * 60); }}
                                 className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition text-sm">
-                                Reessayer
+                                Réessayer
                             </button>
                         )}
                         {isInitialDiagnostic && result.firstFailedConceptId && result.firstFailedHasContent && (
                             <button
                                 onClick={() => navigate(result.firstFailedContext?.isInCurrentCourse === false
                                     ? `/learner/external-concepts/${encodeURIComponent(result.firstFailedConceptId)}?sourceCourseId=${encodeURIComponent(result.courseId || '')}`
-                                    : `/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.firstFailedConceptId)}`)}
+                                    : courseReturnUrl(result.courseId, { focusConcept: result.firstFailedConceptId }))}
                                 className="px-5 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition text-sm"
                             >
-                                Reviser ce concept
+                                Réviser ce concept
                             </button>
                         )}
                         {isInitialDiagnostic && result.recommendationConceptId && (
                             <button
-                                onClick={() => navigate(`/learner/courses/${result.courseId}?focusConcept=${encodeURIComponent(result.recommendationConceptId)}`)}
+                                onClick={() => navigate(courseReturnUrl(result.courseId, { focusConcept: result.recommendationConceptId }))}
                                 className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition text-sm"
                             >
                                 Voir la recommandation
                             </button>
                         )}
-                        <button onClick={() => result.courseId ? navigate(`/learner/courses/${result.courseId}`) : navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-800 transition text-sm">
+                        <button onClick={() => result.courseId ? navigate(courseReturnUrl(result.courseId)) : navigate(-1)} className="px-5 py-2 bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-800 transition text-sm">
                             Retour au cours
                         </button>
                     </div>
@@ -537,9 +558,9 @@ export default function StudentQuiz() {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <div className="text-xs text-indigo-500 font-bold uppercase tracking-widest flex items-center gap-1 mb-1">
-                        <ClipboardList size={12}/> {evaluationLabels[evaluation.typeEvaluation] || 'Evaluation'}
+                        <ClipboardList size={12}/> {evaluationLabels[evaluation.typeEvaluation] || 'Évaluation'}
                     </div>
-                    <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Evaluation en cours</h1>
+                    <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Évaluation en cours</h1>
                 </div>
                 {/* Timer */}
                 {timeLeft !== null && (
@@ -614,7 +635,7 @@ export default function StudentQuiz() {
             <div className="flex items-center justify-between gap-3">
                 <button onClick={goPrev} disabled={currentIdx === 0 || !canGoBack}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                    <ChevronLeft size={16}/> Precedent
+                    <ChevronLeft size={16}/> Précédent
                 </button>
 
                 {currentIdx < questions.length - 1 ? (
@@ -626,7 +647,7 @@ export default function StudentQuiz() {
                     <button onClick={() => handleSubmit(false)} disabled={submitting}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition ${submitting ? 'bg-indigo-400 text-white cursor-wait' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
                         {submitting ? <Loader2 className="animate-spin" size={16}/> : <Send size={16}/>}
-                        {submitting ? 'Envoi...' : 'Soumettre mes reponses'}
+                        {submitting ? 'Envoi...' : 'Soumettre mes réponses'}
                     </button>
                 )}
             </div>

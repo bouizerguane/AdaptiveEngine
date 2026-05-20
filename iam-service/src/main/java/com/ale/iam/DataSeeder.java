@@ -48,7 +48,7 @@ public class DataSeeder implements CommandLineRunner {
             admin.setEstApprouve(true); // Super Admin auto-approuvé
             
             userRepository.save(admin);
-            log.info("Compte admin de developpement cree : admin@system.com / mot de passe configure via ADMIN_DEFAULT_PASSWORD");
+            log.info("Compte admin de développement créé : admin@system.com / mot de passe configuré via ADMIN_DEFAULT_PASSWORD");
         });
     }
 }

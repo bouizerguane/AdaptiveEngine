@@ -7,7 +7,7 @@ import { learnerApi } from '../api/learnerApi';
 import { useAuth } from '../context/AuthContext';
 import { flattenConcepts, normalizeCourseTree } from '../utils/courseOrder';
 
-const teacherLabel = (course) => course?.teacherName || course?.authorName || course?.teacherEmail || course?.authorEmail || 'Enseignant non renseigne';
+const teacherLabel = (course) => course?.teacherName || course?.authorName || course?.teacherEmail || course?.authorEmail || 'Enseignant non renseigné';
 const conceptLabel = (concept) => concept?.labelPedagogique || concept?.title || concept?.name || 'Concept sans titre';
 const shortText = (value, length = 90) => {
     const text = value || '';
@@ -32,15 +32,15 @@ const tutoringEventFromAction = (nextAction) => {
 };
 
 const profileTypeLabels = {
-    DATA_INSUFFICIENT: 'Donnees insuffisantes',
-    NEEDS_REMEDIATION: 'Remediation necessaire',
+    DATA_INSUFFICIENT: 'Données insuffisantes',
+    NEEDS_REMEDIATION: 'Remédiation nécessaire',
     PROGRESSING: 'Progression active',
-    HIGH_PERFORMING: 'Tres bonne maitrise',
+    HIGH_PERFORMING: 'Très bonne maîtrise',
 };
 
 const strategyTypeLabels = {
-    RECOVERY: 'Parcours de remediation',
-    SUPPORTIVE: 'Progression guidee',
+    RECOVERY: 'Parcours de remédiation',
+    SUPPORTIVE: 'Progression guidée',
     STANDARD: 'Progression standard',
     ADVANCED: 'Approfondissement',
 };
@@ -49,8 +49,19 @@ const sequenceLabels = {
     RESOURCE: 'Ressource',
     REVIEW: 'Revision',
     LAB: 'TP',
-    FORMATIVE: 'Evaluation formative',
+    FORMATIVE: 'Évaluation formative',
     CHALLENGE: 'Defi',
+};
+
+const pathFreshnessMessage = (pathFreshness) => {
+    if (!pathFreshness?.refreshedAfterEvent) return null;
+    if (pathFreshness.refreshReason === 'QUIZ_COMPLETED' || pathFreshness.lastEventType === 'quiz.completed') {
+        return "Votre parcours a été mis à jour après l'évaluation.";
+    }
+    if (pathFreshness.refreshReason === 'LAB_SUBMITTED' || pathFreshness.lastEventType === 'lab.submitted') {
+        return 'Votre parcours a été mis à jour après le TP.';
+    }
+    return pathFreshness.message || 'Votre parcours a été mis à jour après votre dernière activité.';
 };
 
 const formatHistoryDate = (value) => {
@@ -61,10 +72,10 @@ const formatHistoryDate = (value) => {
 };
 
 const traceLabel = (trace) => {
-    if (trace.typeEvaluation === 'VALIDATION') return `Validation finale terminee : ${trace.scoreObtenu ?? 0}%`;
-    if (trace.typeEvaluation === 'FORMATIVE') return `Evaluation formative terminee : ${trace.scoreObtenu ?? 0}%`;
-    if (trace.typeEvaluation?.startsWith('DIAGNOSTIC')) return 'Diagnostic initial termine';
-    return `Evaluation terminee : ${trace.scoreObtenu ?? 0}%`;
+    if (trace.typeEvaluation === 'VALIDATION' || trace.typeEvaluation === 'VALIDATION_COURS') return `Validation finale terminée : ${trace.scoreObtenu ?? 0}%`;
+    if (trace.typeEvaluation === 'FORMATIVE') return `Évaluation formative terminée : ${trace.scoreObtenu ?? 0}%`;
+    if (trace.typeEvaluation?.startsWith('DIAGNOSTIC')) return 'Diagnostic initial terminé';
+    return `Évaluation terminée : ${trace.scoreObtenu ?? 0}%`;
 };
 
 export default function LearnerDashboard() {
@@ -189,9 +200,9 @@ export default function LearnerDashboard() {
                 ));
                 const activities = [
                     ...(tracesRes.data || []).map(trace => ({
-                        type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'Diagnostic' : trace.scoreObtenu >= 70 ? 'Quiz reussi' : 'Quiz',
+                        type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'Diagnostic' : trace.scoreObtenu >= 70 ? 'Quiz réussi' : 'Quiz',
                         date: trace.horodatage,
-                        label: trace.typeEvaluation || trace.evaluationId || 'Evaluation',
+                        label: trace.typeEvaluation || trace.evaluationId || 'Évaluation',
                     })),
                     ...(labsRes.data || []).filter(lab => lab.status === 'COMPLETED').map(lab => ({
                         type: 'TP soumis',
@@ -205,27 +216,27 @@ export default function LearnerDashboard() {
                 setRecentActivity(activities);
                 const history = [
                     ...(tracesRes.data || []).map(trace => ({
-                        type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'diagnostic' : trace.typeEvaluation === 'VALIDATION' ? 'validation' : 'quiz',
+                        type: trace.typeEvaluation?.startsWith('DIAGNOSTIC') ? 'diagnostic' : (trace.typeEvaluation === 'VALIDATION' || trace.typeEvaluation === 'VALIDATION_COURS') ? 'validation' : 'quiz',
                         date: trace.horodatage,
                         title: traceLabel(trace),
-                        detail: trace.targetId && conceptNames[trace.targetId] ? conceptNames[trace.targetId] : 'Activite enregistree',
+                        detail: trace.targetId && conceptNames[trace.targetId] ? conceptNames[trace.targetId] : 'Activité enregistrée',
                     })),
                     ...(labsRes.data || []).filter(lab => lab.status === 'COMPLETED').map(lab => ({
                         type: 'lab',
                         date: lab.completedAt,
                         title: 'TP soumis',
-                        detail: lab.githubRepoUrl || 'Soumission enregistree',
+                        detail: lab.githubRepoUrl || 'Soumission enregistrée',
                     })),
                     ...progressItems.flatMap(item => (item.reviewConcepts || []).map(concept => ({
                         type: 'remediation',
                         date: new Date().toISOString(),
-                        title: 'Remediation recommandee',
+                        title: 'Remédiation recommandée',
                         detail: `${concept.name} - ${item.course.title}`,
                     }))),
                     ...progressItems.filter(item => item.adaptivePath?.nextConcept?.conceptName).map(item => ({
                         type: 'recommendation',
                         date: new Date().toISOString(),
-                        title: 'Nouveau concept recommande',
+                        title: 'Nouveau concept recommandé',
                         detail: `${item.adaptivePath.nextConcept.conceptName} - ${item.course.title}`,
                     })),
                 ]
@@ -235,17 +246,21 @@ export default function LearnerDashboard() {
                 setLearningHistory(history);
                 const notificationItems = [];
                 if (progressItems.some(item => item.adaptivePath?.nextAction === 'REMEDIATION' || item.reviewConcepts.length > 0)) {
-                    notificationItems.push({ tone: 'amber', message: 'Une remediation est recommandee.' });
+                    notificationItems.push({ tone: 'amber', message: 'Une remédiation est recommandée.' });
                 }
                 if (progressItems.some(item => item.adaptivePath?.nextAction === 'LEARN')) {
-                    notificationItems.push({ tone: 'indigo', message: 'Un nouveau concept est recommande.' });
+                    notificationItems.push({ tone: 'indigo', message: 'Un nouveau concept est recommandé.' });
                 }
                 if (progressItems.some(item => item.adaptivePath?.nextAction === 'COMPLETED' || (item.total > 0 && item.mastered === item.total))) {
-                    notificationItems.push({ tone: 'emerald', message: 'Un cours est termine ou pret pour la validation finale.' });
+                    notificationItems.push({ tone: 'emerald', message: 'Un cours est terminé ou prêt pour la validation finale.' });
                 }
                 if (progressItems.some(item => item.learnable > 0 && item.strategyFeedback)) {
-                    notificationItems.push({ tone: 'sky', message: 'Un conseil personnalise est disponible pour votre prochaine activite.' });
+                    notificationItems.push({ tone: 'sky', message: 'Un conseil personnalisé est disponible pour votre prochaine activité.' });
                 }
+                progressItems
+                    .map(item => pathFreshnessMessage(item.adaptivePath?.pathFreshness))
+                    .filter(Boolean)
+                    .forEach(message => notificationItems.push({ tone: 'emerald', message }));
                 setNotifications(notificationItems.slice(0, 4));
             } catch (error) {
                 console.error('[LearnerDashboard] load failed', error);
@@ -270,6 +285,7 @@ export default function LearnerDashboard() {
     const primaryProfile = primaryAdaptivePath?.learnerProfile;
     const primaryStrategy = primaryAdaptivePath?.pedagogicalStrategy;
     const primaryFeedback = recommendation?.strategyFeedback;
+    const primaryFreshnessMessage = pathFreshnessMessage(primaryAdaptivePath?.pathFreshness);
 
     if (loading) {
         return (
@@ -304,9 +320,9 @@ export default function LearnerDashboard() {
                 {[
                     ['Cours inscrits', courses.length, BookOpen, 'text-indigo-600 bg-indigo-50'],
                     ['En cours', activeCourses, Compass, 'text-sky-600 bg-sky-50'],
-                    ['Maitrises', summary.mastered, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
-                    ['Termines', summary.completedCourses, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
-                    ['A apprendre', summary.learnable, PlayCircle, 'text-indigo-600 bg-indigo-50'],
+                    ['Maîtrisés', summary.mastered, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
+                    ['Terminés', summary.completedCourses, CheckCircle2, 'text-emerald-600 bg-emerald-50'],
+                    ['À apprendre', summary.learnable, PlayCircle, 'text-indigo-600 bg-indigo-50'],
                 ].map(([label, value, Icon, color]) => (
                     <section key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-center gap-3">
@@ -327,11 +343,16 @@ export default function LearnerDashboard() {
                             <p className="flex items-center gap-2 text-sm font-bold"><Sparkles size={16} /> Recommandation Adaptive Engine</p>
                             <h2 className="mt-1 text-xl font-bold">
                                 {primaryAdaptivePath.nextAction === 'COMPLETED'
-                                    ? 'Cours termine'
+                                    ? 'Cours terminé'
                                     : primaryAdaptivePath.nextConcept?.conceptName || 'Diagnostic initial requis'}
                             </h2>
                             <p className="text-sm">{recommendation.course.title}</p>
                             <p className="mt-1 text-sm opacity-80">{primaryAdaptivePath.decisionExplanation || primaryAdaptivePath.recommendationReason}</p>
+                            {primaryFreshnessMessage && (
+                                <p className="mt-3 inline-flex rounded-full border border-emerald-300 bg-white/70 px-3 py-1 text-xs font-bold text-emerald-800">
+                                    {primaryFreshnessMessage}
+                                </p>
+                            )}
                         </div>
                         <Link to={`/learner/courses/${recommendation.course.id}`} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800">
                             Ouvrir le cours
@@ -343,7 +364,7 @@ export default function LearnerDashboard() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <p className="flex items-center gap-2 text-sm font-bold"><Sparkles size={16} /> Recommandation principale</p>
-                            <h2 className="mt-1 text-xl font-bold">{recommendation.recommendation.label || 'Concept recommande'}</h2>
+                            <h2 className="mt-1 text-xl font-bold">{recommendation.recommendation.label || 'Concept recommandé'}</h2>
                             <p className="text-sm">{recommendation.course.title}</p>
                             <p className="mt-1 text-sm opacity-80">{recommendation.recommendation.reason}</p>
                         </div>
@@ -362,7 +383,7 @@ export default function LearnerDashboard() {
                             <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                                 <p className="font-semibold text-indigo-700 dark:text-indigo-300">{profileTypeLabels[primaryProfile.profileType] || 'Situation en cours d analyse'}</p>
                                 {primaryProfile.masteryScore !== null && primaryProfile.masteryScore !== undefined && (
-                                    <p>Maitrise : {Math.round(Number(primaryProfile.masteryScore))}%</p>
+                                    <p>Maîtrise : {Math.round(Number(primaryProfile.masteryScore))}%</p>
                                 )}
                                 <p>Traces : {primaryProfile.tracesCount ?? 0}</p>
                                 <p>TP completes : {primaryProfile.completedLabsCount ?? 0}</p>
@@ -370,10 +391,10 @@ export default function LearnerDashboard() {
                                     <p>Lacunes : {primaryProfile.knowledgeGaps.join(', ')}</p>
                                 )}
                             </div>
-                        ) : <p className="mt-3 text-sm text-slate-500">Votre situation sera precisee apres les premieres activites.</p>}
+                        ) : <p className="mt-3 text-sm text-slate-500">Votre situation sera précisée après les premières activités.</p>}
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Approche recommandee</h2>
+                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Approche recommandée</h2>
                         {primaryStrategy ? (
                             <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                                 <p className="font-semibold text-emerald-700 dark:text-emerald-300">{strategyTypeLabels[primaryStrategy.strategyType] || 'Progression standard'}</p>
@@ -411,7 +432,7 @@ export default function LearnerDashboard() {
                             </div>
                             <div className="mt-4">
                                 <div className="mb-1 flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    <span>{item.mastered}/{item.total} concepts maitrises</span>
+                                    <span>{item.mastered}/{item.total} concepts maîtrisés</span>
                                     <span>{item.percent}%</span>
                                 </div>
                                 <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -428,7 +449,7 @@ export default function LearnerDashboard() {
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Concepts a reviser</h2>
                     {reviewConcepts.length === 0 ? (
                         <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                            <p className="font-semibold text-slate-700 dark:text-slate-200">Aucune remediation necessaire.</p>
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">Aucune remédiation nécessaire.</p>
                             <p className="mt-1">Vous pouvez continuer votre progression.</p>
                         </div>
                     ) : (
@@ -438,7 +459,7 @@ export default function LearnerDashboard() {
                                     <div>
                                         <p className="font-bold text-slate-800 dark:text-slate-100">{item.name}</p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {item.external ? `Prerequis externe - ${item.sourceCourseTitle}` : item.currentCourseTitle}
+                                            {item.external ? `Prérequis externe - ${item.sourceCourseTitle}` : item.currentCourseTitle}
                                         </p>
                                     </div>
                                     <Link to={item.external ? `/learner/external-concepts/${item.conceptId}?sourceCourseId=${item.courseId}` : `/learner/courses/${item.courseId}?focusConcept=${item.conceptId}`} className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-bold text-white">
@@ -451,10 +472,10 @@ export default function LearnerDashboard() {
                 </div>
 
                 <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Notifications pedagogiques</h2>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Notifications pédagogiques</h2>
                     {notifications.length === 0 ? (
                         <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                            Aucune notification pedagogique pour le moment.
+                            Aucune notification pédagogique pour le moment.
                         </div>
                     ) : (
                         <div className="mt-3 space-y-2">
@@ -482,7 +503,7 @@ export default function LearnerDashboard() {
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Historique d'apprentissage</h2>
                     {learningHistory.length === 0 ? (
                         <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                            Aucune activite recente.
+                            Aucune activité récente.
                         </div>
                     ) : (
                         <div className="mt-4 space-y-3">
@@ -514,7 +535,7 @@ export default function LearnerDashboard() {
                     {recentActivity.length === 0 ? (
                         <div className="mt-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             <AlertTriangle size={16} className="mt-0.5" />
-                            Aucune activite recente pour le moment.
+                            Aucune activité récente pour le moment.
                         </div>
                     ) : (
                         <div className="mt-3 space-y-2">

@@ -1,0 +1,22 @@
+{
+  "seed": 42,
+  "rows": 260,
+  "description": "synthetic experimental dataset generated from AdaptiveEngine feature schema",
+  "targetDistribution": {
+    "True": 143,
+    "False": 107,
+    "None": 10
+  },
+  "profileDistribution": {
+    "AVERAGE_LEARNER": 71,
+    "HIGH_PERFORMER": 57,
+    "STRUGGLING_LEARNER": 53,
+    "REMEDIATION_SUCCESS": 40,
+    "REMEDIATION_FAILURE": 39
+  },
+  "notes": [
+    "Synthetic data follows AdaptiveEngine feature semantics but does not represent real learners.",
+    "Unknown outcomes remain null and are not converted to false.",
+    "The dataset is intended for offline pipeline validation only."
+  ]
+}

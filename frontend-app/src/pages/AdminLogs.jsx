@@ -49,11 +49,11 @@ export default function AdminLogs() {
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Logs Systeme</h1>
-                    <p className="text-slate-500 text-lg mt-2 dark:text-slate-400">Journaux d'activite et traces des microservices.</p>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Logs Système</h1>
+                    <p className="text-slate-500 text-lg mt-2 dark:text-slate-400">Journaux d'activité et traces des microservices.</p>
                 </div>
                 <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
-                    Donnees de demonstration
+                    Données de démonstration
                 </span>
             </div>
 

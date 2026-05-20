@@ -85,6 +85,7 @@ function Slug {
 }
 
 $A_GRAVE = [string][char]0x00E0
+$E_GRAVE = [string][char]0x00E8
 $E_ACUTE = [string][char]0x00E9
 $I_CIRC = [string][char]0x00EE
 $O_CIRC = [string][char]0x00F4
@@ -227,6 +228,7 @@ $createdRelations = @()
 $createdLabs = @()
 $createdEvaluations = @()
 $createdDiagnostics = @()
+$createdCourseValidations = @()
 $errors = @()
 
 foreach ($course in $courses) {
@@ -384,6 +386,37 @@ foreach ($course in $courses) {
     $createdDiagnostics += $diag
 }
 
+Write-Host "Création validations finales de cours..."
+foreach ($course in $courses) {
+    $courseConcepts = @()
+    foreach ($module in $course.modules) {
+        foreach ($label in $module.chapter.concepts) { $courseConcepts += $conceptByLabel[$label] }
+    }
+    $questions = @()
+    foreach ($concept in $courseConcepts) {
+        $answer = "Identifier le besoin, choisir la d${E_ACUTE}marche adapt${E_ACUTE}e et v${E_ACUTE}rifier le r${E_ACUTE}sultat"
+        $questions += (New-Question -ConceptId $concept.id -Text "Validation finale: comment appliquer '$($concept.label)' dans une situation compl${E_GRAVE}te ?" -Correct $answer -Options @($answer, "Ignorer les contraintes du probl${E_GRAVE}me", "R${E_ACUTE}pondre sans tester", "Utiliser un concept au hasard") -Difficulty "MEDIUM")
+    }
+    $validation = Invoke-Api -Method "POST" -Path "/content/evaluations" -Body @{
+        courseId = $course.id
+        targetId = $course.id
+        targetType = "COURSE"
+        typeEvaluation = "VALIDATION_COURS"
+        seuilReussite = 70
+        nbrTentativesMax = 2
+        tempsImparti = 30
+        allowBacktrack = $false
+        shuffleQuestions = $false
+        showImmediateFeedback = $false
+        retryDelayHours = 0
+        coefficient = 1
+        nbQuestionsATirer = 0
+        equilibrerDifficulte = $true
+        questions = $questions
+    }
+    $createdCourseValidations += $validation
+}
+
 Write-Host "Creation de traces enseignant de test dans PostgreSQL et publication RabbitMQ..."
 $firstConcepts = @(
     $conceptByLabel["Variables"],
@@ -456,6 +489,7 @@ $teacherCourses = Invoke-Api -Method "GET" -Path "/graph/courses/teacher/$Teache
 $availableCourses = Invoke-Api -Method "GET" -Path "/graph/courses/available"
 $treeChecks = @()
 $diagnosticChecks = @()
+$validationChecks = @()
 $contentChecks = @()
 $labChecks = @()
 $quizChecks = @()
@@ -466,6 +500,13 @@ foreach ($course in $courses) {
     $treeChecks += $tree
     $diagnostics = Invoke-Api -Method "GET" -Path "/content/evaluations/course/$($course.id)/diagnostics"
     $diagnosticChecks += @{ courseId = $course.id; count = @($diagnostics).Count }
+    $courseEvaluations = Invoke-Api -Method "GET" -Path "/content/evaluations/course/$($course.id)"
+    $validationChecks += @{
+        courseId = $course.id
+        validationCours = @($courseEvaluations | Where-Object { $_.typeEvaluation -eq "VALIDATION_COURS" }).Count
+        formative = @($courseEvaluations | Where-Object { $_.typeEvaluation -eq "FORMATIVE" }).Count
+        positionnement = @($courseEvaluations | Where-Object { $_.typeEvaluation -in @("DIAGNOSTIC_ENTREE", "DIAGNOSTIC_POSITIONNEMENT", "POSITIONNEMENT") }).Count
+    }
     $externalPrereqs = Invoke-Api -Method "GET" -Path "/graph/courses/$($course.id)/prerequisite-concepts"
     $externalChecks += @{ courseId = $course.id; count = @($externalPrereqs).Count; labels = @($externalPrereqs | ForEach-Object { $_.labelPedagogique }) }
 }
@@ -485,6 +526,7 @@ $summary = [ordered]@{
     concepts = $conceptCount
     formativeEvaluations = @($createdEvaluations).Count
     diagnostics = @($createdDiagnostics).Count
+    courseValidations = @($createdCourseValidations).Count
     resources = @($contentChecks).Count
     labs = @($labChecks).Count
     interCourseRelations = @($interCourseRelations | ForEach-Object { "$($_[0]) -> $($_[1])" })
@@ -492,6 +534,7 @@ $summary = [ordered]@{
     teacherCoursesVisible = @($teacherCourses | Where-Object { $courseIds -contains $_.id }).Count
     learnerCoursesVisible = @($availableCourses | Where-Object { $courseIds -contains $_.id }).Count
     diagnosticsByCourse = $diagnosticChecks
+    validationsByCourse = $validationChecks
     externalPrerequisitesByCourse = $externalChecks
     cleanup = "Supprimer via admin/interface ou via API DELETE /api/graph/courses/{id} pour: $($courseIds -join ', '). Les contenus Mongo sont upsertes par conceptId/targetId et seront remplaces si le script est relance."
     errors = $errors

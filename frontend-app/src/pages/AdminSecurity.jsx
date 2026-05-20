@@ -36,14 +36,14 @@ export default function AdminSecurity() {
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Securite</h1>
-                <p className="text-slate-500 text-lg mt-2 dark:text-slate-400">Controle d'acces, comptes et recommandations de securite.</p>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Sécurité</h1>
+                <p className="text-slate-500 text-lg mt-2 dark:text-slate-400">Contrôle d'accès, comptes et recommandations de sécurité.</p>
             </div>
 
             <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 dark:border-slate-700 dark:bg-slate-900">
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4 dark:text-slate-100">
                     <Shield size={20} className="text-indigo-600" />
-                    Resume securite
+                    Résumé sécurité
                 </h2>
                 {loading ? (
                     <div className="flex items-center justify-center gap-2 p-8 text-slate-500 dark:text-slate-300">
@@ -62,16 +62,16 @@ export default function AdminSecurity() {
             <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 dark:border-slate-700 dark:bg-slate-900">
                 <h2 className="text-xl font-bold text-slate-800 mb-3 dark:text-slate-100">Tentatives de connexion</h2>
                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    Aucune activite de connexion recente.
+                    Aucune activité de connexion récente.
                 </div>
             </section>
 
             <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 dark:border-slate-700 dark:bg-slate-900">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 dark:text-slate-100">Recommandations simples</h2>
                 <div className="space-y-3">
-                    <Recommendation text="Changer le mot de passe admin par defaut apres la demonstration." />
-                    <Recommendation text="Verifier regulierement les comptes en attente avant validation." />
-                    <Recommendation text="Securiser les variables d'environnement et ne jamais commiter de secrets reels." />
+                    <Recommendation text="Changer le mot de passe admin par défaut après la démonstration." />
+                    <Recommendation text="Vérifier régulièrement les comptes en attente avant validation." />
+                    <Recommendation text="Sécuriser les variables d'environnement et ne jamais commiter de secrets réels." />
                 </div>
             </section>
         </div>

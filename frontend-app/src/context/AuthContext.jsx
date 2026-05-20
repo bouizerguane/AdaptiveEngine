@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const decoded = jwtDecode(token);
                 if (decoded.exp * 1000 < Date.now()) {
-                    console.warn('[AuthContext] Token expire, deconnexion automatique');
+                    console.warn('[AuthContext] Token expiré, déconnexion automatique');
                     logout();
                 } else {
                     let role = decoded.role || (decoded.roles ? decoded.roles[0] : 'TEACHER');
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
                     setIsAuthenticated(true);
                 }
             } catch (err) {
-                console.error('[AuthContext] Erreur de decodage JWT, deconnexion', err);
+                console.error('[AuthContext] Erreur de décodage JWT, déconnexion', err);
                 logout();
             }
         }

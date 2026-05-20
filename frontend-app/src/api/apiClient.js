@@ -107,7 +107,10 @@ export const contentApi = {
 };
 
 export const evaluationApi = {
-    getEvaluation: (targetId) => apiClient.get(`/content/evaluations/${targetId}`),
+    getEvaluation: (targetId, typeEvaluation) =>
+        apiClient.get(`/content/evaluations/${targetId}`, {
+            params: typeEvaluation ? { typeEvaluation } : {}
+        }),
     getCourseEvaluations: (courseId) => apiClient.get(`/content/evaluations/course/${courseId}`),
     getCourseDiagnostics: (courseId) => apiClient.get(`/content/evaluations/course/${courseId}/diagnostics`),
     saveEvaluation: (data) => apiClient.post('/content/evaluations', data),

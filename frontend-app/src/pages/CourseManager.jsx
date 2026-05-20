@@ -328,11 +328,11 @@ export default function CourseManager() {
                             {panel.type === 'COURSE' && (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Objectifs pedagogiques</label>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Objectifs pédagogiques</label>
                                         <textarea value={formData.objectifs} onChange={e => setFormData({...formData, objectifs: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none transition"/>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Prerequis textuels</label>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Prérequis textuels</label>
                                         <textarea value={formData.prerequisTextuels} onChange={e => setFormData({...formData, prerequisTextuels: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none transition"/>
                                     </div>
                                 </>

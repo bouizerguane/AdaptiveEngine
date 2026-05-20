@@ -51,7 +51,7 @@ const parseConceptResults = (value) => {
 };
 
 const formatActivityDate = (value) => {
-    if (!value) return 'Aucune activite recente';
+    if (!value) return 'Aucune activité récente';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return 'Date inconnue';
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -321,13 +321,13 @@ export default function TeacherDashboard() {
         if (hardest) {
             items.push({
                 title: `Renforcer le concept "${hardest.conceptName}"`,
-                message: 'Fort taux d echec : proposer une ressource plus progressive ou un exemple supplementaire.',
+                message: "Fort taux d'échec : proposer une ressource plus progressive ou un exemple supplémentaire.",
             });
         }
         if ((summary?.completedLabs || 0) < Object.keys(labsMap).length && Object.keys(labsMap).length > 0) {
             items.push({
                 title: 'Clarifier les TP peu soumis',
-                message: 'Peu de TP sont termines : simplifier les consignes ou ajouter une etape guidee.',
+                message: 'Peu de TP sont terminés : simplifier les consignes ou ajouter une étape guidée.',
             });
         }
         if (lowProgressCourse) {
@@ -338,8 +338,8 @@ export default function TeacherDashboard() {
         }
         if (items.length === 0) {
             items.push({
-                title: 'Aucune alerte pedagogique majeure',
-                message: 'Les donnees actuelles ne montrent pas de blocage prioritaire.',
+                title: 'Aucune alerte pédagogique majeure',
+                message: 'Les données actuelles ne montrent pas de blocage prioritaire.',
             });
         }
         return items;
@@ -423,12 +423,12 @@ export default function TeacherDashboard() {
                                         />
                                     </div>
                                     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                        Calcul : concepts maitrises / total des concepts attendus pour les apprenants inscrits.
+                                        Calcul : concepts maîtrisés / total des concepts attendus pour les apprenants inscrits.
                                     </p>
                                 </div>
                             ))
                         ) : (
-                            <EmptyState message="Aucune donnee de progression disponible pour le moment." />
+                            <EmptyState message="Aucune donnée de progression disponible pour le moment." />
                         )}
                     </div>
                 </section>
@@ -448,7 +448,7 @@ export default function TeacherDashboard() {
                                     <th className="py-3 pr-4 font-semibold">Cours</th>
                                     <th className="py-3 pr-4 font-semibold">Progression</th>
                                     <th className="py-3 pr-4 font-semibold">Lacunes</th>
-                                    <th className="py-3 pr-4 font-semibold">Derniere activite</th>
+                                    <th className="py-3 pr-4 font-semibold">Dernière activité</th>
                                     <th className="py-3 font-semibold">Niveau risque</th>
                                 </tr>
                             </thead>
@@ -477,7 +477,7 @@ export default function TeacherDashboard() {
                         </table>
                     </div>
                 ) : (
-                    <EmptyState message="Aucun apprenant a risque detecte avec les donnees actuelles." />
+                    <EmptyState message="Aucun apprenant à risque détecté avec les données actuelles." />
                 )}
             </section>
 
@@ -533,7 +533,7 @@ export default function TeacherDashboard() {
                                 </div>
                             ))
                         ) : (
-                            <EmptyState message="Pas assez de donnees pour identifier des concepts difficiles." />
+                            <EmptyState message="Pas assez de données pour identifier des concepts difficiles." />
                         )}
                     </div>
                 </section>
@@ -554,11 +554,11 @@ export default function TeacherDashboard() {
                                         cursor={{ fill: '#f8fafc' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 10px rgb(15 23 42 / 0.12)' }}
                                     />
-                                    <Bar dataKey="validatedConcepts" fill="#4f46e5" radius={[4, 4, 0, 0]} name="Concepts maitrises" />
+                                    <Bar dataKey="validatedConcepts" fill="#4f46e5" radius={[4, 4, 0, 0]} name="Concepts maîtrisés" />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <EmptyState message="Aucune donnee de maitrise disponible." />
+                            <EmptyState message="Aucune donnée de maîtrise disponible." />
                         )}
                     </div>
                 </section>
@@ -587,7 +587,7 @@ export default function TeacherDashboard() {
                                 </div>
                             ))
                         ) : (
-                            <EmptyState message="Aucun apprenant en difficulte detecte avec les donnees actuelles." />
+                            <EmptyState message="Aucun apprenant en difficulté détecté avec les données actuelles." />
                         )}
                     </div>
                 </section>
@@ -595,7 +595,7 @@ export default function TeacherDashboard() {
                 <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-4 flex items-center gap-2">
                         <Lightbulb className="text-amber-500" size={20} />
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Suggestions pedagogiques</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Suggestions pédagogiques</h2>
                     </div>
                     <div className="space-y-3">
                         {suggestions.map((item, index) => (
@@ -616,7 +616,7 @@ export default function TeacherDashboard() {
                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
                     <p className="font-semibold text-slate-800">Feedbacks tutoring visibles cote apprenant</p>
                     <p className="mt-1">
-                        Les feedbacks tutorat et strategies pedagogiques sont generes a la demande dans le flux apprenant.
+                        Les feedbacks tutorat et stratégies pédagogiques sont générés à la demande dans le flux apprenant.
                         Ils ne sont pas encore persistes dans le tableau de bord enseignant ; les indicateurs disponibles ici restent les traces,
                         les difficultes par concept, la progression moyenne et les soumissions TP recentes.
                     </p>
@@ -670,7 +670,7 @@ export default function TeacherDashboard() {
                                             <td className="px-6 py-4 text-slate-500">
                                                 {Number(submission.totalTimeSpent || 0) > 0
                                                     ? `${(Number(submission.totalTimeSpent) / 60).toFixed(0)} min`
-                                                    : 'Non renseigne'}
+                                                    : 'Non renseigné'}
                                             </td>
                                             <td className="px-6 py-4 text-right text-slate-500">
                                                 {submission.completedAt

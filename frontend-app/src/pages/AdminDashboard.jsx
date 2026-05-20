@@ -134,9 +134,9 @@ export default function AdminDashboard() {
             {/* EN-TÊTE */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Administration systeme</h1>
+                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Administration système</h1>
                     <p className="text-slate-500 mt-2 text-lg dark:text-slate-400">
-                        Console d'administration globale. Gerez ici les acces, la securite et les parametres de la plateforme.
+                        Console d'administration globale. Gérez ici les accès, la sécurité et les paramètres de la plateforme.
                     </p>
                 </div>
                 <button
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
                             <Server size={24} />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Etat des services</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">État des services</h2>
                     </div>
                     <p className="text-slate-500 text-sm flex-1 dark:text-slate-400">
                         Statut de chaque service principal via la gateway.
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
                         <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
                             <Cpu size={24} />
                         </div>
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Graphe pedagogique</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Graphe pédagogique</h2>
                     </div>
                     <p className="text-slate-500 text-sm flex-1 dark:text-slate-400">
                         Cours, concepts et latence moyenne des services disponibles.
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MiniStat icon={<BookOpen size={18} />} label="Total cours" value={stats.courses} color="rose" />
                 <MiniStat icon={<Layers size={18} />} label="Total concepts" value={stats.concepts} color="violet" />
-                <MiniStat icon={<ClipboardList size={18} />} label="Evaluations" value={stats.evaluations} color="indigo" />
+                <MiniStat icon={<ClipboardList size={18} />} label="Évaluations" value={stats.evaluations} color="indigo" />
                 <MiniStat icon={<Terminal size={18} />} label="TP" value={stats.labs} color="emerald" />
             </div>
 
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
                     <div className="p-5 border-b border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
                         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
                             <Activity size={18} className="text-slate-500" />
-                            Activite recente
+                            Activité récente
                         </h2>
                     </div>
                     <div className="divide-y divide-slate-100">
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                                 <p className="text-xs text-slate-500">{item.detail}</p>
                             </div>
                         )) : (
-                            <div className="p-8 text-center text-slate-400">Aucune activite recente.</div>
+                            <div className="p-8 text-center text-slate-400">Aucune activité récente.</div>
                         )}
                     </div>
                 </div>

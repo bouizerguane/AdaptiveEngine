@@ -12,6 +12,7 @@ Les anciens dossiers de tests sont conserves pour compatibilite avec l'historiqu
 | `tools/adaptive-v4-runtime-tests` | Profil apprenant |
 | `tools/adaptive-v5-runtime-tests` | Strategie pedagogique |
 | `tools/tutoring-v6-runtime-tests` | Feedback tutorat |
+| `tools/runtime-validation/event-driven-refresh-tests` | Rafraichissement evenementiel persistant |
 | `tools/final-validation-report` | Validation fonctionnelle finale |
 
 ## Execution complete
@@ -22,7 +23,7 @@ Depuis la racine du projet :
 node tools/runtime-validation/run-all-runtime-validation.mjs
 ```
 
-Le script execute successivement les validations de scoring explicable, profil apprenant, strategie pedagogique, feedback tutorat, puis regenere le rapport final consolide.
+Le script execute successivement les validations de scoring explicable, profil apprenant, strategie pedagogique, feedback tutorat, rafraichissement evenementiel persistant, puis regenere le rapport final consolide.
 
 ## Contraintes
 

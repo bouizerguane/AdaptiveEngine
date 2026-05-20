@@ -1,0 +1,317 @@
+{
+  "generatedAt": "2026-05-20T09:57:22.428203+00:00",
+  "metadata": {
+    "source": "synthetic",
+    "path": "ml-experiments\\synthetic-recommendation-traces.json",
+    "description": "synthetic experimental dataset generated from AdaptiveEngine feature schema"
+  },
+  "target": "conceptCompletedAfterRecommendation",
+  "audit": {
+    "totalRows": 260,
+    "totalColumns": 45,
+    "missingValuesByColumn": {
+      "remediationSucceeded": 185,
+      "remediationSuccess": 181,
+      "quizScoreAfterRecommendation": 87,
+      "conceptCompleted": 10,
+      "outcomeCapturedAt": 10,
+      "recommendationAccepted": 10,
+      "learnerDropped": 10,
+      "labSubmittedAfterRecommendation": 10,
+      "conceptCompletedAfterRecommendation": 10,
+      "lastActivityScore": 7,
+      "historicalPerformanceScore": 0,
+      "pedagogicalOrderScore": 0,
+      "engagementScore": 0,
+      "adaptiveScore": 0,
+      "recommendedConcept": 0,
+      "id": 0,
+      "nextAction": 0,
+      "remediationTriggered": 0,
+      "recommendationReason": 0,
+      "prerequisiteScore": 0,
+      "createdAt": 0,
+      "syntheticProfile": 0,
+      "diagnosticWeaknessScore": 0,
+      "completedConceptsCount": 0,
+      "recommendedPathSize": 0,
+      "knowledgeGapsCount": 0,
+      "courseId": 0,
+      "courseTitle": 0,
+      "conceptId": 0,
+      "masteryScore": 0,
+      "learningTime": 0,
+      "tracesCount": 0,
+      "completedLabsCount": 0,
+      "averageAssessmentScore": 0,
+      "profileType": 0,
+      "learnerEmail": 0,
+      "pedagogicalStrategy": 0,
+      "recommendationContext": 0,
+      "lastActivityType": 0,
+      "repeatedFailuresCount": 0,
+      "persistentDifficulty": 0,
+      "highMasteryProgression": 0,
+      "readyConceptsCount": 0,
+      "lockedConceptsCount": 0,
+      "syntheticDatasetNote": 0
+    },
+    "targetDistribution": {
+      "1.0": 143,
+      "0.0": 107,
+      "nan": 10
+    },
+    "availableFeatures": {
+      "numerical": [
+        "masteryScore",
+        "engagementScore",
+        "adaptiveScore",
+        "prerequisiteScore",
+        "diagnosticWeaknessScore",
+        "historicalPerformanceScore",
+        "pedagogicalOrderScore",
+        "averageAssessmentScore",
+        "repeatedFailuresCount",
+        "tracesCount",
+        "completedLabsCount",
+        "knowledgeGapsCount",
+        "readyConceptsCount",
+        "lockedConceptsCount",
+        "completedConceptsCount",
+        "recommendedPathSize"
+      ],
+      "categorical": [
+        "profileType",
+        "recommendationContext",
+        "nextAction",
+        "lastActivityType",
+        "persistentDifficulty",
+        "highMasteryProgression"
+      ]
+    },
+    "excludedOutcomeFields": [
+      "quizScoreAfterRecommendation",
+      "conceptCompletedAfterRecommendation",
+      "remediationSucceeded",
+      "outcomeCapturedAt",
+      "conceptCompleted",
+      "labSubmittedAfterRecommendation",
+      "learnerDropped",
+      "recommendationAccepted"
+    ],
+    "duplicatesCount": 0,
+    "risks": []
+  },
+  "cleanedDataset": {
+    "rows": 250,
+    "columns": 23,
+    "path": "ml-experiments\\synthetic-recommendation-traces-cleaned.csv"
+  },
+  "evaluation": {
+    "skipped": false,
+    "bestModel": "logistic_regression",
+    "models": {
+      "dummy_most_frequent": {
+        "accuracy": 0.5733333333333334,
+        "precision": 0.5733333333333334,
+        "recall": 1.0,
+        "f1": 0.7288135593220338,
+        "roc_auc": 0.5,
+        "confusionMatrix": [
+          [
+            0,
+            32
+          ],
+          [
+            0,
+            43
+          ]
+        ],
+        "trainRows": 175,
+        "testRows": 75,
+        "crossValidationF1Mean": 0.7276858162934112,
+        "crossValidationF1Std": 0.007950307506599096
+      },
+      "logistic_regression": {
+        "accuracy": 0.7733333333333333,
+        "precision": 0.825,
+        "recall": 0.7674418604651163,
+        "f1": 0.7951807228915663,
+        "roc_auc": 0.8248546511627907,
+        "confusionMatrix": [
+          [
+            25,
+            7
+          ],
+          [
+            10,
+            33
+          ]
+        ],
+        "trainRows": 175,
+        "testRows": 75,
+        "crossValidationF1Mean": 0.7871520636226518,
+        "crossValidationF1Std": 0.03400583634637655
+      },
+      "random_forest": {
+        "accuracy": 0.7066666666666667,
+        "precision": 0.7692307692307693,
+        "recall": 0.6976744186046512,
+        "f1": 0.7317073170731707,
+        "roc_auc": 0.7819767441860466,
+        "confusionMatrix": [
+          [
+            23,
+            9
+          ],
+          [
+            13,
+            30
+          ]
+        ],
+        "trainRows": 175,
+        "testRows": 75,
+        "crossValidationF1Mean": 0.7590572390572391,
+        "crossValidationF1Std": 0.04689963759970234
+      }
+    },
+    "featureImportance": [
+      {
+        "feature": "nextAction_REMEDIATION",
+        "importance": 1.5731669722369481
+      },
+      {
+        "feature": "recommendationContext_LEARN",
+        "importance": 1.3379074529673627
+      },
+      {
+        "feature": "nextAction_LEARN",
+        "importance": 1.2698729149491035
+      },
+      {
+        "feature": "recommendationContext_REMEDIATION",
+        "importance": 1.0346133956795192
+      },
+      {
+        "feature": "repeatedFailuresCount",
+        "importance": 0.7867356656197936
+      },
+      {
+        "feature": "masteryScore",
+        "importance": 0.6513635861190149
+      },
+      {
+        "feature": "profileType_HIGH_PERFORMING",
+        "importance": 0.595344232416538
+      },
+      {
+        "feature": "completedLabsCount",
+        "importance": 0.49842559769985934
+      },
+      {
+        "feature": "lastActivityType_REMEDIATION",
+        "importance": 0.4897286906687172
+      },
+      {
+        "feature": "highMasteryProgression_True",
+        "importance": 0.4832095582869045
+      },
+      {
+        "feature": "highMasteryProgression_False",
+        "importance": 0.4826460409430088
+      },
+      {
+        "feature": "profileType_PROGRESSING",
+        "importance": 0.4565142550663701
+      },
+      {
+        "feature": "engagementScore",
+        "importance": 0.3527707435883789
+      },
+      {
+        "feature": "lastActivityType_DIAGNOSTIC",
+        "importance": 0.31239247914158247
+      },
+      {
+        "feature": "recommendationContext_VALIDATION",
+        "importance": 0.30385757463174035
+      },
+      {
+        "feature": "nextAction_COMPLETED",
+        "importance": 0.30385757463174035
+      },
+      {
+        "feature": "historicalPerformanceScore",
+        "importance": 0.3037699809322951
+      },
+      {
+        "feature": "averageAssessmentScore",
+        "importance": 0.281644771131786
+      },
+      {
+        "feature": "tracesCount",
+        "importance": 0.2543447830536921
+      },
+      {
+        "feature": "diagnosticWeaknessScore",
+        "importance": 0.21628045790712144
+      },
+      {
+        "feature": "lastActivityType_QUIZ",
+        "importance": 0.18016278244619668
+      },
+      {
+        "feature": "persistentDifficulty_False",
+        "importance": 0.13882997735016825
+      },
+      {
+        "feature": "profileType_NEEDS_REMEDIATION",
+        "importance": 0.13826646000627202
+      },
+      {
+        "feature": "persistentDifficulty_True",
+        "importance": 0.13826646000627202
+      },
+      {
+        "feature": "knowledgeGapsCount",
+        "importance": 0.13569155983699588
+      },
+      {
+        "feature": "pedagogicalOrderScore",
+        "importance": 0.12641221575355285
+      },
+      {
+        "feature": "lockedConceptsCount",
+        "importance": 0.10882572549918065
+      },
+      {
+        "feature": "completedConceptsCount",
+        "importance": 0.08987400247260968
+      },
+      {
+        "feature": "readyConceptsCount",
+        "importance": 0.08490510085139748
+      },
+      {
+        "feature": "recommendedPathSize",
+        "importance": 0.058472105599640764
+      },
+      {
+        "feature": "lastActivityType_LAB",
+        "importance": 0.035039706094495075
+      },
+      {
+        "feature": "lastActivityType_VALIDATION",
+        "importance": 0.032776652519330936
+      },
+      {
+        "feature": "prerequisiteScore",
+        "importance": 0.013762274465840057
+      },
+      {
+        "feature": "adaptiveScore",
+        "importance": 0.006083626734849941
+      }
+    ]
+  }
+}

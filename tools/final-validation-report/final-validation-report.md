@@ -1,22 +1,23 @@
 # Rapport final de validation AdaptiveEngine
 
-Genere le: 2026-05-17T19:33:31.559Z
+Genere le: 2026-05-20T08:37:23.416Z
 
 ## Synthese globale
 
-- Total tests: 18
-- Total PASS: 18
+- Total tests: 20
+- Total PASS: 20
 - Total FAIL: 0
-- Duree totale disponible: 10955 ms
+- Duree totale disponible: 29921 ms
 
 ## Resume par composant fonctionnel
 
 | Composant | Portee | Tests | PASS | FAIL | Duree | Rapport source |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Scoring explicable | scoring explicable | 5 | 5 | 0 | 3050 ms | tools/adaptive-v3-runtime-tests/adaptive-v3-test-report.json |
-| Profil apprenant | profil apprenant | 4 | 4 | 0 | 4638 ms | tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.json |
-| Strategie pedagogique | strategie pedagogique | 4 | 4 | 0 | 2902 ms | tools/adaptive-v5-runtime-tests/adaptive-v5-test-report.json |
-| Feedback tutorat | feedback tutorat | 5 | 5 | 0 | 365 ms | tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json |
+| Scoring explicable | scoring explicable | 5 | 5 | 0 | 19376 ms | tools/adaptive-v3-runtime-tests/adaptive-v3-test-report.json |
+| Profil apprenant | profil apprenant | 4 | 4 | 0 | 3001 ms | tools/adaptive-v4-runtime-tests/adaptive-v4-test-report.json |
+| Strategie pedagogique | strategie pedagogique | 4 | 4 | 0 | 2868 ms | tools/adaptive-v5-runtime-tests/adaptive-v5-test-report.json |
+| Feedback tutorat | feedback tutorat | 5 | 5 | 0 | 1151 ms | tools/tutoring-v6-runtime-tests/tutoring-v6-test-report.json |
+| Rafraichissement evenementiel persistant | rafraichissement evenementiel persistant | 2 | 2 | 0 | 3525 ms | tools/runtime-validation/event-driven-refresh-tests/event-driven-refresh-test-report.json |
 
 ## Exemples de reponses importantes
 
@@ -34,10 +35,11 @@ Genere le: 2026-05-17T19:33:31.559Z
     "adaptiveScore": null,
     "scoreBreakdown": null,
     "explanationReasons": [
-      "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+      "Le concept 'Fonctions' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+      "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
     ]
   },
-  "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic."
+  "decisionExplanation": "Une activité de remédiation est proposée sur 'Fonctions' en raison de lacunes identifiées dans le dernier diagnostic."
 }
 ```
 
@@ -58,7 +60,7 @@ Genere le: 2026-05-17T19:33:31.559Z
     "averageAssessmentScore": null,
     "totalLearningTime": 0,
     "profileType": "DATA_INSUFFICIENT",
-    "profileExplanation": "Le profil sera affine apres davantage d'activites."
+    "profileExplanation": "Le profil sera affiné après davantage d'activités."
   }
 }
 ```
@@ -71,7 +73,7 @@ Genere le: 2026-05-17T19:33:31.559Z
   "caseName": "Strategie pedagogique - Apprenant sans donnees",
   "value": {
     "strategyType": "SUPPORTIVE",
-    "strategyExplanation": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+    "strategyExplanation": "Le système propose une progression guidée car les données d'apprentissage sont encore limitées.",
     "recommendedSequence": [
       "RESOURCE",
       "LAB",
@@ -81,7 +83,7 @@ Genere le: 2026-05-17T19:33:31.559Z
       "Respecter la decision principale du moteur: PASS_DIAGNOSTIC.",
       "Collecter davantage de traces avant d'affiner la personnalisation."
     ],
-    "tutoringMessageHint": "Encourager l'apprenant et proposer une activite guidee."
+    "tutoringMessageHint": "Encourager l'apprenant et proposer une activité guidée."
   }
 }
 ```
@@ -95,18 +97,18 @@ Genere le: 2026-05-17T19:33:31.559Z
   "value": {
     "eventType": "DIAGNOSTIC_FAILED",
     "feedbackType": "REMEDIATION_FEEDBACK",
-    "message": "Des lacunes ont ete detectees sur Variables. Il est recommande de revoir la ressource avant de refaire le TP puis l'evaluation formative.",
+    "message": "Des lacunes ont été identifiées sur Variables. Une remédiation structurée est recommandée avant la poursuite du parcours.",
     "actions": [
       "Revoir la ressource",
-      "Reprendre les prerequis",
-      "Realiser ou refaire le TP",
-      "Passer l'evaluation formative"
+      "Reprendre les prérequis",
+      "Réaliser ou refaire le TP",
+      "Passer l'évaluation formative"
     ],
     "recommendedActions": [
       "Revoir la ressource",
-      "Reprendre les prerequis",
-      "Realiser ou refaire le TP",
-      "Passer l'evaluation formative"
+      "Reprendre les prérequis",
+      "Réaliser ou refaire le TP",
+      "Passer l'évaluation formative"
     ],
     "learningSequence": [
       "RESOURCE",
@@ -114,8 +116,24 @@ Genere le: 2026-05-17T19:33:31.559Z
       "LAB",
       "FORMATIVE"
     ],
-    "motivationalMessage": "Cette etape sert a consolider vos bases avant de continuer.",
-    "explanation": "La strategie RECOVERY est appliquee car le parcours signale une remediation ou des lacunes. Contexte utilise: profil=NEEDS_REMEDIATION; action=REMEDIATION; evaluation=DIAGNOSTIC_ENTREE; score=38.0; lacunes=Variables."
+    "motivationalMessage": "Cette étape consolide les bases nécessaires avant d'aborder de nouveaux concepts.",
+    "explanation": "Une approche de remédiation est appliquée car le parcours signale des lacunes à consolider. Contexte utilisé: profil=NEEDS_REMEDIATION; action=REMEDIATION; évaluation=DIAGNOSTIC_ENTREE; score=38.0; lacunes=Variables."
+  }
+}
+```
+
+### pathFreshness
+
+```json
+{
+  "sourceComponent": "Rafraichissement evenementiel persistant",
+  "caseName": "Rafraichissement apres quiz",
+  "value": {
+    "refreshedAfterEvent": true,
+    "lastEventType": "quiz.completed",
+    "lastEventAt": "2026-05-20T08:37:21.304409",
+    "refreshReason": "QUIZ_COMPLETED",
+    "message": "Le parcours a été actualisé après votre dernière évaluation."
   }
 }
 ```
@@ -132,8 +150,8 @@ Genere le: 2026-05-17T19:33:31.559Z
 
 ### Ce que les tests demontrent
 
-- Les tests demontrent que les endpoints runtime exposent les champs attendus pour le scoring explicable, le profil apprenant, la strategie pedagogique et le feedback tutorat.
-- Ils demontrent que les decisions, profils, strategies et feedbacks sont coherents avec les cas simules dans les rapports existants.
+- Les tests demontrent que les endpoints runtime exposent les champs attendus pour le scoring explicable, le profil apprenant, la strategie pedagogique, le feedback tutorat et le rafraichissement evenementiel persistant.
+- Ils demontrent que les decisions, profils, strategies, feedbacks et indicateurs de fraicheur sont coherents avec les cas simules dans les rapports existants.
 - Ils demontrent une non-regression observable sur les couches successives deja testees.
 
 ### Ce qu ils ne demontrent pas

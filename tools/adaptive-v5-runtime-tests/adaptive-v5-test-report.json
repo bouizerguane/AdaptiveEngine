@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-05-17T19:33:28.041Z",
+    "generatedAt": "2026-05-20T08:37:15.352Z",
     "apiBaseUrl": "http://localhost:8080/api",
     "kmsFormula": "KMS_u = sum(W_i * S_u,i) / sum(W_i), W_i = poidsCognitif if available else 1"
   },
@@ -36,7 +36,7 @@
         {
           "label": "profileExplanation",
           "expected": "non-empty",
-          "actual": "Le profil sera affine apres davantage d'activites.",
+          "actual": "Le profil sera affiné après davantage d'activités.",
           "status": "PASS"
         },
         {
@@ -48,7 +48,7 @@
         {
           "label": "pedagogicalStrategy.strategyExplanation",
           "expected": "non-empty",
-          "actual": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+          "actual": "Le système propose une progression guidée car les données d'apprentissage sont encore limitées.",
           "status": "PASS"
         },
         {
@@ -64,7 +64,7 @@
         {
           "label": "pedagogicalStrategy.tutoringMessageHint",
           "expected": "non-empty",
-          "actual": "Encourager l'apprenant et proposer une activite guidee.",
+          "actual": "Encourager l'apprenant et proposer une activité guidée.",
           "status": "PASS"
         }
       ],
@@ -85,11 +85,11 @@
           "averageAssessmentScore": null,
           "totalLearningTime": 0,
           "profileType": "DATA_INSUFFICIENT",
-          "profileExplanation": "Le profil sera affine apres davantage d'activites."
+          "profileExplanation": "Le profil sera affiné après davantage d'activités."
         },
         "pedagogicalStrategy": {
           "strategyType": "SUPPORTIVE",
-          "strategyExplanation": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+          "strategyExplanation": "Le système propose une progression guidée car les données d'apprentissage sont encore limitées.",
           "recommendedSequence": [
             "RESOURCE",
             "LAB",
@@ -99,7 +99,7 @@
             "Respecter la decision principale du moteur: PASS_DIAGNOSTIC.",
             "Collecter davantage de traces avant d'affiner la personnalisation."
           ],
-          "tutoringMessageHint": "Encourager l'apprenant et proposer une activite guidee."
+          "tutoringMessageHint": "Encourager l'apprenant et proposer une activité guidée."
         }
       },
       "adaptivePathResponse": {
@@ -127,8 +127,8 @@
               "engagementScore": 0.5
             },
             "explanationReasons": [
-              "Ce concept peut etre aborde sans prerequis declares.",
-              "Ce concept suit l'ordre pedagogique recommande."
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours."
             ]
           },
           {
@@ -149,8 +149,8 @@
               "engagementScore": 0.5
             },
             "explanationReasons": [
-              "Ce concept peut etre aborde sans prerequis declares.",
-              "Ce concept suit l'ordre pedagogique recommande."
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours."
             ]
           }
         ],
@@ -232,19 +232,121 @@
           }
         ],
         "conceptsToReview": [],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "READY",
+            "adaptiveScore": 0.5,
+            "explanationReasons": [
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "READY",
+            "adaptiveScore": 0.48,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Conditions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          }
+        ],
         "nextAction": "PASS_DIAGNOSTIC",
         "nextConcept": null,
         "learningPhase": "DIAGNOSTIC",
         "nextRecommendation": {
           "action": "PASS_DIAGNOSTIC",
           "learningPhase": "DIAGNOSTIC",
-          "reason": "Le diagnostic initial doit etre passe avant de generer le parcours."
+          "reason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé."
         },
-        "recommendationReason": "Le diagnostic initial doit etre passe avant de generer le parcours.",
+        "recommendationReason": "Le diagnostic initial est nécessaire pour identifier les acquis et les lacunes avant de proposer un parcours personnalisé.",
         "latestDiagnostic": {},
         "traceCount": 0,
         "submittedLabCount": 0,
-        "decisionExplanation": "Le diagnostic initial doit etre passe avant de recommander un parcours personnalise.",
+        "decisionExplanation": "Le système doit d'abord disposer d'un diagnostic pour situer le niveau initial de l'apprenant et adapter la suite du parcours.",
         "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
           "learnerEmail": "student.strategy.nodata@test.local",
@@ -257,11 +359,11 @@
           "averageAssessmentScore": null,
           "totalLearningTime": 0,
           "profileType": "DATA_INSUFFICIENT",
-          "profileExplanation": "Le profil sera affine apres davantage d'activites."
+          "profileExplanation": "Le profil sera affiné après davantage d'activités."
         },
         "pedagogicalStrategy": {
           "strategyType": "SUPPORTIVE",
-          "strategyExplanation": "Le systeme propose une progression guidee car les donnees d'apprentissage sont encore limitees.",
+          "strategyExplanation": "Le système propose une progression guidée car les données d'apprentissage sont encore limitées.",
           "recommendedSequence": [
             "RESOURCE",
             "LAB",
@@ -271,7 +373,14 @@
             "Respecter la decision principale du moteur: PASS_DIAGNOSTIC.",
             "Collecter davantage de traces avant d'affiner la personnalisation."
           ],
-          "tutoringMessageHint": "Encourager l'apprenant et proposer une activite guidee."
+          "tutoringMessageHint": "Encourager l'apprenant et proposer une activité guidée."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": false,
+          "lastEventType": null,
+          "lastEventAt": null,
+          "refreshReason": null,
+          "message": null
         }
       }
     },
@@ -303,7 +412,7 @@
         {
           "label": "profileExplanation",
           "expected": "non-empty",
-          "actual": "Le profil indique des lacunes detectees dans le dernier diagnostic.",
+          "actual": "Le profil indique des lacunes détectées dans le dernier diagnostic.",
           "status": "PASS"
         },
         {
@@ -315,7 +424,7 @@
         {
           "label": "pedagogicalStrategy.strategyExplanation",
           "expected": "non-empty",
-          "actual": "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+          "actual": "Le système privilégie une stratégie de récupération car des lacunes ont été détectées.",
           "status": "PASS"
         },
         {
@@ -332,7 +441,7 @@
         {
           "label": "pedagogicalStrategy.tutoringMessageHint",
           "expected": "non-empty",
-          "actual": "Proposer une explication simplifiee et rappeler les prerequis.",
+          "actual": "Proposer une explication simplifiée et rappeler les prérequis.",
           "status": "PASS"
         }
       ],
@@ -351,16 +460,16 @@
           ],
           "masteredConceptsCount": 0,
           "weakConceptsCount": 2,
-          "tracesCount": 1,
+          "tracesCount": 5,
           "completedLabsCount": 0,
           "averageAssessmentScore": 38.5,
-          "totalLearningTime": 300,
+          "totalLearningTime": 1500,
           "profileType": "NEEDS_REMEDIATION",
-          "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
+          "profileExplanation": "Le profil indique des lacunes détectées dans le dernier diagnostic."
         },
         "pedagogicalStrategy": {
           "strategyType": "RECOVERY",
-          "strategyExplanation": "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+          "strategyExplanation": "Le système privilégie une stratégie de récupération car des lacunes ont été détectées.",
           "recommendedSequence": [
             "RESOURCE",
             "REVIEW",
@@ -369,10 +478,10 @@
           ],
           "constraints": [
             "Respecter la decision principale du moteur: REMEDIATION.",
-            "Appliquer la strategie au concept recommande: Variables.",
-            "Traiter les lacunes detectees avant d'avancer."
+            "Appliquer la stratégie au concept recommandé: Variables.",
+            "Traiter les lacunes détectées avant d'avancer."
           ],
-          "tutoringMessageHint": "Proposer une explication simplifiee et rappeler les prerequis."
+          "tutoringMessageHint": "Proposer une explication simplifiée et rappeler les prérequis."
         }
       },
       "adaptivePathResponse": {
@@ -391,19 +500,20 @@
             "chapitreTitle": "Representer et manipuler les donnees",
             "status": "LEARNABLE",
             "missingPrerequisiteIds": [],
-            "adaptiveScore": 0.68,
+            "adaptiveScore": 0.64,
             "scoreBreakdown": {
               "prerequisiteScore": 0.5,
               "diagnosticWeaknessScore": 1,
               "historicalPerformanceScore": 0.4,
               "pedagogicalOrderScore": 0.86,
-              "engagementScore": 0.7
+              "engagementScore": 0.3
             },
             "explanationReasons": [
-              "Ce concept peut etre aborde sans prerequis declares.",
-              "Le dernier diagnostic indique que ce concept doit etre renforce.",
-              "Ce concept suit l'ordre pedagogique recommande.",
-              "Le moteur garde une progression prudente car les scores precedents sont faibles."
+              "Le concept 'Variables' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Le dernier diagnostic signale que 'Variables' nécessite un renforcement.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+              "Le système privilégie un apprentissage progressif adapté au rythme observé."
             ]
           },
           {
@@ -415,18 +525,19 @@
             "chapitreTitle": "Representer et manipuler les donnees",
             "status": "LEARNABLE",
             "missingPrerequisiteIds": [],
-            "adaptiveScore": 0.49,
+            "adaptiveScore": 0.45,
             "scoreBreakdown": {
               "prerequisiteScore": 0.5,
               "diagnosticWeaknessScore": 0.3,
               "historicalPerformanceScore": 0.4,
               "pedagogicalOrderScore": 0.71,
-              "engagementScore": 0.7
+              "engagementScore": 0.3
             },
             "explanationReasons": [
-              "Ce concept peut etre aborde sans prerequis declares.",
-              "Ce concept suit l'ordre pedagogique recommande.",
-              "Le moteur garde une progression prudente car les scores precedents sont faibles."
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+              "Le système privilégie un apprentissage progressif adapté au rythme observé."
             ]
           }
         ],
@@ -520,7 +631,8 @@
             "adaptiveScore": null,
             "scoreBreakdown": null,
             "explanationReasons": [
-              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+              "Le concept 'Variables' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+              "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
             ]
           },
           {
@@ -535,8 +647,114 @@
             "adaptiveScore": null,
             "scoreBreakdown": null,
             "explanationReasons": [
-              "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+              "Le concept 'Conditions' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+              "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
             ]
+          }
+        ],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "TO_REVIEW",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Variables' est prioritaire car 5 difficultés successives ont été observées dans vos activités récentes.",
+              "Une remédiation renforcée est proposée afin de consolider ce concept avant de poursuivre le parcours."
+            ],
+            "repeatedFailuresCount": 5,
+            "persistentDifficulty": true,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "TO_REVIEW",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Conditions' est prioritaire car 5 difficultés successives ont été observées dans vos activités récentes.",
+              "Une remédiation renforcée est proposée afin de consolider ce concept avant de poursuivre le parcours."
+            ],
+            "repeatedFailuresCount": 5,
+            "persistentDifficulty": true,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "READY",
+            "adaptiveScore": 0.45,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+              "Le système privilégie un apprentissage progressif adapté au rythme observé."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
           }
         ],
         "nextAction": "REMEDIATION",
@@ -552,7 +770,8 @@
           "adaptiveScore": null,
           "scoreBreakdown": null,
           "explanationReasons": [
-            "Ce concept est prioritaire car il n'a pas ete maitrise lors du diagnostic."
+            "Le concept 'Variables' est recommandé car il n'a pas été maîtrisé lors du dernier diagnostic.",
+            "Cette remédiation vise à consolider une lacune avant de poursuivre la progression."
           ]
         },
         "learningPhase": "REMEDIATION",
@@ -563,30 +782,30 @@
           "conceptName": "Variables",
           "courseId": "ae-runtime-course-algo",
           "type": "INTERNAL",
-          "reason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic."
+          "reason": "Le concept 'Variables' est prioritaire car il n'a pas ete maîtrise lors du dernier diagnostic."
         },
-        "recommendationReason": "Le parcours commence par les concepts non maitrises detectes lors du dernier diagnostic.",
+        "recommendationReason": "Le concept 'Variables' est prioritaire car il n'a pas ete maîtrise lors du dernier diagnostic.",
         "latestDiagnostic": {
-          "idTrace": 172,
+          "idTrace": 341,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
           "studentEmail": "student.strategy.gaps@test.local",
           "learnerEmail": "student.strategy.gaps@test.local",
           "userId": "student.strategy.gaps@test.local",
-          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779046410236",
+          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779266236738",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 38.5,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T19:33:30",
+          "horodatage": "2026-05-20T08:37:16",
           "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":false,\"score\":35},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":false,\"score\":42}]"
         },
-        "traceCount": 1,
+        "traceCount": 5,
         "submittedLabCount": 0,
-        "decisionExplanation": "La priorite est donnee au concept non maitrise lors du dernier diagnostic.",
+        "decisionExplanation": "Une activité de remédiation est proposée sur 'Variables' en raison de lacunes identifiées dans le dernier diagnostic.",
         "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
           "learnerEmail": "student.strategy.gaps@test.local",
@@ -597,16 +816,16 @@
           ],
           "masteredConceptsCount": 0,
           "weakConceptsCount": 2,
-          "tracesCount": 1,
+          "tracesCount": 5,
           "completedLabsCount": 0,
           "averageAssessmentScore": 38.5,
-          "totalLearningTime": 300,
+          "totalLearningTime": 1500,
           "profileType": "NEEDS_REMEDIATION",
-          "profileExplanation": "Le profil indique des lacunes detectees dans le dernier diagnostic."
+          "profileExplanation": "Le profil indique des lacunes détectées dans le dernier diagnostic."
         },
         "pedagogicalStrategy": {
           "strategyType": "RECOVERY",
-          "strategyExplanation": "Le systeme privilegie une strategie de recuperation car des lacunes ont ete detectees.",
+          "strategyExplanation": "Le système privilégie une stratégie de récupération car des lacunes ont été détectées.",
           "recommendedSequence": [
             "RESOURCE",
             "REVIEW",
@@ -615,10 +834,17 @@
           ],
           "constraints": [
             "Respecter la decision principale du moteur: REMEDIATION.",
-            "Appliquer la strategie au concept recommande: Variables.",
-            "Traiter les lacunes detectees avant d'avancer."
+            "Appliquer la stratégie au concept recommandé: Variables.",
+            "Traiter les lacunes détectées avant d'avancer."
           ],
-          "tutoringMessageHint": "Proposer une explication simplifiee et rappeler les prerequis."
+          "tutoringMessageHint": "Proposer une explication simplifiée et rappeler les prérequis."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "quiz.completed",
+          "lastEventAt": "2026-05-20T08:37:16.766494",
+          "refreshReason": "QUIZ_COMPLETED",
+          "message": "Le parcours a été actualisé après votre dernière évaluation."
         }
       }
     },
@@ -659,7 +885,7 @@
         {
           "label": "pedagogicalStrategy.strategyExplanation",
           "expected": "non-empty",
-          "actual": "Le systeme applique une progression standard basee sur le parcours recommande.",
+          "actual": "Le système applique une progression standard basée sur le parcours recommandé.",
           "status": "PASS"
         },
         {
@@ -675,7 +901,7 @@
         {
           "label": "pedagogicalStrategy.tutoringMessageHint",
           "expected": "non-empty",
-          "actual": "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation.",
+          "actual": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation.",
           "status": "PASS"
         }
       ],
@@ -687,20 +913,20 @@
       "actual": {
         "learnerProfile": {
           "learnerEmail": "student.strategy.progressing@test.local",
-          "masteryScore": 81.49,
+          "masteryScore": 81.3,
           "knowledgeGaps": [],
           "masteredConceptsCount": 2,
           "weakConceptsCount": 0,
-          "tracesCount": 2,
+          "tracesCount": 10,
           "completedLabsCount": 0,
           "averageAssessmentScore": 80,
-          "totalLearningTime": 540,
+          "totalLearningTime": 2700,
           "profileType": "PROGRESSING",
           "profileExplanation": "Le profil indique une progression active."
         },
         "pedagogicalStrategy": {
           "strategyType": "STANDARD",
-          "strategyExplanation": "Le systeme applique une progression standard basee sur le parcours recommande.",
+          "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
           "recommendedSequence": [
             "RESOURCE",
             "LAB",
@@ -708,9 +934,9 @@
           ],
           "constraints": [
             "Respecter la decision principale du moteur: LEARN.",
-            "Appliquer la strategie au concept recommande: Conditions."
+            "Appliquer la stratégie au concept recommandé: Conditions."
           ],
-          "tutoringMessageHint": "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation."
+          "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
         }
       },
       "adaptivePathResponse": {
@@ -765,9 +991,9 @@
               "engagementScore": 0.7
             },
             "explanationReasons": [
-              "Tous les prerequis de ce concept sont satisfaits.",
-              "Ce concept suit l'ordre pedagogique recommande.",
-              "Votre historique recent montre une progression suffisante."
+              "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape."
             ]
           },
           {
@@ -788,9 +1014,9 @@
               "engagementScore": 0.7
             },
             "explanationReasons": [
-              "Ce concept peut etre aborde sans prerequis declares.",
-              "Ce concept suit l'ordre pedagogique recommande.",
-              "Votre historique recent montre une progression suffisante."
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape."
             ]
           }
         ],
@@ -842,6 +1068,114 @@
           }
         ],
         "conceptsToReview": [],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "READY",
+            "adaptiveScore": 0.73,
+            "explanationReasons": [
+              "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "READY",
+            "adaptiveScore": 0.58,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' peut être abordé car aucun prérequis bloquant n'est déclaré.",
+              "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+              "L'historique récent montre une progression suffisante pour aborder cette étape.",
+              "Votre progression récente indique une bonne maîtrise des concepts précédents.",
+              "Les prochaines activités recommandées sont légèrement priorisées afin de maintenir votre progression pédagogique."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": true
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "LOCKED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Variables' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          }
+        ],
         "nextAction": "LEARN",
         "nextConcept": {
           "conceptId": "ae-runtime-concept-conditions",
@@ -861,9 +1195,9 @@
             "engagementScore": 0.7
           },
           "explanationReasons": [
-            "Tous les prerequis de ce concept sont satisfaits.",
-            "Ce concept suit l'ordre pedagogique recommande.",
-            "Votre historique recent montre une progression suffisante."
+            "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+            "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+            "L'historique récent montre une progression suffisante pour aborder cette étape."
           ]
         },
         "learningPhase": "LEARNING",
@@ -874,47 +1208,47 @@
           "conceptName": "Conditions",
           "courseId": "ae-runtime-course-algo",
           "type": "INTERNAL",
-          "reason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants."
+          "reason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu."
         },
-        "recommendationReason": "Le prochain concept est accessible car ses prerequis sont satisfaits ou inexistants.",
+        "recommendationReason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu.",
         "latestDiagnostic": {
-          "idTrace": 173,
+          "idTrace": 342,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
           "studentEmail": "student.strategy.progressing@test.local",
           "learnerEmail": "student.strategy.progressing@test.local",
           "userId": "student.strategy.progressing@test.local",
-          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779046410421",
+          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779266237094",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 82,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T19:33:30",
+          "horodatage": "2026-05-20T08:37:17",
           "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":82},{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":82}]"
         },
-        "traceCount": 2,
+        "traceCount": 10,
         "submittedLabCount": 0,
-        "decisionExplanation": "Le concept recommande est celui qui obtient le meilleur score adaptatif parmi les concepts accessibles.",
+        "decisionExplanation": "Le concept 'Conditions' est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.",
         "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
           "learnerEmail": "student.strategy.progressing@test.local",
-          "masteryScore": 81.49,
+          "masteryScore": 81.3,
           "knowledgeGaps": [],
           "masteredConceptsCount": 2,
           "weakConceptsCount": 0,
-          "tracesCount": 2,
+          "tracesCount": 10,
           "completedLabsCount": 0,
           "averageAssessmentScore": 80,
-          "totalLearningTime": 540,
+          "totalLearningTime": 2700,
           "profileType": "PROGRESSING",
           "profileExplanation": "Le profil indique une progression active."
         },
         "pedagogicalStrategy": {
           "strategyType": "STANDARD",
-          "strategyExplanation": "Le systeme applique une progression standard basee sur le parcours recommande.",
+          "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
           "recommendedSequence": [
             "RESOURCE",
             "LAB",
@@ -922,9 +1256,16 @@
           ],
           "constraints": [
             "Respecter la decision principale du moteur: LEARN.",
-            "Appliquer la strategie au concept recommande: Conditions."
+            "Appliquer la stratégie au concept recommandé: Conditions."
           ],
-          "tutoringMessageHint": "Accompagner l'apprenant dans la sequence normale ressource-TP-evaluation."
+          "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "quiz.completed",
+          "lastEventAt": "2026-05-20T08:37:17.289292",
+          "refreshReason": "QUIZ_COMPLETED",
+          "message": "Le parcours a été actualisé après votre dernière évaluation."
         }
       }
     },
@@ -953,7 +1294,7 @@
         {
           "label": "profileExplanation",
           "expected": "non-empty",
-          "actual": "Le profil indique une bonne maitrise des concepts evalues.",
+          "actual": "Le profil indique une bonne maîtrise des concepts évalués.",
           "status": "PASS"
         },
         {
@@ -965,7 +1306,7 @@
         {
           "label": "pedagogicalStrategy.strategyExplanation",
           "expected": "non-empty",
-          "actual": "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+          "actual": "Le système propose une stratégie avancée car le profil indique une bonne maîtrise.",
           "status": "PASS"
         },
         {
@@ -981,7 +1322,7 @@
         {
           "label": "pedagogicalStrategy.tutoringMessageHint",
           "expected": "non-empty",
-          "actual": "Proposer un defi ou une activite d'approfondissement.",
+          "actual": "Proposer un défi ou une activité d'approfondissement.",
           "status": "PASS"
         }
       ],
@@ -995,20 +1336,20 @@
         "nextAction": "COMPLETED",
         "learnerProfile": {
           "learnerEmail": "student.strategy.high@test.local",
-          "masteryScore": 95.12,
+          "masteryScore": 95.16,
           "knowledgeGaps": [],
           "masteredConceptsCount": 7,
           "weakConceptsCount": 0,
-          "tracesCount": 4,
+          "tracesCount": 20,
           "completedLabsCount": 0,
           "averageAssessmentScore": 95.75,
-          "totalLearningTime": 1020,
+          "totalLearningTime": 5100,
           "profileType": "HIGH_PERFORMING",
-          "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
+          "profileExplanation": "Le profil indique une bonne maîtrise des concepts évalués."
         },
         "pedagogicalStrategy": {
           "strategyType": "ADVANCED",
-          "strategyExplanation": "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+          "strategyExplanation": "Le système propose une stratégie avancée car le profil indique une bonne maîtrise.",
           "recommendedSequence": [
             "RESOURCE",
             "CHALLENGE",
@@ -1017,7 +1358,7 @@
           "constraints": [
             "Respecter la decision principale du moteur: COMPLETED."
           ],
-          "tutoringMessageHint": "Proposer un defi ou une activite d'approfondissement."
+          "tutoringMessageHint": "Proposer un défi ou une activité d'approfondissement."
         }
       },
       "adaptivePathResponse": {
@@ -1121,53 +1462,153 @@
         "learnableConcepts": [],
         "blockedConcepts": [],
         "conceptsToReview": [],
+        "recommendedLearningPath": [
+          {
+            "order": 1,
+            "conceptId": "ae-runtime-concept-types-de-donnees",
+            "conceptName": "Types de données",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Types de données' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 2,
+            "conceptId": "ae-runtime-concept-variables",
+            "conceptName": "Variables",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Variables' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 3,
+            "conceptId": "ae-runtime-concept-entrees-sorties",
+            "conceptName": "Entrées/Sorties",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Entrées/Sorties' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 4,
+            "conceptId": "ae-runtime-concept-conditions",
+            "conceptName": "Conditions",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Conditions' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 5,
+            "conceptId": "ae-runtime-concept-boucles",
+            "conceptName": "Boucles",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Boucles' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 6,
+            "conceptId": "ae-runtime-concept-tableaux",
+            "conceptName": "Tableaux",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Tableaux' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          },
+          {
+            "order": 7,
+            "conceptId": "ae-runtime-concept-fonctions",
+            "conceptName": "Fonctions",
+            "status": "COMPLETED",
+            "adaptiveScore": null,
+            "explanationReasons": [
+              "Le concept 'Fonctions' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+            ],
+            "repeatedFailuresCount": null,
+            "persistentDifficulty": null,
+            "remediationSuccess": null,
+            "highMasteryProgression": null
+          }
+        ],
         "nextAction": "COMPLETED",
         "nextConcept": null,
         "learningPhase": "COMPLETED",
         "nextRecommendation": {
           "action": "COMPLETED",
           "learningPhase": "COMPLETED",
-          "reason": "Tous les concepts disponibles sont maitrises ou aucun concept n'est disponible."
+          "reason": "Le cours est considéré terminé car aucun concept accessible ne reste à apprendre dans le parcours actuel."
         },
-        "recommendationReason": "Tous les concepts disponibles sont maitrises ou aucun concept n'est disponible.",
+        "recommendationReason": "Le cours est considéré terminé car aucun concept accessible ne reste à apprendre dans le parcours actuel.",
         "latestDiagnostic": {
-          "idTrace": 175,
+          "idTrace": 344,
           "courseId": "ae-runtime-course-algo",
           "targetId": "ae-runtime-course-algo",
           "targetType": "COURSE",
           "studentEmail": "student.strategy.high@test.local",
           "learnerEmail": "student.strategy.high@test.local",
           "userId": "student.strategy.high@test.local",
-          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779046410673",
+          "evaluationId": "runtime-strategy-diagnostic-ae-runtime-course-algo-1779266237647",
           "typeEvaluation": "DIAGNOSTIC_ENTREE",
           "scoreObtenu": 95,
           "tempsConsultation": 300,
-          "horodatage": "2026-05-17T19:33:30",
+          "horodatage": "2026-05-20T08:37:17",
           "feedbackGenere": "Runtime adaptive diagnostic simulation",
           "tabSwitchesCount": 0,
           "masterySource": "DIAGNOSTIC_ENTREE",
           "conceptResults": "[{\"conceptId\":\"ae-runtime-concept-types-de-donnees\",\"conceptName\":\"Types de données\",\"name\":\"Types de données\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-variables\",\"conceptName\":\"Variables\",\"name\":\"Variables\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-entrees-sorties\",\"conceptName\":\"Entrées/Sorties\",\"name\":\"Entrées/Sorties\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-conditions\",\"conceptName\":\"Conditions\",\"name\":\"Conditions\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-boucles\",\"conceptName\":\"Boucles\",\"name\":\"Boucles\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-tableaux\",\"conceptName\":\"Tableaux\",\"name\":\"Tableaux\",\"mastered\":true,\"score\":95},{\"conceptId\":\"ae-runtime-concept-fonctions\",\"conceptName\":\"Fonctions\",\"name\":\"Fonctions\",\"mastered\":true,\"score\":95}]"
         },
-        "traceCount": 4,
+        "traceCount": 20,
         "submittedLabCount": 0,
-        "decisionExplanation": "Le parcours est termine : aucun concept accessible ne reste a apprendre.",
+        "decisionExplanation": "Le parcours est terminé : les concepts requis sont maîtrisés ou aucun nouveau concept accessible n'est disponible.",
         "scoringVersion": "RULE_BASED_EXPLAINABLE",
         "learnerProfile": {
           "learnerEmail": "student.strategy.high@test.local",
-          "masteryScore": 95.12,
+          "masteryScore": 95.16,
           "knowledgeGaps": [],
           "masteredConceptsCount": 7,
           "weakConceptsCount": 0,
-          "tracesCount": 4,
+          "tracesCount": 20,
           "completedLabsCount": 0,
           "averageAssessmentScore": 95.75,
-          "totalLearningTime": 1020,
+          "totalLearningTime": 5100,
           "profileType": "HIGH_PERFORMING",
-          "profileExplanation": "Le profil indique une bonne maitrise des concepts evalues."
+          "profileExplanation": "Le profil indique une bonne maîtrise des concepts évalués."
         },
         "pedagogicalStrategy": {
           "strategyType": "ADVANCED",
-          "strategyExplanation": "Le systeme propose une strategie avancee car le profil indique une bonne maitrise.",
+          "strategyExplanation": "Le système propose une stratégie avancée car le profil indique une bonne maîtrise.",
           "recommendedSequence": [
             "RESOURCE",
             "CHALLENGE",
@@ -1176,7 +1617,14 @@
           "constraints": [
             "Respecter la decision principale du moteur: COMPLETED."
           ],
-          "tutoringMessageHint": "Proposer un defi ou une activite d'approfondissement."
+          "tutoringMessageHint": "Proposer un défi ou une activité d'approfondissement."
+        },
+        "pathFreshness": {
+          "refreshedAfterEvent": true,
+          "lastEventType": "quiz.completed",
+          "lastEventAt": "2026-05-20T08:37:17.894475",
+          "refreshReason": "QUIZ_COMPLETED",
+          "message": "Le parcours a été actualisé après votre dernière évaluation."
         }
       }
     }
@@ -1186,6 +1634,6 @@
     "passed": 4,
     "failed": 0,
     "errors": [],
-    "durationMs": 2902
+    "durationMs": 2868
   }
 }

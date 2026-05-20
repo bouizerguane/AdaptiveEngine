@@ -19,3 +19,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:change_me_jwt_secret_at_least_32_chars}
+
+services:
+  content:
+    url: ${CONTENT_SERVICE_URL:http://content-service:8083}

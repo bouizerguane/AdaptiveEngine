@@ -158,6 +158,7 @@ services:
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=${NEO4J_USER:-neo4j}
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=${NEO4J_PASSWORD:-change_me_neo4j_password}
       - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
+      - CONTENT_SERVICE_URL=http://content-service:8083
     networks:
       - adaptive-network
     depends_on:
@@ -175,6 +176,7 @@ services:
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-change_me_mongo_password}@mongodb-content:27017/${MONGO_DB:-content_db}?authSource=admin
       - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
+      - IAM_SERVICE_URL=http://iam-service:8081
     networks:
       - adaptive-network
     depends_on:
@@ -219,6 +221,7 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
+      - KNOWLEDGE_GRAPH_SERVICE_URL=http://knowledge-graph-service:8082
     networks:
       - adaptive-network
     depends_on:

@@ -57,7 +57,7 @@ export default function LearnerMyCourses() {
                                 <h2 className="text-lg font-bold text-slate-800">{course.title || 'Cours sans titre'}</h2>
                                 <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
                                     <User size={16} />
-                                    <span>{teacherLabel(course) ? `Enseignant : ${teacherLabel(course)}` : 'Enseignant non renseigne'}</span>
+                                    <span>{teacherLabel(course) ? `Enseignant : ${teacherLabel(course)}` : 'Enseignant non renseigné'}</span>
                                 </div>
                             </div>
                             <p className="text-sm text-slate-600 leading-6 flex-1">

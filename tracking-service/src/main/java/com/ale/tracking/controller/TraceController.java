@@ -3,6 +3,7 @@ package com.ale.tracking.controller;
 import com.ale.tracking.domain.TraceApprentissage;
 import com.ale.tracking.events.QuizCompletedEventPublisher;
 import com.ale.tracking.repository.TraceRepository;
+import com.ale.tracking.service.RecommendationTraceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ public class TraceController {
 
     private final TraceRepository traceRepository;
     private final QuizCompletedEventPublisher quizCompletedEventPublisher;
+    private final RecommendationTraceService recommendationTraceService;
 
     /**
      * POST /api/traces
@@ -38,6 +40,7 @@ public class TraceController {
             trace.setHorodatage(LocalDateTime.now());
         }
         TraceApprentissage saved = traceRepository.save(trace);
+        recommendationTraceService.captureTraceOutcome(saved);
         quizCompletedEventPublisher.publishIfQuizTrace(saved);
         return ResponseEntity.ok(saved);
     }

@@ -8,6 +8,7 @@ import com.ale.tracking.repository.TraceRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,9 @@ public class TeacherDashboardController {
     private final LabSubmissionRepository labSubmissionRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+
+    @Value("${services.knowledge-graph.url}")
+    private String knowledgeGraphServiceUrl;
 
     @GetMapping("/summary")
     public ResponseEntity<TeacherDashboardSummaryDto> getSummary(
@@ -47,7 +51,7 @@ public class TeacherDashboardController {
         }
         
         // 1. Récupérer les cours de l'enseignant via knowledge-graph-service
-        String coursesUrl = "http://knowledge-graph-service/api/graph/courses/teacher/" + teacherEmail;
+        String coursesUrl = knowledgeGraphServiceUrl + "/api/graph/courses/teacher/" + teacherEmail;
         List<Map<String, Object>> courses = new ArrayList<>();
         try {
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
@@ -64,7 +68,7 @@ public class TeacherDashboardController {
                 .collect(Collectors.toList());
 
         // 2. Récupérer la maîtrise via knowledge-graph-service
-        String masteryUrl = "http://knowledge-graph-service/api/graph/mastery/teacher/" + teacherEmail;
+        String masteryUrl = knowledgeGraphServiceUrl + "/api/graph/mastery/teacher/" + teacherEmail;
         List<Map<String, Object>> masteryData = new ArrayList<>();
         try {
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(

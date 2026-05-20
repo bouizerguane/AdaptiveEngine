@@ -20,7 +20,7 @@ const DIFFICULTY_COLORS = { EASY: 'text-emerald-600 bg-emerald-50 border-emerald
 const DIFFICULTY_LABELS = { EASY: 'Facile', MEDIUM: 'Moyen', HARD: 'Difficile' };
 
 const TYPES_BY_LEVEL = {
-    COURSE:   ['DIAGNOSTIC_ENTREE', 'VALIDATION'],
+    COURSE:   ['DIAGNOSTIC_ENTREE', 'VALIDATION_COURS'],
     MODULE:   ['DIAGNOSTIC_POSITIONNEMENT'],
     CONCEPT:  ['FORMATIVE', 'VALIDATION'],
     '':       [],
@@ -30,7 +30,8 @@ const TYPE_META = {
     DIAGNOSTIC_ENTREE:         { color: 'violet',  icon: <GraduationCap size={16}/>, label: 'Diagnostic d\'Entrée (Cours)',  desc: 'Prérequis globaux du cours entier. Détermine si l\'étudiant est prêt à débuter.' },
     DIAGNOSTIC_POSITIONNEMENT: { color: 'sky',     icon: <Zap size={16}/>,           label: 'Positionnement (Module)',       desc: 'Si réussi, valide automatiquement tous les concepts du module (saut de niveau).' },
     FORMATIVE:                 { color: 'emerald', icon: <BookOpen size={16}/>,       label: 'Formative',                    desc: 'Accompagne l\'apprentissage avec indices, feedback immédiat et remédiation.' },
-    VALIDATION:                { color: 'red',     icon: <Shield size={16}/>,         label: 'Validation (Examen)',           desc: 'Évaluation stricte : chronomètre, tentatives limitées et anti-triche actif.' },
+    VALIDATION:                { color: 'red',     icon: <Shield size={16}/>,         label: 'Validation de concept',         desc: 'Évaluation stricte associée à un concept.' },
+    VALIDATION_COURS:          { color: 'red',     icon: <Shield size={16}/>,         label: 'Validation finale du cours',    desc: 'Banque de questions finale, distincte du diagnostic initial.' },
 };
 
 const emptyQuestion = () => ({ conceptId: '', associationType: 'COURSE_CONCEPT', externalPrerequisiteLabel: '', generalQuestion: false, text: '', type: 'QCM', options: ['', '', '', ''], correctAnswer: '', difficulty: 'MEDIUM', hintText: '' });
@@ -47,7 +48,7 @@ const defaultEval = (type = 'FORMATIVE') => {
     };
     if (type === 'DIAGNOSTIC_POSITIONNEMENT' || type === 'DIAGNOSTIC_ENTREE')
         return { ...base, shuffleQuestions: true, allowBacktrack: false, showImmediateFeedback: false, nbrTentativesMax: 1 };
-    if (type === 'VALIDATION') return { ...base, allowBacktrack: false, showImmediateFeedback: false, tempsImparti: 30, nbrTentativesMax: 1, coefficient: 1 };
+    if (type === 'VALIDATION' || type === 'VALIDATION_COURS') return { ...base, allowBacktrack: false, showImmediateFeedback: false, tempsImparti: 30, nbrTentativesMax: 1, coefficient: 1 };
     return base;
 };
 
@@ -124,7 +125,7 @@ export default function TeacherQuizzes() {
         const defaultType = activeTargetType === 'MODULE' ? 'DIAGNOSTIC_POSITIONNEMENT'
                           : activeTargetType === 'COURSE'  ? 'DIAGNOSTIC_ENTREE'
                           : 'FORMATIVE';
-        evaluationApi.getEvaluation(activeTargetId)
+        evaluationApi.getEvaluation(activeTargetId, defaultType)
             .then(r => {
                 setEvaluation({
                     ...defaultEval(r.data.typeEvaluation),
@@ -150,7 +151,27 @@ export default function TeacherQuizzes() {
     }, [activeTargetType, evaluation.typeEvaluation]);
 
     const setField = (field, value) => { setEvaluation(p => ({ ...p, [field]: value })); setIsDirty(true); };
-    const changeType = (type) => { setEvaluation(prev => ({ ...defaultEval(type), id: prev.id, questions: prev.questions })); setIsDirty(true); };
+    const changeType = (nextType) => {
+        if (!activeTargetId) {
+            setEvaluation(defaultEval(nextType));
+            setIsDirty(false);
+            return;
+        }
+        evaluationApi.getEvaluation(activeTargetId, nextType)
+            .then(r => {
+                setEvaluation({
+                    ...defaultEval(r.data.typeEvaluation),
+                    ...r.data,
+                    questions: r.data.questions?.length ? r.data.questions : [emptyQuestion()]
+                });
+                setIsDirty(false);
+            })
+            .catch(err => {
+                if (err.response?.status !== 404) toast.error('Erreur chargement quiz.');
+                setEvaluation(defaultEval(nextType));
+                setIsDirty(false);
+            });
+    };
 
     const addQuestion = () => { setEvaluation(p => ({ ...p, questions: [...p.questions, emptyQuestion()] })); setIsDirty(true); };
     const removeQuestion = (idx) => { setEvaluation(p => ({ ...p, questions: p.questions.filter((_, i) => i !== idx) })); setIsDirty(true); };
@@ -169,7 +190,7 @@ export default function TeacherQuizzes() {
     const inferAssociationType = (question) => {
         if (question.associationType) return question.associationType;
         if (question.generalQuestion) return 'GENERAL';
-        if (question.externalPrerequisiteLabel?.trim()) return 'FREE_EXTERNAL';
+        if (question.externalPrerequisiteLabel?.trim()) return 'GENERAL';
         if (question.conceptId && externalPrerequisiteConcepts.some(concept => concept.id === question.conceptId)) return 'EXTERNAL_CONCEPT';
         return 'COURSE_CONCEPT';
     };
@@ -207,14 +228,14 @@ export default function TeacherQuizzes() {
             toast.error('Chaque question doit posséder un énoncé, une réponse correcte et un niveau de difficulté défini.');
             return;
         }
-        if (evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT'
+        if ((evaluation.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT' || evaluation.typeEvaluation === 'VALIDATION_COURS')
             && evaluation.questions.some(q => !q.conceptId)) {
-            toast.error('Chaque question doit etre associee a un concept.');
+            toast.error('Chaque question doit être associée à un concept.');
             return;
         }
         if (evaluation.typeEvaluation === 'DIAGNOSTIC_ENTREE'
-            && evaluation.questions.some(q => !q.conceptId && !q.externalPrerequisiteLabel?.trim() && !q.generalQuestion)) {
-            toast.error("Chaque question de diagnostic d'entree doit avoir un concept, un prerequis libre ou etre marquee comme generale.");
+            && evaluation.questions.some(q => !q.conceptId && !q.externalPrerequisiteLabel?.trim())) {
+            toast.error("Chaque question de diagnostic d'entrée doit avoir un concept du cours, un concept externe ou un concept général.");
             return;
         }
         setSaving(true);
@@ -226,7 +247,7 @@ export default function TeacherQuizzes() {
                     : question.generalQuestion || question.externalPrerequisiteLabel?.trim()
                         ? ''
                         : question.conceptId || '',
-                externalPrerequisiteLabel: question.generalQuestion ? '' : question.externalPrerequisiteLabel || '',
+                externalPrerequisiteLabel: question.externalPrerequisiteLabel || '',
                 generalQuestion: !!question.generalQuestion,
             }));
             await evaluationApi.saveEvaluation({
@@ -257,11 +278,11 @@ export default function TeacherQuizzes() {
     const availableTypes = TYPES_BY_LEVEL[activeTargetType] || [];
     const allCourseConcepts = flattenConcepts(modules);
     const courseQuestionConcepts = allCourseConcepts.map(concept => ({ ...concept, sourceLabel: 'Concept du cours' }));
-    const externalQuestionConcepts = externalPrerequisiteConcepts.map(concept => ({ ...concept, sourceLabel: 'Prerequis conceptuel existant', moduleTitle: 'Autre cours', chapitreTitle: '' }));
+    const externalQuestionConcepts = externalPrerequisiteConcepts.map(concept => ({ ...concept, sourceLabel: 'Prérequis conceptuel existant', moduleTitle: 'Autre cours', chapitreTitle: '' }));
     const selectableQuestionConcepts = type === 'DIAGNOSTIC_ENTREE'
         ? [...courseQuestionConcepts, ...externalQuestionConcepts]
         : courseQuestionConcepts;
-    const requiresQuestionConcept = type === 'DIAGNOSTIC_POSITIONNEMENT';
+    const requiresQuestionConcept = type === 'DIAGNOSTIC_POSITIONNEMENT' || type === 'VALIDATION_COURS';
     const allowsQuestionConcept = requiresQuestionConcept || type === 'VALIDATION';
 
     const qs = evaluation.questions;
@@ -415,7 +436,7 @@ export default function TeacherQuizzes() {
                                             className="w-full border border-sky-300 bg-sky-50 rounded-lg p-2 text-sm outline-none text-sky-800" />
                                     </div>
                                 )}
-                                {type === 'VALIDATION' && (
+                                {(type === 'VALIDATION' || type === 'VALIDATION_COURS') && (
                                     <>
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1"><Timer size={11}/> Temps imparti (min)</label>
@@ -433,7 +454,7 @@ export default function TeacherQuizzes() {
 
                             <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
                                 <Toggle value={evaluation.shuffleQuestions} onChange={v => setField('shuffleQuestions', v)} label="Mélanger questions" disabled={type === 'DIAGNOSTIC_POSITIONNEMENT' || type === 'DIAGNOSTIC_ENTREE'} />
-                                <Toggle value={evaluation.allowBacktrack} onChange={v => setField('allowBacktrack', v)} label="Navigation arrière" disabled={type === 'DIAGNOSTIC_POSITIONNEMENT' || type === 'DIAGNOSTIC_ENTREE' || type === 'VALIDATION'} />
+                                <Toggle value={evaluation.allowBacktrack} onChange={v => setField('allowBacktrack', v)} label="Navigation arrière" disabled={type === 'DIAGNOSTIC_POSITIONNEMENT' || type === 'DIAGNOSTIC_ENTREE' || type === 'VALIDATION' || type === 'VALIDATION_COURS'} />
                                 {type === 'FORMATIVE' && <Toggle value={evaluation.showImmediateFeedback} onChange={v => setField('showImmediateFeedback', v)} label="Feedback immédiat" />}
                             </div>
 
@@ -477,10 +498,9 @@ export default function TeacherQuizzes() {
                                                         onChange={e => updateQuestionAssociationType(qIdx, e.target.value)}
                                                         className="w-full border border-violet-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-violet-400"
                                                     >
-                                                        <option value="COURSE_CONCEPT">Concept du cours</option>
-                                                        <option value="EXTERNAL_CONCEPT">Prerequis conceptuel existant</option>
-                                                        <option value="FREE_EXTERNAL">Prerequis externe libre</option>
-                                                        <option value="GENERAL">Question generale sans concept</option>
+                                                        <option value="COURSE_CONCEPT">CONCEPT_DU_COURS - Concept du cours</option>
+                                                        <option value="EXTERNAL_CONCEPT">CONCEPT_EXTERNE - Concept externe lié</option>
+                                                        <option value="GENERAL">CONCEPT_GENERAL - Concept général</option>
                                                     </select>
 
                                                     {inferAssociationType(q) === 'COURSE_CONCEPT' && (
@@ -489,7 +509,7 @@ export default function TeacherQuizzes() {
                                                             onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
                                                             className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
                                                         >
-                                                            <option value="">Selectionner un concept du cours</option>
+                                                            <option value="">Sélectionner un concept du cours</option>
                                                             {courseQuestionConcepts.map(concept => (
                                                                 <option key={concept.id} value={concept.id}>
                                                                     {concept.moduleTitle}{concept.chapitreTitle ? ` / ${concept.chapitreTitle}` : ''} / {concept.labelPedagogique || concept.title || concept.id}
@@ -504,7 +524,7 @@ export default function TeacherQuizzes() {
                                                             onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
                                                             className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
                                                         >
-                                                            <option value="">Selectionner un prerequis existant</option>
+                                                            <option value="">Sélectionner un prérequis existant</option>
                                                             {externalQuestionConcepts.map(concept => (
                                                                 <option key={concept.id} value={concept.id}>
                                                                     {concept.labelPedagogique || concept.title || concept.label || concept.id}
@@ -513,19 +533,18 @@ export default function TeacherQuizzes() {
                                                         </select>
                                                     )}
 
-                                                    {inferAssociationType(q) === 'FREE_EXTERNAL' && (
-                                                        <input
-                                                            value={q.externalPrerequisiteLabel || ''}
-                                                            onChange={e => updateQuestion(qIdx, 'externalPrerequisiteLabel', e.target.value)}
-                                                            placeholder="Exemple : logique mathematique"
-                                                            className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
-                                                        />
-                                                    )}
-
                                                     {inferAssociationType(q) === 'GENERAL' && (
-                                                        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-                                                            Cette question restera generale : aucun conceptId ni prerequis libre ne sera envoye.
-                                                        </p>
+                                                        <div className="space-y-2">
+                                                            <input
+                                                                value={q.externalPrerequisiteLabel || ''}
+                                                                onChange={e => updateQuestion(qIdx, 'externalPrerequisiteLabel', e.target.value)}
+                                                                placeholder="Exemple : logique mathématique générale"
+                                                                className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
+                                                            />
+                                                            <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+                                                                Ce concept général sera utilisé pour analyser le diagnostic sans le relier à un concept du graphe.
+                                                            </p>
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
@@ -533,14 +552,14 @@ export default function TeacherQuizzes() {
                                             {allowsQuestionConcept && type !== 'DIAGNOSTIC_ENTREE' && (
                                                 <div className="space-y-2">
                                                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                                                        Concept associe {requiresQuestionConcept && <span className="text-red-500">*</span>}
+                                                        Concept associé {requiresQuestionConcept && <span className="text-red-500">*</span>}
                                                     </label>
                                                     <select
                                                         value={q.conceptId || ''}
                                                         onChange={e => updateQuestion(qIdx, 'conceptId', e.target.value)}
                                                         className="w-full border border-slate-200 bg-white text-slate-700 rounded-lg p-2 text-sm outline-none focus:border-indigo-300"
                                                     >
-                                                        <option value="">Selectionner un concept</option>
+                                                        <option value="">Sélectionner un concept</option>
                                                         {selectableQuestionConcepts.map(concept => (
                                                             <option key={concept.id} value={concept.id}>
                                                                 {concept.sourceLabel} / {concept.moduleTitle}{concept.chapitreTitle ? ` / ${concept.chapitreTitle}` : ''} / {concept.labelPedagogique || concept.id}
@@ -558,13 +577,13 @@ export default function TeacherQuizzes() {
                                                 ))}
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Bonne reponse</label>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Bonne réponse</label>
                                                 <select
                                                     value={q.correctAnswer || ''}
                                                     onChange={e => updateQuestion(qIdx, 'correctAnswer', e.target.value)}
                                                     className="w-full border border-emerald-200 bg-emerald-50 text-emerald-800 rounded-lg p-2 text-sm font-semibold outline-none focus:border-emerald-400"
                                                 >
-                                                    <option value="">Selectionner la bonne reponse</option>
+                                                    <option value="">Sélectionner la bonne réponse</option>
                                                     {(q.options || []).filter(Boolean).map((opt, optIdx) => (
                                                         <option key={`${optIdx}-${opt}`} value={opt}>{opt}</option>
                                                     ))}

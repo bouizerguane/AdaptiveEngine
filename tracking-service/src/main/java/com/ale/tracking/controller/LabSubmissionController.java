@@ -3,6 +3,7 @@ package com.ale.tracking.controller;
 import com.ale.tracking.domain.LabSubmission;
 import com.ale.tracking.events.LabSubmittedEventPublisher;
 import com.ale.tracking.repository.LabSubmissionRepository;
+import com.ale.tracking.service.RecommendationTraceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class LabSubmissionController {
 
     private final LabSubmissionRepository submissionRepository;
     private final LabSubmittedEventPublisher eventPublisher;
+    private final RecommendationTraceService recommendationTraceService;
 
     /**
      * Crée ou met à jour une soumission.
@@ -74,6 +76,7 @@ public class LabSubmissionController {
                 s.setCompletedAt(LocalDateTime.now());
             }
             LabSubmission saved = submissionRepository.save(s);
+            recommendationTraceService.captureLabOutcome(saved);
             eventPublisher.publish(saved);
             return ResponseEntity.ok(saved);
         }
@@ -83,6 +86,7 @@ public class LabSubmissionController {
             submission.setCompletedAt(LocalDateTime.now());
         }
         LabSubmission saved = submissionRepository.save(submission);
+        recommendationTraceService.captureLabOutcome(saved);
         eventPublisher.publish(saved);
         return ResponseEntity.ok(saved);
     }
@@ -160,7 +164,7 @@ public class LabSubmissionController {
 
     /**
      * Statistiques d'un Lab — soumissions réelles uniquement (hors tests enseignants).
-     * Utilisé par le moteur LSTM pour détecter les TP trop difficiles.
+     * Utilisé par le moteur adaptatif rule-based et exploitable pour de futures analyses ML.
      */
     @GetMapping("/{labId}/submissions")
     public ResponseEntity<?> getLabSubmissions(

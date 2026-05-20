@@ -1,0 +1,5 @@
+masteryScore,engagementScore,adaptiveScore,prerequisiteScore,diagnosticWeaknessScore,historicalPerformanceScore,pedagogicalOrderScore,averageAssessmentScore,repeatedFailuresCount,tracesCount,completedLabsCount,knowledgeGapsCount,readyConceptsCount,lockedConceptsCount,completedConceptsCount,recommendedPathSize,profileType,recommendationContext,nextAction,lastActivityType,persistentDifficulty,highMasteryProgression,conceptCompletedAfterRecommendation
+90.0,0.7,0.6,0.5,0.3,1.0,0.86,90.0,,1.0,0.0,0.0,2.0,5.0,0.0,7.0,PROGRESSING,LEARN,LEARN,LAB,MISSING,True,1
+64.67,0.3,0.47,0.5,0.3,0.4,0.86,59.6,3.0,5.0,1.0,0.0,1.0,5.0,0.0,7.0,PROGRESSING,LEARN,LEARN,QUIZ,True,MISSING,1
+90.0,0.7,0.6,0.5,0.3,1.0,0.86,90.0,,1.0,0.0,0.0,2.0,5.0,0.0,7.0,PROGRESSING,LEARN,LEARN,QUIZ,MISSING,True,1
+91.24,1.0,0.76,1.0,0.3,1.0,0.57,91.2,,20.0,3.0,0.0,,,,,PROGRESSING,MISSING,LEARN,QUIZ,MISSING,MISSING,1

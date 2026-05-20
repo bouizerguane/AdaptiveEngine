@@ -25,7 +25,7 @@ public class TraceApprentissage {
 
     /**
      * Type de la cible pédagogique : CONCEPT | MODULE | COURSE.
-     * Crucial pour l'Adaptive Engine (LSTM) afin de différencier les types de performance.
+     * Utilisé par le moteur adaptatif rule-based explicable pour différencier les types de performance.
      */
     private String targetType;
 
@@ -66,7 +66,7 @@ public class TraceApprentissage {
     private int tabSwitchesCount = 0;
 
     /**
-     * Source de maîtrise — métadonnée critique pour l'Adaptive Engine (LSTM).
+     * Source de maîtrise — métadonnée utile au moteur adaptatif et exploitable pour de futurs modèles ML.
      * Valeurs :
      *   null               → quiz standard sans implication sur la maîtrise globale
      *   "QUIZ_DIRECT"      → concept validé directement par un quiz FORMATIVE/VALIDATION

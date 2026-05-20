@@ -45,7 +45,7 @@ public class Lab {
 
     /**
      * Niveau de difficulté : EASY | MEDIUM | HARD.
-     * Utilisé par le moteur adaptatif LSTM pour les recommandations.
+     * Utilisé par le moteur adaptatif rule-based explicable pour les recommandations.
      */
     private String difficulty;
 

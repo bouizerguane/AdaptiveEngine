@@ -30,13 +30,14 @@ import {
     AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, 
     Table as TableIcon, CheckSquare, Subscript as SubscriptIcon, Superscript as SuperscriptIcon,
     Trash2, Plus, Minus, GraduationCap, Youtube as YoutubeIcon, FileText, Type, Combine, PanelTop,
-    Eraser, Sigma
+    Eraser
 } from 'lucide-react';
 import { contentApi, courseApi, adminApi, graphApi } from '../api/apiClient';
 import CustomDialog from '../components/CustomDialog';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { normalizeCourseTree } from '../utils/courseOrder';
+import { normalizeResourceHtml } from '../utils/resourceHtml';
 
 const lowlight = createLowlight(common);
 
@@ -80,45 +81,72 @@ const CustomTableCell = TableCell.extend({
 const PdfExtension = Node.create({
   name: 'pdf', group: 'block', selectable: true, draggable: true,
   addAttributes() { return { href: { default: null }, filename: { default: 'Document PDF' } } },
-  parseHTML() { return [{ tag: 'iframe[data-type="pdf"]' }] },
+  parseHTML() {
+    return [
+      {
+        tag: 'div[data-type="pdf-resource"]',
+        getAttrs: element => ({
+          href: element.querySelector('object')?.getAttribute('data') || element.querySelector('a')?.getAttribute('href'),
+          filename: element.getAttribute('data-filename') || element.querySelector('a')?.textContent || 'Document PDF',
+        }),
+      },
+      {
+        tag: 'object[data-type="pdf"]',
+        getAttrs: element => ({
+          href: element.getAttribute('data'),
+          filename: element.getAttribute('data-filename') || 'Document PDF',
+        }),
+      },
+      {
+        tag: 'iframe[data-type="pdf"]',
+        getAttrs: element => ({
+          href: element.getAttribute('src'),
+          filename: element.getAttribute('data-filename') || 'Document PDF',
+        }),
+      },
+    ]
+  },
   renderHTML({ HTMLAttributes }) {
-    return ['iframe', { src: HTMLAttributes.href, 'data-type': 'pdf', width: '100%', height: '500px', class: 'w-full h-[500px] border border-slate-200 rounded-xl my-4 shadow-sm' }]
+    const href = HTMLAttributes.href;
+    const filename = HTMLAttributes.filename || 'Document PDF';
+    return ['div', { 'data-type': 'pdf-resource', 'data-filename': filename, class: 'pdf-resource my-4 rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm' },
+      ['p', { class: 'mb-2 text-sm font-semibold text-slate-700' }, filename],
+      ['a', { href, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-indigo-700 underline hover:bg-indigo-50' }, 'Ouvrir le document PDF']
+    ]
   },
   addCommands() { return { setPdf: options => ({ commands }) => commands.insertContent({ type: this.name, attrs: options }) } }
 });
 
 const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
     const [showChars, setShowChars] = useState(false);
-    const SPECIAL_CHARS = ['α', 'β', 'γ', '∞', '∑', 'Δ', '≈', '≠', 'π', 'θ', 'μ', 'Ω', '±', '≤', '≥', '√'];
+    const [inputDialog, setInputDialog] = useState(null);
+    const SPECIAL_CHARS = ['≤', '≥', '≠', '±', '×', '÷', '√', '∑', '∫', 'π', 'α', 'β', 'γ', 'Δ', '∞', '→', '←', '↔', '∈', '∉', '∅', '∧', '∨', '∀', '∃', '²', '³'];
 
     if (!editor) return null;
 
-    const addYoutubeVideo = () => {
-        const url = prompt('URL de la vidéo YouTube :');
-        if (url) editor.chain().focus().setYoutubeVideo({ src: url }).run();
+    const openInputDialog = (type) => {
+        const selectedText = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ');
+        const config = {
+            youtube: { title: 'Insérer une vidéo YouTube', label: 'URL de la vidéo', placeholder: 'https://www.youtube.com/watch?v=...', initialValue: '' },
+            image: { title: 'Insérer une image par URL', label: "URL de l'image", placeholder: 'https://exemple.com/image.png', initialValue: '' },
+            link: { title: 'Insérer un lien', label: 'URL du lien', placeholder: 'https://exemple.com', initialValue: selectedText || '' },
+        }[type];
+        setInputDialog({ type, value: config.initialValue, ...config });
     };
 
-    const addImageUrl = () => {
-        const url = prompt('URL de l\'image :');
-        if (url) editor.chain().focus().setImage({ src: url }).run();
+    const submitInputDialog = () => {
+        const value = inputDialog?.value?.trim();
+        if (!value) return;
+        const chain = editor.chain().focus();
+        if (inputDialog.type === 'youtube') chain.setYoutubeVideo({ src: value }).run();
+        if (inputDialog.type === 'image') chain.setImage({ src: value }).run();
+        if (inputDialog.type === 'link') chain.setLink({ href: value, target: '_blank' }).run();
+        setInputDialog(null);
     };
 
-    const addLink = () => {
-        const url = prompt('URL du lien (ex: https://...) :');
-        if (url) editor.chain().focus().setLink({ href: url, target: '_blank' }).run();
-    };
-
-    const insertEquation = () => {
-        const { from, to } = editor.state.selection;
-        const text = editor.state.doc.textBetween(from, to, ' ');
-        if (text) {
-            editor.chain().focus().insertContent(`$${text}$`).run();
-        } else {
-            const eq = prompt("Saisissez l'équation :");
-            if (eq) editor.chain().focus().insertContent(`$${eq}$`).run();
-        }
-    };
-
+    const addYoutubeVideo = () => openInputDialog('youtube');
+    const addImageUrl = () => openInputDialog('image');
+    const addLink = () => openInputDialog('link');
     const setSelectionWidth = (width) => {
         if (editor.isActive('image')) editor.chain().focus().updateAttributes('image', { width }).run();
         else if (editor.isActive('video')) editor.chain().focus().updateAttributes('video', { width }).run();
@@ -128,9 +156,7 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
 
     return (
         <div className="flex flex-col border-b border-slate-200 bg-slate-50 shrink-0">
-            {/* ROW 1: FORMATTING, SCIENTIFIC, STRUCTURE */}
             <div className="flex gap-2 flex-wrap p-2 items-center border-b border-slate-100">
-                {/* Style Group */}
                 <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm items-center gap-1">
                     <select onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()} value={editor.getAttributes('textStyle').fontFamily || ''} className="p-1 cursor-pointer outline-none text-[11px] text-slate-700 bg-transparent font-medium max-w-[80px]">
                         <option value="">Police</option><option value="Arial">Arial</option><option value="Courier New">Courier New</option><option value="Georgia">Georgia</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Verdana">Verdana</option>
@@ -147,19 +173,17 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
                     <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))}><UnderlineIcon size={14}/></button>
                     <button onClick={() => editor.chain().focus().toggleStrike().run()} className={btnClass(editor.isActive('strike'))}><Strikethrough size={14}/></button>
                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <button onClick={() => editor.chain().focus().unsetAllMarks().run()} className={btnClass(false)} title="Nettoyer le formatage (Gomme)"><Eraser size={14}/></button>
+                    <button onClick={() => editor.chain().focus().unsetAllMarks().run()} className={btnClass(false)} title="Nettoyer le formatage"><Eraser size={14}/></button>
                 </div>
 
-                {/* Scientifique Group */}
                 <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm items-center relative">
                     <button onClick={() => editor.chain().focus().toggleSuperscript().run()} className={btnClass(editor.isActive('superscript'))} title="Exposant"><SuperscriptIcon size={14}/></button>
                     <button onClick={() => editor.chain().focus().toggleSubscript().run()} className={btnClass(editor.isActive('subscript'))} title="Indice"><SubscriptIcon size={14}/></button>
                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <button onClick={insertEquation} className={btnClass()} title="Insérer une Équation"><Sigma size={14}/></button>
                     <div className="relative">
-                        <button onClick={() => setShowChars(!showChars)} className={btnClass()} title="Caractères Spéciaux">Ω</button>
+                        <button onClick={() => setShowChars(!showChars)} className={btnClass()} title="Caractères spéciaux">Ω</button>
                         {showChars && (
-                            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-lg p-2 w-48 z-50 grid grid-cols-4 gap-1">
+                            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-lg p-2 w-64 z-50 grid grid-cols-5 gap-1">
                                 {SPECIAL_CHARS.map(char => (
                                     <button key={char} onClick={() => { editor.chain().focus().insertContent(char).run(); setShowChars(false); }} className="p-1.5 hover:bg-indigo-50 rounded text-slate-700 font-medium text-center">{char}</button>
                                 ))}
@@ -168,7 +192,6 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
                     </div>
                 </div>
 
-                {/* Structure Group */}
                 <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm items-center">
                     <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={btnClass(editor.isActive('bulletList'))} title="Puces"><List size={14}/></button>
                     <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive('orderedList'))} title="Numéros"><ListOrdered size={14}/></button>
@@ -178,23 +201,22 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
                     <button onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btnClass(editor.isActive({ textAlign: 'right' }))} title="Aligner à droite"><AlignRight size={14}/></button>
                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
                     <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btnClass(editor.isActive('blockquote'))} title="Citation"><Quote size={14}/></button>
-                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btnClass()} title="Ligne Séparatrice"><Minus size={14}/></button>
+                    <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btnClass()} title="Ligne séparatrice"><Minus size={14}/></button>
                     <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={btnClass(editor.isActive('codeBlock'))} title="Bloc de code"><Code size={14}/></button>
                 </div>
             </div>
 
-            {/* ROW 2: INSERTION & TABLES */}
             <div className="flex gap-2 flex-wrap p-2 items-center justify-between">
                 <div className="flex gap-2 flex-wrap items-center">
                     <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm items-center gap-1">
-                        <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="p-1 hover:bg-slate-100 rounded text-slate-600" title="Insérer Tableau"><TableIcon size={14}/></button>
-                        <button onClick={() => editor.chain().focus().deleteTable().run()} className="p-1 hover:bg-red-50 rounded text-red-500" title="Supprimer Tableau"><Trash2 size={14}/></button>
-                        <button onClick={() => editor.chain().focus().deleteColumn().run()} className="px-1 text-[10px] font-bold text-red-400 hover:text-red-600" title="Supprimer Colonne">C-</button>
-                        <button onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-1 text-[10px] font-bold text-slate-400 hover:text-indigo-600" title="Ajouter Colonne">C+</button>
-                        <button onClick={() => editor.chain().focus().deleteRow().run()} className="px-1 text-[10px] font-bold text-red-400 hover:text-red-600" title="Supprimer Ligne">L-</button>
-                        <button onClick={() => editor.chain().focus().addRowAfter().run()} className="px-1 text-[10px] font-bold text-slate-400 hover:text-indigo-600" title="Ajouter Ligne">L+</button>
+                        <button onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="p-1 hover:bg-slate-100 rounded text-slate-600" title="Insérer un tableau"><TableIcon size={14}/></button>
+                        <button onClick={() => editor.chain().focus().deleteTable().run()} className="p-1 hover:bg-red-50 rounded text-red-500" title="Supprimer le tableau"><Trash2 size={14}/></button>
+                        <button onClick={() => editor.chain().focus().deleteColumn().run()} className="px-1 text-[10px] font-bold text-red-400 hover:text-red-600" title="Supprimer colonne">C-</button>
+                        <button onClick={() => editor.chain().focus().addColumnAfter().run()} className="px-1 text-[10px] font-bold text-slate-400 hover:text-indigo-600" title="Ajouter colonne">C+</button>
+                        <button onClick={() => editor.chain().focus().deleteRow().run()} className="px-1 text-[10px] font-bold text-red-400 hover:text-red-600" title="Supprimer ligne">L-</button>
+                        <button onClick={() => editor.chain().focus().addRowAfter().run()} className="px-1 text-[10px] font-bold text-slate-400 hover:text-indigo-600" title="Ajouter ligne">L+</button>
                         <button onClick={() => editor.chain().focus().mergeCells().run()} className="p-1 hover:bg-slate-100 rounded text-indigo-600" title="Fusionner"><Combine size={14}/></button>
-                        <button onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="p-1 hover:bg-slate-100 rounded text-indigo-600" title="Transformer ligne en En-tête"><PanelTop size={14}/></button>
+                        <button onClick={() => editor.chain().focus().toggleHeaderRow().run()} className="p-1 hover:bg-slate-100 rounded text-indigo-600" title="Transformer ligne en en-tête"><PanelTop size={14}/></button>
                         <div className="w-px h-4 bg-slate-200 mx-1"></div>
                         <label className="p-1 hover:bg-slate-100 rounded cursor-pointer relative" title="Couleur de fond cellule"><Palette size={14} className="text-emerald-600"/><input type="color" onInput={e => editor.chain().focus().setCellAttribute('backgroundColor', e.target.value).run()} className="absolute opacity-0 inset-0 w-full h-full cursor-pointer"/></label>
                     </div>
@@ -202,7 +224,7 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
                     <div className="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm items-center gap-1">
                         <button onClick={addImageUrl} className={btnClass()} title="Image par URL"><ImageIcon size={14}/></button>
                         <button onClick={addYoutubeVideo} className={btnClass()} title="YouTube"><YoutubeIcon size={14}/></button>
-                        <button onClick={addLink} className={btnClass(editor.isActive('link'))} title="Lien Hypertexte"><LinkIcon size={14}/></button>
+                        <button onClick={addLink} className={btnClass(editor.isActive('link'))} title="Lien hypertexte"><LinkIcon size={14}/></button>
                     </div>
 
                     {(editor.isActive('image') || editor.isActive('video')) && (
@@ -213,15 +235,40 @@ const MenuBar = ({ editor, isFullscreen, setIsFullscreen }) => {
                         </div>
                     )}
                 </div>
-                
-                <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg shadow-sm text-slate-600 flex items-center justify-center transition-all" title="Plein Écran">
+
+                <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg shadow-sm text-slate-600 flex items-center justify-center transition-all" title="Plein écran">
                     {isFullscreen ? <Minimize2 size={16}/> : <Maximize2 size={16}/>}
                 </button>
             </div>
+
+            {inputDialog && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 px-4">
+                    <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-2xl">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-bold text-slate-800">{inputDialog.title}</h3>
+                        </div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-500">{inputDialog.label}</label>
+                        <input
+                            autoFocus
+                            value={inputDialog.value}
+                            onChange={(event) => setInputDialog(previous => ({ ...previous, value: event.target.value }))}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') submitInputDialog();
+                                if (event.key === 'Escape') setInputDialog(null);
+                            }}
+                            placeholder={inputDialog.placeholder}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        />
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button onClick={() => setInputDialog(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
+                            <button onClick={submitInputDialog} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">Insérer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
-
 
 
 
@@ -261,6 +308,7 @@ export default function TeacherResources() {
     });
 
     const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreviewUrl, setMediaPreviewUrl] = useState('');
     const [uploading, setUploading] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
 
@@ -356,9 +404,40 @@ export default function TeacherResources() {
         else editor.chain().focus().setLink({ href: url, target: '_blank' }).insertContent(filename).run();
     };
 
+    const resolveMediaUrl = (url) => {
+        if (!url) return '';
+        if (/^https?:\/\//i.test(url)) return url;
+        const hostUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+        return `${hostUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    };
+
+    const detectMediaType = (file) => {
+        if (!file) return 'file';
+        const name = file.name?.toLowerCase() || '';
+        if (file.type?.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/.test(name)) return 'image';
+        if (file.type?.startsWith('video/') || /\.(mp4|webm)$/.test(name)) return 'video';
+        if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+        return 'file';
+    };
+
+    const handleMediaFileChange = (file) => {
+        if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+        setMediaFile(file || null);
+        setMediaPreviewUrl(file ? URL.createObjectURL(file) : '');
+    };
+
+    useEffect(() => () => {
+        if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+    }, [mediaPreviewUrl]);
+
     const handleMediaUpload = async (e) => {
         e.preventDefault();
         if (!mediaFile) return;
+        const selectedMediaType = detectMediaType(mediaFile);
+        if (selectedMediaType === 'file') {
+            setDialogConfig({ isOpen: true, type: 'error', title: 'Format non pris en charge', message: 'Formats acceptés : image, vidéo MP4/WebM ou PDF.' });
+            return;
+        }
         setUploading(true);
 
         try {
@@ -384,15 +463,10 @@ export default function TeacherResources() {
             formData.append("file", mediaFile);
 
             const res = await contentApi.uploadMedia(formData);
-            const hostUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:8080';
-            const absoluteUrl = `${hostUrl}${res.data.url}`;
-            let mediaType = 'file';
-            if (mediaFile.type.startsWith('video')) mediaType = 'video';
-            else if (mediaFile.type.startsWith('image')) mediaType = 'image';
-            else if (mediaFile.type === 'application/pdf') mediaType = 'pdf';
-            insertIntoEditor(absoluteUrl, mediaType, mediaFile.name);
+            const absoluteUrl = resolveMediaUrl(res.data.url);
+            insertIntoEditor(absoluteUrl, selectedMediaType, mediaFile.name);
             toast.success('Fichier inséré avec succès !');
-            setMediaFile(null);
+            handleMediaFileChange(null);
             e.target.reset();
         } catch (error) { 
             toast.error('Échec du téléversement du fichier.'); 
@@ -482,10 +556,22 @@ export default function TeacherResources() {
 
                 <div className={`w-80 shrink-0 flex flex-col gap-4 ${isFullscreen ? 'hidden' : ''}`}>
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><UploadCloud className="text-indigo-500" size={20} /> Insertion Médias</h3>
-                        <p className="text-xs text-slate-400 mb-4 font-medium">Téléversez un fichier local (Image, Vidéo MP4 ou PDF) pour l'insérer au point d'insertion.</p>
+                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><UploadCloud className="text-indigo-500" size={20} /> Insertion médias</h3>
+                        <p className="text-xs text-slate-400 mb-4 font-medium">Téléversez un fichier local (image, vidéo MP4/WebM ou PDF) pour l'insérer au point d'insertion.</p>
                         <form onSubmit={handleMediaUpload} className="flex flex-col gap-4 border-t border-slate-100 pt-4">
-                            <input type="file" accept="image/*,video/mp4,.pdf" onChange={(e) => setMediaFile(e.target.files[0])} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 outline-none cursor-pointer" />
+                            <input type="file" accept="image/*,video/mp4,video/webm,application/pdf,.pdf" onChange={(e) => handleMediaFileChange(e.target.files[0])} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 outline-none cursor-pointer" />
+                            {mediaFile && (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="mb-2 truncate text-xs font-semibold text-slate-600">{mediaFile.name}</p>
+                                    {detectMediaType(mediaFile) === 'image' && <img src={mediaPreviewUrl} alt="Prévisualisation" className="max-h-36 w-full rounded-lg object-contain bg-white" />}
+                                    {detectMediaType(mediaFile) === 'video' && <video src={mediaPreviewUrl} controls className="max-h-36 w-full rounded-lg bg-black" />}
+                                    {detectMediaType(mediaFile) === 'pdf' && (
+                                        <a href={mediaPreviewUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
+                                            <FileText size={16} /> Ouvrir l'aperçu PDF
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                             <button type="submit" disabled={!mediaFile || uploading} className={`w-full py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold text-sm transition shadow ${!mediaFile ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : uploading ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}><UploadCloud size={18}/> {uploading ? "Envoi..." : "Insérer au curseur"}</button>
                         </form>
                     </div>
@@ -499,7 +585,7 @@ export default function TeacherResources() {
                             <div><h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Eye className="text-indigo-600" /> Aperçu Apprenant</h3></div>
                             <button onClick={() => setShowPreview(false)} className="p-2 text-slate-400 hover:text-red-500 rounded-lg"><X size={24} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8 bg-white preview-container"><div className="prose prose-slate prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: editorHtml }} /></div>
+                        <div className="flex-1 overflow-y-auto p-8 bg-white preview-container"><div className="prose prose-slate prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: normalizeResourceHtml(editorHtml) }} /></div>
                     </div>
                 </div>
             )}

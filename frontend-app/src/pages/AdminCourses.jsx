@@ -112,8 +112,8 @@ export default function AdminCourses() {
             setDialog({
                 isOpen: true,
                 type: 'success',
-                title: 'Suppression terminee',
-                message: `${summary.deletedCourses ?? 0} cours supprime(s), ${summary.deletedContents ?? 0} contenu(s) supprime(s), ${summary.deletedEvaluations ?? 0} quiz supprime(s), ${summary.deletedLabs ?? 0} TP supprime(s).`,
+                title: 'Suppression terminée',
+                message: `${summary.deletedCourses ?? 0} cours supprimé(s), ${summary.deletedContents ?? 0} contenu(s) supprimé(s), ${summary.deletedEvaluations ?? 0} quiz supprimé(s), ${summary.deletedLabs ?? 0} TP supprimé(s).`,
                 onConfirm: null,
                 confirmText: 'Continuer',
                 confirmVariant: 'primary',
@@ -123,7 +123,7 @@ export default function AdminCourses() {
                 isOpen: true,
                 type: 'error',
                 title: 'Erreur de suppression',
-                message: error.response?.data?.error || error.response?.data?.message || "Impossible de supprimer les cours selectionnes.",
+                message: error.response?.data?.error || error.response?.data?.message || "Impossible de supprimer les cours sélectionnés.",
                 onConfirm: null,
                 confirmText: 'Compris',
                 confirmVariant: 'primary',
@@ -157,7 +157,7 @@ export default function AdminCourses() {
                         Gestion des cours
                     </h1>
                     <p className="text-slate-500 mt-2">
-                        Administrez les cours publies et supprimez uniquement les cours explicitement selectionnes.
+                        Administrez les cours publiés et supprimez uniquement les cours explicitement sélectionnés.
                     </p>
                 </div>
                 <button
@@ -211,7 +211,7 @@ export default function AdminCourses() {
                         disabled={filteredCourses.length === 0}
                         className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 disabled:text-slate-400"
                     >
-                        {allVisibleSelected ? 'Deselectionner les resultats' : 'Selectionner les resultats'}
+                        {allVisibleSelected ? 'Désélectionner les résultats' : 'Sélectionner les résultats'}
                     </button>
                 </div>
 
@@ -290,7 +290,7 @@ export default function AdminCourses() {
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
                 >
                     {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                    Supprimer les cours selectionnes
+                    Supprimer les cours sélectionnés
                 </button>
             </div>
 

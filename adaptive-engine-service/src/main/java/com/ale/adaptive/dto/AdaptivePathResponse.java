@@ -17,6 +17,7 @@ public class AdaptivePathResponse {
     private List<AdaptiveConceptDto> learnableConcepts;
     private List<AdaptiveConceptDto> blockedConcepts;
     private List<AdaptiveConceptDto> conceptsToReview;
+    private List<LearningPathStepDto> recommendedLearningPath;
     private String nextAction;
     private AdaptiveConceptDto nextConcept;
     private String learningPhase;
@@ -29,4 +30,5 @@ public class AdaptivePathResponse {
     private String scoringVersion;
     private LearnerProfileDto learnerProfile;
     private PedagogicalStrategyDto pedagogicalStrategy;
+    private PathFreshnessDto pathFreshness;
 }

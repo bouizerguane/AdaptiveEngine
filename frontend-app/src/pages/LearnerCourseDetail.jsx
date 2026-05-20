@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, BookOpen, ClipboardList, Loader2, Lock, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,6 +6,7 @@ import { contentApi, courseApi, evaluationApi, graphApi, labApi, labTrackingApi,
 import { learnerApi } from '../api/learnerApi';
 import { useAuth } from '../context/AuthContext';
 import { flattenConcepts, normalizeCourseTree } from '../utils/courseOrder';
+import { normalizeResourceHtml } from '../utils/resourceHtml';
 
 const conceptLabel = (concept) => concept?.labelPedagogique || concept?.title || 'Concept sans titre';
 
@@ -47,7 +48,7 @@ const adaptiveScorePercent = (score) => {
 const strategyStepLabels = {
     RESOURCE: 'Ressource',
     LAB: 'TP',
-    FORMATIVE: 'Evaluation formative',
+    FORMATIVE: 'Évaluation formative',
     REVIEW: 'Revision',
     CHALLENGE: 'Defi',
 };
@@ -62,30 +63,70 @@ const actionLabels = {
     PASS_DIAGNOSTIC: 'Diagnostic requis',
     REMEDIATION: 'Revision',
     LEARN: 'Apprentissage',
-    COMPLETED: 'Cours termine',
+    COMPLETED: 'Cours terminé',
 };
 
 const profileTypeLabels = {
-    DATA_INSUFFICIENT: 'Donnees insuffisantes',
-    NEEDS_REMEDIATION: 'Remediation necessaire',
+    DATA_INSUFFICIENT: 'Données insuffisantes',
+    NEEDS_REMEDIATION: 'Remédiation nécessaire',
     PROGRESSING: 'Progression active',
-    HIGH_PERFORMING: 'Tres bonne maitrise',
+    HIGH_PERFORMING: 'Très bonne maîtrise',
 };
 
 const strategyTypeLabels = {
-    RECOVERY: 'Approche de remediation',
-    SUPPORTIVE: 'Approche guidee',
+    RECOVERY: 'Approche de remédiation',
+    SUPPORTIVE: 'Approche guidée',
     STANDARD: 'Approche standard',
-    ADVANCED: 'Approche avancee',
+    ADVANCED: 'Approche avancée',
+};
+
+const learningPathStatusMeta = {
+    TO_REVIEW: {
+        label: 'À revoir',
+        dotClassName: 'bg-amber-500',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200',
+        cardClassName: 'border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/20',
+    },
+    READY: {
+        label: 'Accessible',
+        dotClassName: 'bg-indigo-500',
+        badgeClassName: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-200',
+        cardClassName: 'border-indigo-200 bg-indigo-50/70 dark:border-indigo-900/60 dark:bg-indigo-950/20',
+    },
+    LOCKED: {
+        label: 'Verrouillé',
+        dotClassName: 'bg-slate-400',
+        badgeClassName: 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+        cardClassName: 'border-slate-200 bg-slate-50 opacity-80 dark:border-slate-700 dark:bg-slate-800/60',
+    },
+    COMPLETED: {
+        label: 'Maîtrisé',
+        dotClassName: 'bg-emerald-500',
+        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200',
+        cardClassName: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/20',
+    },
+};
+
+const pathFreshnessMessage = (pathFreshness) => {
+    if (!pathFreshness?.refreshedAfterEvent) return null;
+    if (pathFreshness.refreshReason === 'QUIZ_COMPLETED' || pathFreshness.lastEventType === 'quiz.completed') {
+        return "Votre parcours a été mis à jour après l'évaluation.";
+    }
+    if (pathFreshness.refreshReason === 'LAB_SUBMITTED' || pathFreshness.lastEventType === 'lab.submitted') {
+        return 'Votre parcours a été mis à jour après le TP.';
+    }
+    return pathFreshness.message || 'Votre parcours a été mis à jour après votre dernière activité.';
 };
 
 const tabs = [
     { id: 'course', label: 'Cours' },
     { id: 'adaptive', label: 'Parcours adaptatif' },
-    { id: 'remediation', label: 'Remediation' },
-    { id: 'evaluations', label: 'Evaluations' },
+    { id: 'remediation', label: 'Remédiation' },
+    { id: 'evaluations', label: 'Évaluations' },
     { id: 'progress', label: 'Progression' },
 ];
+
+const adaptiveRefreshKey = (courseId) => `adaptive-refresh:${courseId}`;
 
 export default function LearnerCourseDetail() {
     const { courseId } = useParams();
@@ -113,13 +154,24 @@ export default function LearnerCourseDetail() {
     const [tutoringFeedbacks, setTutoringFeedbacks] = useState({});
     const [strategyTutoringFeedback, setStrategyTutoringFeedback] = useState(null);
     const [activeTab, setActiveTab] = useState('course');
+    const [refreshNonce, setRefreshNonce] = useState(0);
 
     const concepts = useMemo(() => flattenConcepts(course), [course]);
 
-    useEffect(() => {
-        const loadCourse = async () => {
-            setLoading(true);
-            try {
+    const consumeAdaptiveRefreshMarker = useCallback(() => {
+        if (!courseId) return false;
+        const key = adaptiveRefreshKey(courseId);
+        const pending = sessionStorage.getItem(key);
+        if (!pending) return false;
+        sessionStorage.removeItem(key);
+        setRefreshNonce(value => value + 1);
+        window.setTimeout(() => setRefreshNonce(value => value + 1), 900);
+        return true;
+    }, [courseId]);
+
+    const loadCourse = useCallback(async () => {
+        setLoading(true);
+        try {
                 const [courseRes, recommendationRes, adaptivePathRes, diagnosticsRes, statusesRes, evaluationsRes] = await Promise.all([
                     courseApi.getCourseTree(courseId),
                     user?.email
@@ -146,7 +198,7 @@ export default function LearnerCourseDetail() {
                     || diagnostics.find(item => item.typeEvaluation === 'DIAGNOSTIC_POSITIONNEMENT')
                     || null;
                 const validationEvaluation = evaluations.find(item =>
-                    item.typeEvaluation === 'VALIDATION'
+                    (item.typeEvaluation === 'VALIDATION_COURS' || item.typeEvaluation === 'VALIDATION')
                     && ((item.targetType || 'COURSE') === 'COURSE')
                     && (item.targetId === courseId || item.courseId === courseId)
                 ) || null;
@@ -201,7 +253,7 @@ export default function LearnerCourseDetail() {
                         const [contentRes, labRes, evaluationRes] = await Promise.all([
                             contentApi.getConceptContent(result.conceptId).then(response => response.data).catch(() => null),
                             labApi.getLabByTarget(result.conceptId).then(response => response.data).catch(() => null),
-                            evaluationApi.getEvaluation(result.conceptId).then(response => response.data).catch(() => null),
+                            evaluationApi.getEvaluation(result.conceptId, 'FORMATIVE').then(response => response.data).catch(() => null),
                         ]);
                         return { ...result, content: contentRes, lab: labRes, evaluation: evaluationRes };
                     }));
@@ -256,10 +308,31 @@ export default function LearnerCourseDetail() {
             } finally {
                 setLoading(false);
             }
-        };
-
-        loadCourse();
     }, [courseId, user?.email, searchParams]);
+
+    useEffect(() => {
+        loadCourse();
+    }, [loadCourse, refreshNonce]);
+
+    useEffect(() => {
+        consumeAdaptiveRefreshMarker();
+    }, [consumeAdaptiveRefreshMarker]);
+
+    useEffect(() => {
+        const onReturnToPage = () => {
+            if (document.visibilityState === 'visible') {
+                consumeAdaptiveRefreshMarker();
+            }
+        };
+        window.addEventListener('focus', consumeAdaptiveRefreshMarker);
+        window.addEventListener('pageshow', consumeAdaptiveRefreshMarker);
+        document.addEventListener('visibilitychange', onReturnToPage);
+        return () => {
+            window.removeEventListener('focus', consumeAdaptiveRefreshMarker);
+            window.removeEventListener('pageshow', consumeAdaptiveRefreshMarker);
+            document.removeEventListener('visibilitychange', onReturnToPage);
+        };
+    }, [consumeAdaptiveRefreshMarker]);
 
     useEffect(() => {
         if (!selectedConcept?.id) {
@@ -272,7 +345,7 @@ export default function LearnerCourseDetail() {
         Promise.all([
             contentApi.getConceptContent(selectedConcept.id).then(response => response.data).catch(() => null),
             labApi.getLabByTarget(selectedConcept.id).then(response => response.data).catch(() => null),
-            evaluationApi.getEvaluation(selectedConcept.id).then(response => response.data).catch(() => null),
+            evaluationApi.getEvaluation(selectedConcept.id, 'FORMATIVE').then(response => response.data).catch(() => null),
         ])
             .then(async ([contentData, labData, evaluationData]) => {
                 setContent(contentData);
@@ -358,6 +431,10 @@ export default function LearnerCourseDetail() {
     const pedagogicalStrategy = adaptivePath?.pedagogicalStrategy;
     const pedagogicalSequence = Array.isArray(pedagogicalStrategy?.recommendedSequence)
         ? pedagogicalStrategy.recommendedSequence
+        : [];
+    const freshnessMessage = pathFreshnessMessage(adaptivePath?.pathFreshness);
+    const recommendedLearningPath = Array.isArray(adaptivePath?.recommendedLearningPath)
+        ? adaptivePath.recommendedLearningPath
         : [];
     const adaptiveConceptStatuses = adaptivePath
         ? Object.fromEntries([
@@ -451,12 +528,12 @@ export default function LearnerCourseDetail() {
                         <div className="min-w-[180px] rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <p className="font-semibold text-slate-700 dark:text-slate-200">Progression globale</p>
                             <p className="mt-1 text-2xl font-bold text-indigo-600">{globalProgressPercent}%</p>
-                            <p className="text-xs text-slate-500">{masteredConceptCount}/{concepts.length} concepts maitrises</p>
+                            <p className="text-xs text-slate-500">{masteredConceptCount}/{concepts.length} concepts maîtrisés</p>
                         </div>
                     </div>
                     {adaptivePath?.decisionExplanation && (
                         <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
-                            {courseCompleted ? 'Cours termine.' : adaptivePath.decisionExplanation}
+                            {courseCompleted ? 'Cours terminé.' : adaptivePath.decisionExplanation}
                         </p>
                     )}
                 </div>
@@ -469,15 +546,20 @@ export default function LearnerCourseDetail() {
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Les informations ci-dessous regroupent la recommandation, votre situation actuelle et le conseil d'accompagnement.
                         </p>
+                        {freshnessMessage && (
+                            <p className="mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                {freshnessMessage}
+                            </p>
+                        )}
                     </div>
 
                     <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Prochaine etape</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Prochaine étape</p>
                         <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">{actionLabels[adaptiveNextAction] || 'Parcours en cours'}</p>
                                 <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
-                                    {adaptiveNextConcept ? adaptiveNextConceptName : courseCompleted ? 'Cours termine' : 'Aucune recommandation disponible'}
+                                    {adaptiveNextConcept ? adaptiveNextConceptName : courseCompleted ? 'Cours terminé' : 'Aucune recommandation disponible'}
                                 </p>
                                 {adaptiveNextScore !== null && (
                                     <p className="mt-1 text-sm font-semibold text-emerald-700">Score adaptatif : {adaptiveNextScore}%</p>
@@ -491,7 +573,7 @@ export default function LearnerCourseDetail() {
                             )}
                             {adaptiveNextConcept && adaptiveNextConceptType === 'EXTERNAL' && (
                                 <Link to={`/learner/external-concepts/${adaptiveNextConceptId}?sourceCourseId=${courseId}`} className="inline-flex w-fit rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">
-                                    Ouvrir le prerequis
+                                    Ouvrir le prérequis
                                 </Link>
                             )}
                             {adaptiveNextConcept && adaptiveNextConceptType !== 'EXTERNAL' && (
@@ -513,13 +595,86 @@ export default function LearnerCourseDetail() {
 
                     <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Pourquoi cette recommandation ?</p>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{adaptivePath?.decisionExplanation || 'La recommandation sera affichee apres analyse du parcours.'}</p>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{adaptivePath?.decisionExplanation || 'La recommandation sera affichée après analyse du parcours.'}</p>
                         {adaptiveExplanationReasons.length > 0 && (
                             <ul className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
                                 {adaptiveExplanationReasons.map(reason => (
                                     <li key={reason}>- {reason}</li>
                                 ))}
                             </ul>
+                        )}
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Parcours personnalisé</p>
+                                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                    Une vue ordonnée des étapes du cours selon votre situation actuelle.
+                                </p>
+                            </div>
+                            {recommendedLearningPath.length > 0 && (
+                                <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                    {recommendedLearningPath.length} étape{recommendedLearningPath.length > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+
+                        {recommendedLearningPath.length > 0 ? (
+                            <ol className="mt-4 space-y-3">
+                                {recommendedLearningPath.map((step, index) => {
+                                    const meta = learningPathStatusMeta[step.status] || {
+                                        label: step.status || 'Étape',
+                                        dotClassName: 'bg-slate-400',
+                                        badgeClassName: 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                                        cardClassName: 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900',
+                                    };
+                                    const score = adaptiveScorePercent(step.adaptiveScore);
+                                    const reasons = Array.isArray(step.explanationReasons) ? step.explanationReasons.filter(Boolean) : [];
+                                    return (
+                                        <li key={`${step.conceptId || step.conceptName || 'step'}-${step.order || index}`} className="relative pl-8">
+                                            {index < recommendedLearningPath.length - 1 && (
+                                                <span className="absolute left-[11px] top-7 h-[calc(100%-1rem)] w-px bg-slate-200 dark:bg-slate-700" />
+                                            )}
+                                            <span className={`absolute left-0 top-4 h-6 w-6 rounded-full border-4 border-white shadow-sm dark:border-slate-900 ${meta.dotClassName}`} />
+                                            <div className={`rounded-lg border p-4 ${meta.cardClassName}`}>
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                                            {step.order || index + 1}. {step.conceptName || 'Concept sans titre'}
+                                                        </p>
+                                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${meta.badgeClassName}`}>
+                                                                {meta.label}
+                                                            </span>
+                                                            {score !== null && (
+                                                                <span className="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-slate-900 dark:text-emerald-200">
+                                                                    Score adaptatif : {score}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {reasons.length > 0 ? (
+                                                    <ul className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                                        {reasons.map((reason, reasonIndex) => (
+                                                            <li key={`${step.conceptId || step.order || index}-reason-${reasonIndex}`}>- {reason}</li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                                                        Aucune explication détaillée n'est disponible pour cette étape.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                        ) : (
+                            <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                                Le parcours personnalisé sera affiché dès que le moteur aura suffisamment d'informations.
+                            </p>
                         )}
                     </section>
 
@@ -533,9 +688,9 @@ export default function LearnerCourseDetail() {
                                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{learnerProfile.profileExplanation}</p>
                                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                                     {learnerMasteryScore !== null && Number.isFinite(learnerMasteryScore) && (
-                                        <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Maitrise : {learnerMasteryScore}%</span>
+                                        <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Maîtrise : {learnerMasteryScore}%</span>
                                     )}
-                                    <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Activites : {learnerProfile.tracesCount ?? 0}</span>
+                                    <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Activités : {learnerProfile.tracesCount ?? 0}</span>
                                     <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">TP completes : {learnerProfile.completedLabsCount ?? 0}</span>
                                     <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Temps : {Math.round((learnerProfile.totalLearningTime || 0) / 60)} min</span>
                                 </div>
@@ -548,16 +703,16 @@ export default function LearnerCourseDetail() {
                                 )}
                             </>
                         ) : (
-                            <p className="mt-2 text-sm text-slate-500">Votre situation sera precisee apres les premieres activites.</p>
+                            <p className="mt-2 text-sm text-slate-500">Votre situation sera précisée après les premières activités.</p>
                         )}
                     </section>
 
                     <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Approche recommandee</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Approche recommandée</p>
                         <p className="mt-2 text-sm font-semibold text-emerald-700">
                             {strategyTypeLabels[pedagogicalStrategy?.strategyType] || 'Approche standard'}
                         </p>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{pedagogicalStrategy?.strategyExplanation || 'Une progression normale est proposee pour ce cours.'}</p>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{pedagogicalStrategy?.strategyExplanation || 'Une progression normale est proposée pour ce cours.'}</p>
                         {pedagogicalSequence.length > 0 && (
                             <ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                                 {pedagogicalSequence.map((step, index) => (
@@ -586,7 +741,7 @@ export default function LearnerCourseDetail() {
                                 )}
                             </div>
                         ) : (
-                            <p className="mt-2 text-sm text-slate-500">{pedagogicalStrategy?.tutoringMessageHint || 'Le conseil personnalise apparaitra lorsque le service de tutorat sera disponible.'}</p>
+                            <p className="mt-2 text-sm text-slate-500">{pedagogicalStrategy?.tutoringMessageHint || 'Le conseil personnalisé apparaîtra lorsque le service de tutorat sera disponible.'}</p>
                         )}
                     </section>
                 </div>
@@ -599,8 +754,8 @@ export default function LearnerCourseDetail() {
                             <p className="font-bold text-slate-800 dark:text-slate-100">Diagnostic initial</p>
                             <p className="mt-1 text-slate-600 dark:text-slate-300">
                                 {diagnosticDone
-                                    ? 'Diagnostic effectue. Le parcours peut utiliser vos resultats pour proposer la suite.'
-                                    : 'Le diagnostic initial doit etre passe avant de commencer le parcours.'}
+                                    ? 'Diagnostic effectué. Le parcours peut utiliser vos résultats pour proposer la suite.'
+                                    : 'Le diagnostic initial doit être passé avant de commencer le parcours.'}
                             </p>
                         </div>
                         {diagnostic?.targetId && (
@@ -617,20 +772,20 @@ export default function LearnerCourseDetail() {
                 <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <p className="font-bold text-slate-800 dark:text-slate-100">Evaluation formative</p>
+                            <p className="font-bold text-slate-800 dark:text-slate-100">Évaluation formative</p>
                             <p className="mt-1 text-slate-600 dark:text-slate-300">
                                 {formativeEvaluation
-                                    ? `Evaluation disponible pour ${conceptLabel(selectedConcept)}.`
-                                    : `Aucune evaluation formative disponible pour ${conceptLabel(selectedConcept)}.`}
+                                    ? `Évaluation disponible pour ${conceptLabel(selectedConcept)}.`
+                                    : `Aucune évaluation formative disponible pour ${conceptLabel(selectedConcept)}.`}
                             </p>
                             {formativeEvaluation && !canTakeFormative && !selectedBlocked && (
-                                <p className="mt-1 text-xs font-semibold text-amber-700">Realisez d'abord le TP associe au concept.</p>
+                                <p className="mt-1 text-xs font-semibold text-amber-700">Réalisez d'abord le TP associé au concept.</p>
                             )}
                         </div>
                         {formativeEvaluation && canTakeFormative && (
                             <Link to={`/student/quiz/${selectedConcept.id}`} className="inline-flex w-fit items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800">
                                 <ClipboardList size={15} />
-                                Passer l'evaluation
+                                Passer l'évaluation
                             </Link>
                         )}
                     </div>
@@ -646,19 +801,19 @@ export default function LearnerCourseDetail() {
                             <p className="font-bold text-slate-800">Validation finale du cours</p>
                             <p className="mt-1 text-slate-600">
                                 {courseCompleted
-                                    ? 'Tous les concepts requis sont maitrises. Vous pouvez passer la validation finale du cours.'
-                                    : `${masteredConceptCount}/${concepts.length} concepts maitrises. La validation finale sera accessible une fois le parcours termine.`}
+                                    ? 'Tous les concepts requis sont maîtrisés. Vous pouvez passer la validation finale du cours.'
+                                    : `${masteredConceptCount}/${concepts.length} concepts maîtrisés. La validation finale sera accessible une fois le parcours terminé.`}
                             </p>
                             {courseValidationTrace && (
                                 <p className={`mt-2 font-semibold ${validationPassed ? 'text-emerald-700' : 'text-red-700'}`}>
-                                    Dernier score final : {validationScore}% - {validationPassed ? 'reussite' : 'echec'}
+                                    Dernier score final : {validationScore}% - {validationPassed ? 'réussite' : 'échec'}
                                 </p>
                             )}
                         </div>
                         {courseValidation?.targetId ? (
                             courseCompleted ? (
                                 <Link
-                                    to={`/student/quiz/${courseValidation.targetId}`}
+                                    to={`/student/quiz/${courseValidation.targetId}?typeEvaluation=${encodeURIComponent(courseValidation.typeEvaluation || 'VALIDATION_COURS')}`}
                                     className="inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800"
                                 >
                                     <ClipboardList size={15} />
@@ -672,7 +827,7 @@ export default function LearnerCourseDetail() {
                             )
                         ) : (
                             <span className="inline-flex w-fit rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800">
-                                Aucune validation finale configuree.
+                                Aucune validation finale configurée.
                             </span>
                         )}
                     </div>
@@ -684,7 +839,7 @@ export default function LearnerCourseDetail() {
                     <ClipboardList className="mx-auto mb-3 text-indigo-600" size={42} />
                     <h2 className="text-xl font-bold text-slate-800">Diagnostic initial</h2>
                     <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">
-                        Passez le diagnostic initial pour identifier les concepts deja maitrises et obtenir votre premier parcours personnalise.
+                        Passez le diagnostic initial pour identifier les concepts déjà maîtrisés et obtenir votre premier parcours personnalisé.
                     </p>
                     {diagnostic?.targetId ? (
                         <Link
@@ -703,7 +858,7 @@ export default function LearnerCourseDetail() {
             ) : activeTab === 'adaptive' && diagnostic && diagnosticDone && !adaptivePath && recommendation?.conceptId ? (
                 <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
                     <p className="font-bold">Votre parcours personnalisé</p>
-                    <p className="mt-1">Premier concept recommande : {recommendation.label}</p>
+                    <p className="mt-1">Premier concept recommandé : {recommendation.label}</p>
                 </div>
             ) : null}
 
@@ -712,7 +867,7 @@ export default function LearnerCourseDetail() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h2 className="font-bold text-amber-900">Concepts a reviser</h2>
-                            <p className="mt-1 text-amber-800">Le test est passe. Le parcours reste oriente vers les lacunes detectees.</p>
+                            <p className="mt-1 text-amber-800">Le test est passé. Le parcours reste orienté vers les lacunes détectées.</p>
                         </div>
                         {canRetakeDiagnostic ? (
                             <Link to={`/student/quiz/${diagnostic.targetId}?retake=1`} className="rounded-lg bg-amber-700 px-4 py-2 text-xs font-bold text-white hover:bg-amber-800">
@@ -720,7 +875,7 @@ export default function LearnerCourseDetail() {
                             </Link>
                         ) : (
                             <span className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-amber-800 border border-amber-200">
-                                Vous pourrez repasser le test lorsque les concepts non maitrises seront maitrises.
+                                Vous pourrez repasser le test lorsque les concepts non maîtrisés seront maîtrisés.
                             </span>
                         )}
                     </div>
@@ -733,7 +888,7 @@ export default function LearnerCourseDetail() {
                                     <p className="font-bold text-slate-800">{concept ? conceptLabel(concept) : (item.conceptName || 'Concept inconnu')}</p>
                                     {item.score !== undefined && <p className="text-xs text-slate-500">Score diagnostic : {item.score}%</p>}
                                     <p className={masteredNow ? 'text-xs font-semibold text-emerald-700' : 'text-xs font-semibold text-amber-700'}>
-                                        {masteredNow ? 'Maintenant maitrise' : 'Encore a travailler'}
+                                        {masteredNow ? 'Maintenant maîtrisé' : 'Encore à travailler'}
                                     </p>
                                 </button>
                             );
@@ -744,7 +899,7 @@ export default function LearnerCourseDetail() {
 
             {activeTab === 'remediation' && diagnostic && diagnosticDone && externalDiagnosticResults.filter(item => !item.mastered).length > 0 && (
                 <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                    <p className="font-bold text-slate-800">Prerequis externes a revoir</p>
+                    <p className="font-bold text-slate-800">Prérequis externes à revoir</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                         {externalDiagnosticResults.filter(item => !item.mastered).map(item => (
                             <span key={item.label} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">
@@ -798,7 +953,7 @@ export default function LearnerCourseDetail() {
 
             {activeTab === 'remediation' && remediations.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
-                    <h2 className="font-bold text-amber-900">Remediation recommandee</h2>
+                    <h2 className="font-bold text-amber-900">Remédiation recommandée</h2>
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
                         {remediations.map(item => (
                             <div key={item.conceptId} className="rounded-lg border border-amber-200 bg-white p-4 text-sm">
@@ -832,11 +987,11 @@ export default function LearnerCourseDetail() {
                                         </Link>
                                     )}
                                     <Link to={`/student/quiz/${item.conceptId}`} className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">
-                                        Evaluation formative
+                                        Évaluation formative
                                     </Link>
                                 </div>
                                 {!item.hasContent && !item.lab?.id && (
-                                    <p className="mt-3 text-xs text-slate-500">Aucune ressource de remediation disponible pour ce concept.</p>
+                                    <p className="mt-3 text-xs text-slate-500">Aucune ressource de remédiation disponible pour ce concept.</p>
                                 )}
                             </div>
                         ))}
@@ -846,7 +1001,7 @@ export default function LearnerCourseDetail() {
 
             {activeTab === 'remediation' && !hasRemediationItems && (
                 <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                    Aucune remediation n'est necessaire pour le moment.
+                    Aucune remédiation n'est nécessaire pour le moment.
                 </div>
             )}
 
@@ -859,7 +1014,7 @@ export default function LearnerCourseDetail() {
                             <p className="mt-1 text-2xl font-bold text-indigo-600">{globalProgressPercent}%</p>
                         </span>
                         <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                            <p className="text-xs font-semibold text-slate-500">Concepts maitrises</p>
+                            <p className="text-xs font-semibold text-slate-500">Concepts maîtrisés</p>
                             <p className="mt-1 text-2xl font-bold text-emerald-600">{masteredConceptCount}</p>
                         </span>
                         <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -867,7 +1022,7 @@ export default function LearnerCourseDetail() {
                             <p className="mt-1 text-2xl font-bold text-indigo-600">{learnableConceptCount}</p>
                         </span>
                         <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-                            <p className="text-xs font-semibold text-slate-500">Concepts bloques</p>
+                            <p className="text-xs font-semibold text-slate-500">Concepts bloqués</p>
                             <p className="mt-1 text-2xl font-bold text-amber-600">{blockedConceptCount}</p>
                         </span>
                         <span className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -902,7 +1057,7 @@ export default function LearnerCourseDetail() {
                     </h2>
 
                     {concepts.length === 0 ? (
-                        <p className="text-sm text-slate-500">Aucun module, chapitre ou concept n'est encore associe a ce cours.</p>
+                        <p className="text-sm text-slate-500">Aucun module, chapitre ou concept n'est encore associé à ce cours.</p>
                     ) : (
                         <div className="space-y-4">
                             {(course.modules || []).map(module => (
@@ -922,7 +1077,7 @@ export default function LearnerCourseDetail() {
                                                         <button
                                                             key={concept.id}
                                                             disabled={blocked}
-                                                            title={diagnosticLocked ? 'Diagnostic initial requis' : blocked ? 'Prerequis non maitrises' : undefined}
+                                                            title={diagnosticLocked ? 'Diagnostic initial requis' : blocked ? 'Prérequis non maîtrisés' : undefined}
                                                             onClick={() => !blocked && setSelectedConcept({ ...concept, moduleTitle: module.title, chapitreTitle: chapitre.title })}
                                                             className={`flex w-full items-start justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition border ${
                                                                 blocked ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : selected ? 'bg-indigo-600 text-white border-indigo-600' : recommended ? 'bg-emerald-50 text-slate-800 border-emerald-200' : 'bg-white text-slate-700 border-transparent hover:bg-indigo-50'
@@ -951,7 +1106,7 @@ export default function LearnerCourseDetail() {
                 <main className="rounded-lg border border-slate-200 bg-white shadow-sm">
                     {diagnosticLocked ? (
                         <div className="p-8 text-center text-slate-500">
-                            Passez le diagnostic initial pour debloquer le parcours du cours.
+                            Passez le diagnostic initial pour débloquer le parcours du cours.
                         </div>
                     ) : selectedConcept ? (
                         <>
@@ -973,7 +1128,7 @@ export default function LearnerCourseDetail() {
                                         TP soumis : {conceptProgress.labSubmitted ? 'oui' : 'non'}
                                     </span>
                                     <span className={`rounded-lg border px-3 py-2 font-semibold ${conceptProgress.quizPassed ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                                        Quiz reussi : {conceptProgress.quizPassed ? 'oui' : 'non'}
+                                        Quiz réussi : {conceptProgress.quizPassed ? 'oui' : 'non'}
                                     </span>
                                     <span className={`rounded-lg border px-3 py-2 font-semibold ${statusMeta[selectedStatus]?.className || statusMeta.LEARNABLE.className}`}>
                                         Statut : {statusMeta[selectedStatus]?.label || 'A apprendre'}
@@ -983,7 +1138,7 @@ export default function LearnerCourseDetail() {
                                     {selectedBlocked && (
                                         <span className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
                                             <Lock size={16} />
-                                            Prerequis non maitrises
+                                            Prérequis non maîtrisés
                                         </span>
                                     )}
                                     {!selectedBlocked && selectedLab?.id && (
@@ -1005,7 +1160,7 @@ export default function LearnerCourseDetail() {
                                             className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                                         >
                                             <ClipboardList size={16} />
-                                            Passer l'evaluation formative
+                                            Passer l'évaluation formative
                                         </Link>
                                     ) : !selectedBlocked && formativeEvaluation ? (
                                         <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500">
@@ -1015,7 +1170,7 @@ export default function LearnerCourseDetail() {
                                     ) : !selectedBlocked ? (
                                         <span className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500">
                                             <ClipboardList size={16} />
-                                            Aucune evaluation formative disponible pour ce concept.
+                                            Aucune évaluation formative disponible pour ce concept.
                                         </span>
                                     ) : null}
                                 </div>
@@ -1030,15 +1185,15 @@ export default function LearnerCourseDetail() {
                                 ) : content?.htmlContent ? (
                                     <div
                                         className="prose prose-slate max-w-none [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-emerald-300"
-                                        dangerouslySetInnerHTML={{ __html: content.htmlContent }}
+                                        dangerouslySetInnerHTML={{ __html: normalizeResourceHtml(content.htmlContent) }}
                                     />
                                 ) : displayedReviewConcepts.some(item => item.conceptId === selectedConcept.id) ? (
                                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-8 text-center text-amber-800">
-                                        Vous devez reviser le concept non maitrise : {conceptLabel(selectedConcept)}. Aucune ressource n'est encore disponible.
+                                        Vous devez réviser le concept non maîtrisé : {conceptLabel(selectedConcept)}. Aucune ressource n'est encore disponible.
                                     </div>
                                 ) : (
                                     <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
-                                        Aucun contenu n'est encore associe a ce concept.
+                                        Aucun contenu n'est encore associé à ce concept.
                                     </div>
                                 )}
                             </div>

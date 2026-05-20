@@ -18,7 +18,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   cloud:
     consul:
-      host: consul
+      host: localhost
       port: 8500
       discovery:
         register: true
@@ -35,6 +35,10 @@ spring:
 app:
   events:
     exchange: adaptive.events
+
+services:
+  knowledge-graph:
+    url: ${KNOWLEDGE_GRAPH_SERVICE_URL:http://knowledge-graph-service:8082}
 
 management:
   health:

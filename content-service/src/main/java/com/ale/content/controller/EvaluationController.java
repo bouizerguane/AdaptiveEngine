@@ -24,15 +24,22 @@ public class EvaluationController {
     private static final Set<String> CONCEPT_ONLY_TYPES = Set.of("FORMATIVE");
 
     @GetMapping("/{targetId}")
-    public ResponseEntity<Evaluation> getEvaluation(@PathVariable String targetId) {
-        return evaluationRepository.findByTargetId(targetId)
+    public ResponseEntity<Evaluation> getEvaluation(
+            @PathVariable String targetId,
+            @RequestParam(value = "typeEvaluation", required = false) String typeEvaluation) {
+        if (typeEvaluation != null && !typeEvaluation.isBlank()) {
+            return evaluationRepository.findByTargetIdAndTypeEvaluation(targetId, typeEvaluation)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
+        return evaluationRepository.findFirstByTargetIdOrderByIdDesc(targetId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/course/{courseId}/diagnostics")
     public ResponseEntity<?> getCourseDiagnostics(@PathVariable String courseId) {
-        Set<String> diagnosticTypes = Set.of("DIAGNOSTIC_ENTREE", "DIAGNOSTIC_POSITIONNEMENT");
+        Set<String> diagnosticTypes = Set.of("DIAGNOSTIC_ENTREE", "DIAGNOSTIC_POSITIONNEMENT", "POSITIONNEMENT");
         var byCourseId = evaluationRepository.findByCourseIdAndTypeEvaluationIn(courseId, diagnosticTypes);
         var byTargetId = evaluationRepository.findByTargetIdAndTypeEvaluationIn(courseId, diagnosticTypes);
 
@@ -60,21 +67,24 @@ public class EvaluationController {
             @RequestBody Evaluation evaluation,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Role TEACHER requis."));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Rôle TEACHER requis."));
         }
 
-        // --- Validation métier ---
-        // FORMATIVE et VALIDATION sont exclusivement liées à des Concepts pédagogiques.
-        String type       = evaluation.getTypeEvaluation();
+        String type = evaluation.getTypeEvaluation();
         String targetType = evaluation.getTargetType();
+        if (evaluation.getTargetId() == null || evaluation.getTargetId().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La cible de l'évaluation est obligatoire."));
+        }
+        if (type == null || type.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Le type d'évaluation est obligatoire."));
+        }
 
         if (CONCEPT_ONLY_TYPES.contains(type) && !"CONCEPT".equals(targetType)) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                "error", String.format(
-                    "Le type '%s' est réservé aux évaluations de niveau CONCEPT. " +
-                    "Cible actuelle : '%s'. Utilisez DIAGNOSTIC_ENTREE (Cours) ou DIAGNOSTIC_POSITIONNEMENT (Module).",
-                    type, targetType
-                )
+                    "error", String.format(
+                            "Le type '%s' est réservé aux évaluations de niveau CONCEPT. Cible actuelle : '%s'.",
+                            type, targetType
+                    )
             ));
         }
 
@@ -89,19 +99,18 @@ public class EvaluationController {
         );
         if (invalidCorrectAnswer) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Chaque question doit avoir un enonce et une reponse correcte presente dans la liste des choix."
+                    "error", "Chaque question doit avoir un énoncé et une réponse correcte présente dans la liste des choix."
             ));
         }
 
-        log.info("[EvaluationController] saveEvaluation targetId={}, targetType={}, questions={}",
-                evaluation.getTargetId(), evaluation.getTargetType(), evaluation.getQuestions().size());
+        log.info("[EvaluationController] saveEvaluation targetId={}, targetType={}, type={}, questions={}",
+                evaluation.getTargetId(), evaluation.getTargetType(), evaluation.getTypeEvaluation(), evaluation.getQuestions().size());
 
-        // --- Upsert ---
         Evaluation saved;
         if (evaluation.getId() != null) {
             saved = evaluationRepository.save(evaluation);
         } else {
-            saved = evaluationRepository.findByTargetId(evaluation.getTargetId())
+            saved = evaluationRepository.findByTargetIdAndTypeEvaluation(evaluation.getTargetId(), type)
                     .map(existing -> {
                         evaluation.setId(existing.getId());
                         return evaluationRepository.save(evaluation);

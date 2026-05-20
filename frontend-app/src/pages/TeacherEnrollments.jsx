@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 const displayLearnerName = (learner) => {
     const fullName = [learner?.prenom, learner?.nom].filter(Boolean).join(' ').trim();
-    return fullName || 'Nom non renseigne';
+    return fullName || 'Nom non renseigné';
 };
 
 export default function TeacherEnrollments() {
@@ -188,7 +188,7 @@ export default function TeacherEnrollments() {
                                             <td className="px-5 py-3 font-semibold text-slate-800">{displayLearnerName(learner)}</td>
                                             <td className="px-5 py-3 text-slate-500">{learner.email}</td>
                                             <td className="px-5 py-3 text-slate-500">
-                                                {learner.enrolledAt ? new Date(learner.enrolledAt).toLocaleString() : 'Non renseigne'}
+                                                {learner.enrolledAt ? new Date(learner.enrolledAt).toLocaleString() : 'Non renseigné'}
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 <button

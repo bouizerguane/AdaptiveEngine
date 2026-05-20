@@ -14,9 +14,9 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed, darkMode
             links: [
                 { to: '/teacher/dashboard', icon: <Home size={20} />, label: 'Tableau de bord' },
                 { to: '/courses', icon: <Book size={20} />, label: 'Gestion des Cours' },
-                { to: '/graph', icon: <Share2 size={20} />, label: 'Graphe de Competences' },
+                { to: '/graph', icon: <Share2 size={20} />, label: 'Graphe de compétences' },
                 { to: '/teacher/resources', icon: <Folder size={20} />, label: 'Gestion Ressources' },
-                { to: '/teacher/quizzes', icon: <ClipboardList size={20} />, label: 'Gestion Evaluations' },
+                { to: '/teacher/quizzes', icon: <ClipboardList size={20} />, label: 'Gestion Évaluations' },
                 { to: '/teacher/labs', icon: <Terminal size={20} />, label: 'Gestion TP' },
                 { to: '/teacher/enrollments', icon: <Users size={20} />, label: 'Gestion des inscriptions' },
                 { to: '/profile', icon: <UserCircle size={20} />, label: 'Mon Profil' }
@@ -32,14 +32,14 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed, darkMode
             ]
         },
         'ROLE_ADMIN': {
-            title: 'Administration Systeme',
+            title: 'Administration Système',
             links: [
                 { to: '/admin/dashboard', icon: <Server size={20} />, label: 'Dashboard Admin' },
                 { to: '/admin/courses', icon: <Book size={20} />, label: 'Gestion des cours' },
                 { to: '/admin/users', icon: <Users size={20} />, label: 'Gestion Utilisateurs' },
-                { to: '/admin/settings', icon: <Settings size={20} />, label: 'Parametres Systeme' },
-                { to: '/admin/logs', icon: <FileText size={20} />, label: 'Logs Systeme' },
-                { to: '/admin/security', icon: <Shield size={20} />, label: 'Securite' },
+                { to: '/admin/settings', icon: <Settings size={20} />, label: 'Paramètres Système' },
+                { to: '/admin/logs', icon: <FileText size={20} />, label: 'Logs Système' },
+                { to: '/admin/security', icon: <Shield size={20} />, label: 'Sécurité' },
                 { to: '/profile', icon: <UserCircle size={20} />, label: 'Mon Profil' }
             ]
         }
@@ -62,8 +62,8 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed, darkMode
                         type="button"
                         onClick={onToggleCollapsed}
                         className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-                        title={collapsed ? 'Agrandir le menu' : 'Reduire le menu'}
-                        aria-label={collapsed ? 'Agrandir le menu' : 'Reduire le menu'}
+                        title={collapsed ? 'Agrandir le menu' : 'Réduire le menu'}
+                        aria-label={collapsed ? 'Agrandir le menu' : 'Réduire le menu'}
                     >
                         {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
                     </button>
@@ -94,10 +94,10 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed, darkMode
                 <button
                     onClick={() => { logout(); navigate('/', { replace: true }); }}
                     className={`flex w-full items-center rounded-lg p-3 transition-colors hover:bg-red-500/10 hover:text-red-400 ${collapsed ? 'justify-center' : 'gap-3'}`}
-                    title={collapsed ? 'Deconnexion' : undefined}
+                    title={collapsed ? 'Déconnexion' : undefined}
                 >
                     <LogOut size={20} />
-                    {!collapsed && <span className="font-medium">Deconnexion</span>}
+                    {!collapsed && <span className="font-medium">Déconnexion</span>}
                 </button>
             </div>
         </aside>

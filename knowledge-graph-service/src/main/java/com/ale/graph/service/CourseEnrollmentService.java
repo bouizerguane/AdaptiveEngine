@@ -206,8 +206,8 @@ public class CourseEnrollmentService {
                             : record.get("prerequisiteCount").asLong();
                     String label = record.get("label").isNull() ? "Concept suivant" : record.get("label").asString();
                     String reason = prerequisiteCount == 0
-                            ? "Ce concept est propose car il n'a pas de prerequis et n'est pas encore maitrise."
-                            : "Ce concept est propose car ses prerequis sont satisfaits et il n'est pas encore maitrise.";
+                            ? "Ce concept est proposé car il n'a pas de prérequis et n'est pas encore maîtrisé."
+                            : "Ce concept est proposé car ses prérequis sont satisfaits et il n'est pas encore maîtrisé.";
 
                     return ConceptRecommendationDto.builder()
                             .courseId(record.get("courseId").isNull() ? null : record.get("courseId").asString())
@@ -217,7 +217,7 @@ public class CourseEnrollmentService {
                             .moduleTitle(record.get("moduleTitle").isNull() ? "" : record.get("moduleTitle").asString())
                             .chapitreTitle(record.get("chapitreTitle").isNull() ? "" : record.get("chapitreTitle").asString())
                             .reason(reason)
-                            .remediation("En cas d'echec, relisez le contenu du concept puis repassez le quiz.")
+                            .remediation("En cas d'échec, relisez le contenu du concept puis repassez le quiz.")
                             .build();
                 })
                 .first();
