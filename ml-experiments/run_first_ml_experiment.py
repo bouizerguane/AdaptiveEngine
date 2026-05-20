@@ -8,6 +8,7 @@ from urllib import error, request
 
 import numpy as np
 import pandas as pd
+import joblib
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -28,45 +29,41 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = Path(__file__).resolve().parent
-TARGET = "conceptCompletedAfterRecommendation"
+MODEL_SERVING_DIR = OUTPUT_DIR / "model-serving"
+SERVING_MODEL_PATH = MODEL_SERVING_DIR / "model.pkl"
+TARGET = "success"
+SOURCE_TARGET = "conceptCompletedAfterRecommendation"
 
 NUMERICAL_FEATURES = [
-    "masteryScore",
-    "engagementScore",
     "adaptiveScore",
     "prerequisiteScore",
-    "diagnosticWeaknessScore",
     "historicalPerformanceScore",
     "pedagogicalOrderScore",
+    "engagementScore",
+    "diagnosticWeaknessScore",
+    "masteryScore",
     "averageAssessmentScore",
-    "repeatedFailuresCount",
-    "tracesCount",
     "completedLabsCount",
-    "knowledgeGapsCount",
-    "readyConceptsCount",
-    "lockedConceptsCount",
-    "completedConceptsCount",
-    "recommendedPathSize",
+    "tracesCount",
 ]
 
 CATEGORICAL_FEATURES = [
     "profileType",
-    "recommendationContext",
-    "nextAction",
-    "lastActivityType",
-    "persistentDifficulty",
-    "highMasteryProgression",
+    "recommendationType",
 ]
 
 EXCLUDED_OUTCOME_FIELDS = [
     "quizScoreAfterRecommendation",
     "conceptCompletedAfterRecommendation",
+    "success",
     "remediationSucceeded",
     "outcomeCapturedAt",
     "conceptCompleted",
     "labSubmittedAfterRecommendation",
     "learnerDropped",
     "recommendationAccepted",
+    "lastActivityScore",
+    "remediationSuccess",
 ]
 
 
@@ -158,24 +155,60 @@ def to_bool_series(series: pd.Series) -> pd.Series:
     return series.map(convert)
 
 
+def normalize_recommendation_type(row) -> str:
+    raw = row.get("recommendationType")
+    if pd.notna(raw) and str(raw).strip():
+        return str(raw).strip()
+
+    raw = row.get("recommendationContext")
+    if pd.notna(raw) and str(raw).strip():
+        value = str(raw).strip().upper()
+        if value == "LEARN":
+            return "NORMAL_PROGRESS"
+        return value
+
+    raw = row.get("nextAction")
+    if pd.notna(raw) and str(raw).strip():
+        value = str(raw).strip().upper()
+        if value == "LEARN":
+            return "NORMAL_PROGRESS"
+        if value == "PASS_DIAGNOSTIC":
+            return "DIAGNOSTIC"
+        if value == "COMPLETED":
+            return "VALIDATION"
+        return value
+
+    return "UNKNOWN"
+
+
+def prepare_serving_schema(df: pd.DataFrame) -> pd.DataFrame:
+    data = df.copy()
+    if TARGET not in data.columns:
+        if SOURCE_TARGET not in data.columns:
+            raise RuntimeError(f"Missing target: {TARGET} or {SOURCE_TARGET}")
+        data[TARGET] = data[SOURCE_TARGET]
+    data["recommendationType"] = data.apply(normalize_recommendation_type, axis=1)
+    return data
+
+
 def audit_dataset(df: pd.DataFrame) -> dict:
-    target_series = to_bool_series(df[TARGET]) if TARGET in df.columns else pd.Series(dtype=float)
+    data = prepare_serving_schema(df)
+    target_series = to_bool_series(data[TARGET]) if TARGET in data.columns else pd.Series(dtype=float)
     distribution = target_series.value_counts(dropna=False).to_dict()
     distribution = {str(key): int(value) for key, value in distribution.items()}
 
     available_features = {
-        "numerical": [col for col in NUMERICAL_FEATURES if col in df.columns],
-        "categorical": [col for col in CATEGORICAL_FEATURES if col in df.columns],
+        "numerical": [col for col in NUMERICAL_FEATURES if col in data.columns],
+        "categorical": [col for col in CATEGORICAL_FEATURES if col in data.columns],
     }
     feature_columns = available_features["numerical"] + available_features["categorical"]
-    missing_by_column = df.isna().sum().sort_values(ascending=False).to_dict()
+    missing_by_column = data.isna().sum().sort_values(ascending=False).to_dict()
 
     duplicate_subset = [
-        col
-        for col in ["learnerEmail", "courseId", "conceptId", "recommendedConcept", "nextAction", "adaptiveScore", "profileType", TARGET]
-        if col in df.columns
+        col for col in ["learnerEmail", "courseId", "conceptId", "recommendedConcept", "adaptiveScore", "profileType", TARGET]
+        if col in data.columns
     ]
-    duplicates_count = int(df.duplicated(subset=duplicate_subset).sum()) if duplicate_subset else 0
+    duplicates_count = int(data.duplicated(subset=duplicate_subset).sum()) if duplicate_subset else 0
 
     risks = []
     non_null_target = target_series.dropna()
@@ -185,7 +218,7 @@ def audit_dataset(df: pd.DataFrame) -> dict:
         risks.append("Target has a single known class; supervised training is not valid.")
     elif non_null_target.value_counts(normalize=True).max() >= 0.8:
         risks.append("Target is potentially imbalanced.")
-    if feature_columns and df[feature_columns].isna().mean().max() > 0.5:
+    if feature_columns and data[feature_columns].isna().mean().max() > 0.5:
         risks.append("Some features are sparse.")
     if duplicates_count:
         risks.append("Duplicate or near-duplicate recommendation rows detected.")
@@ -203,10 +236,7 @@ def audit_dataset(df: pd.DataFrame) -> dict:
 
 
 def build_clean_dataset(df: pd.DataFrame):
-    if TARGET not in df.columns:
-        raise RuntimeError(f"Missing target: {TARGET}")
-
-    data = df.copy()
+    data = prepare_serving_schema(df)
     data[TARGET] = to_bool_series(data[TARGET])
     data = data.dropna(subset=[TARGET]).copy()
     data[TARGET] = data[TARGET].astype(int)
@@ -264,7 +294,7 @@ def evaluate_models(clean: pd.DataFrame, numerical, categorical):
             "reason": "Not enough labelled rows or classes for a valid supervised train/test evaluation.",
             "models": {},
             "featureImportance": [],
-        }
+        }, None
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -345,10 +375,41 @@ def evaluate_models(clean: pd.DataFrame, numerical, categorical):
         "bestModel": best_name,
         "models": results,
         "featureImportance": importance,
+    }, best_model
+
+
+def save_serving_model(best_model, evaluation, numerical, categorical):
+    if best_model is None or evaluation.get("skipped"):
+        return None
+
+    best_name = evaluation.get("bestModel") or "model"
+    model_version = {
+        "logistic_regression": "local-logistic-v1",
+        "random_forest": "local-rf-v1",
+        "dummy_most_frequent": "local-dummy-v1",
+    }.get(best_name, f"local-{best_name}-v1")
+
+    MODEL_SERVING_DIR.mkdir(parents=True, exist_ok=True)
+    bundle = {
+        "modelVersion": model_version,
+        "pipeline": best_model,
+        "target": TARGET,
+        "features": numerical + categorical,
+        "numericalFeatures": numerical,
+        "categoricalFeatures": categorical,
+        "trainedAt": datetime.now(timezone.utc).isoformat(),
+        "trainingNote": "Offline experimental model. The rule-based AdaptiveEngine remains the primary decision engine.",
+    }
+    joblib.dump(bundle, SERVING_MODEL_PATH)
+    return {
+        "path": str(SERVING_MODEL_PATH.relative_to(ROOT_DIR)),
+        "modelVersion": model_version,
+        "bestModel": best_name,
+        "features": numerical + categorical,
     }
 
 
-def write_artifacts(traces, audit, clean, evaluation, metadata, args):
+def write_artifacts(traces, audit, clean, evaluation, best_model, numerical, categorical, metadata, args):
     source = args.source
     report_name = args.report_name or ("synthetic-ml-report.md" if source == "synthetic" else "first-ml-experiment-report.md")
     raw_path = OUTPUT_DIR / f"recommendation-traces-{source}-raw.json"
@@ -357,10 +418,14 @@ def write_artifacts(traces, audit, clean, evaluation, metadata, args):
     raw_path.write_text(json.dumps(traces, ensure_ascii=False, indent=2), encoding="utf-8")
     clean.to_csv(clean_path, index=False, encoding="utf-8")
 
+    serving_model = save_serving_model(best_model, evaluation, numerical, categorical)
+
     metrics = {
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "metadata": metadata,
         "target": TARGET,
+        "sourceTarget": SOURCE_TARGET,
+        "servingModel": serving_model,
         "audit": audit,
         "cleanedDataset": {
             "rows": int(clean.shape[0]),
@@ -459,9 +524,9 @@ def write_markdown_report(path: Path, audit, cleaned_shape, evaluation, metadata
         "This experiment is offline and exploratory. Synthetic data can validate the pipeline mechanics, but it cannot prove real predictive performance on learners.",
         "",
         "## 8. Future integration",
-        "No ML model is integrated into AdaptiveEngine. A future model should first be validated on real labelled outcomes, then compared against the current explainable rule-based engine before any pedagogical activation.",
+        "The exported model is optional and secondary. It should be validated on real labelled outcomes before any stronger pedagogical activation.",
         "",
-        "No ML model was added to the AdaptiveEngine runtime.",
+        "The rule-based AdaptiveEngine remains the primary decision engine.",
     ])
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -472,8 +537,8 @@ def main():
     df = pd.DataFrame(traces)
     audit = audit_dataset(df)
     clean, numerical, categorical = build_clean_dataset(df)
-    evaluation = evaluate_models(clean, numerical, categorical)
-    write_artifacts(traces, audit, clean, evaluation, metadata, args)
+    evaluation, best_model = evaluate_models(clean, numerical, categorical)
+    write_artifacts(traces, audit, clean, evaluation, best_model, numerical, categorical, metadata, args)
 
     print(json.dumps({
         "source": args.source,
@@ -481,6 +546,7 @@ def main():
         "cleanRows": int(clean.shape[0]),
         "targetDistribution": audit["targetDistribution"],
         "bestModel": evaluation.get("bestModel"),
+        "modelPath": str(SERVING_MODEL_PATH.relative_to(ROOT_DIR)) if SERVING_MODEL_PATH.exists() else None,
         "skipped": evaluation["skipped"],
     }, ensure_ascii=False, indent=2))
 

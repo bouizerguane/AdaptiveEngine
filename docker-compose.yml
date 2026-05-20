@@ -245,6 +245,7 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
       - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-change_me_rabbitmq_password}
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://model-serving:8090}
     networks:
       - adaptive-network
     depends_on:
@@ -256,6 +257,17 @@ services:
         condition: service_started
       tracking-service:
         condition: service_started
+      model-serving:
+        condition: service_started
+
+  model-serving:
+    build:
+      context: ./ml-experiments/model-serving
+    container_name: model-serving
+    ports:
+      - "8090:8090"
+    networks:
+      - adaptive-network
 
   tutoring-service:
     build:

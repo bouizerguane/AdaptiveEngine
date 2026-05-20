@@ -1,11 +1,31 @@
 {
-  "generatedAt": "2026-05-20T09:57:22.428203+00:00",
+  "generatedAt": "2026-05-20T10:43:35.984356+00:00",
   "metadata": {
     "source": "synthetic",
     "path": "ml-experiments\\synthetic-recommendation-traces.json",
     "description": "synthetic experimental dataset generated from AdaptiveEngine feature schema"
   },
-  "target": "conceptCompletedAfterRecommendation",
+  "target": "success",
+  "sourceTarget": "conceptCompletedAfterRecommendation",
+  "servingModel": {
+    "path": "ml-experiments\\model-serving\\model.pkl",
+    "modelVersion": "local-rf-v1",
+    "bestModel": "random_forest",
+    "features": [
+      "adaptiveScore",
+      "prerequisiteScore",
+      "historicalPerformanceScore",
+      "pedagogicalOrderScore",
+      "engagementScore",
+      "diagnosticWeaknessScore",
+      "masteryScore",
+      "averageAssessmentScore",
+      "completedLabsCount",
+      "tracesCount",
+      "profileType",
+      "recommendationType"
+    ]
+  },
   "audit": {
     "totalRows": 260,
     "totalColumns": 45,
@@ -13,29 +33,30 @@
       "remediationSucceeded": 185,
       "remediationSuccess": 181,
       "quizScoreAfterRecommendation": 87,
-      "conceptCompleted": 10,
+      "conceptCompletedAfterRecommendation": 10,
+      "success": 10,
       "outcomeCapturedAt": 10,
       "recommendationAccepted": 10,
       "learnerDropped": 10,
       "labSubmittedAfterRecommendation": 10,
-      "conceptCompletedAfterRecommendation": 10,
+      "conceptCompleted": 10,
       "lastActivityScore": 7,
-      "historicalPerformanceScore": 0,
+      "nextAction": 0,
       "pedagogicalOrderScore": 0,
       "engagementScore": 0,
       "adaptiveScore": 0,
       "recommendedConcept": 0,
       "id": 0,
-      "nextAction": 0,
       "remediationTriggered": 0,
       "recommendationReason": 0,
-      "prerequisiteScore": 0,
+      "diagnosticWeaknessScore": 0,
       "createdAt": 0,
       "syntheticProfile": 0,
-      "diagnosticWeaknessScore": 0,
-      "completedConceptsCount": 0,
+      "syntheticDatasetNote": 0,
+      "historicalPerformanceScore": 0,
       "recommendedPathSize": 0,
-      "knowledgeGapsCount": 0,
+      "prerequisiteScore": 0,
+      "learnerEmail": 0,
       "courseId": 0,
       "courseTitle": 0,
       "conceptId": 0,
@@ -44,8 +65,8 @@
       "tracesCount": 0,
       "completedLabsCount": 0,
       "averageAssessmentScore": 0,
+      "knowledgeGapsCount": 0,
       "profileType": 0,
-      "learnerEmail": 0,
       "pedagogicalStrategy": 0,
       "recommendationContext": 0,
       "lastActivityType": 0,
@@ -54,7 +75,8 @@
       "highMasteryProgression": 0,
       "readyConceptsCount": 0,
       "lockedConceptsCount": 0,
-      "syntheticDatasetNote": 0
+      "completedConceptsCount": 0,
+      "recommendationType": 0
     },
     "targetDistribution": {
       "1.0": 143,
@@ -63,30 +85,20 @@
     },
     "availableFeatures": {
       "numerical": [
-        "masteryScore",
-        "engagementScore",
         "adaptiveScore",
         "prerequisiteScore",
-        "diagnosticWeaknessScore",
         "historicalPerformanceScore",
         "pedagogicalOrderScore",
+        "engagementScore",
+        "diagnosticWeaknessScore",
+        "masteryScore",
         "averageAssessmentScore",
-        "repeatedFailuresCount",
-        "tracesCount",
         "completedLabsCount",
-        "knowledgeGapsCount",
-        "readyConceptsCount",
-        "lockedConceptsCount",
-        "completedConceptsCount",
-        "recommendedPathSize"
+        "tracesCount"
       ],
       "categorical": [
         "profileType",
-        "recommendationContext",
-        "nextAction",
-        "lastActivityType",
-        "persistentDifficulty",
-        "highMasteryProgression"
+        "recommendationType"
       ]
     },
     "excludedOutcomeFields": [
@@ -97,19 +109,21 @@
       "conceptCompleted",
       "labSubmittedAfterRecommendation",
       "learnerDropped",
-      "recommendationAccepted"
+      "recommendationAccepted",
+      "lastActivityScore",
+      "remediationSuccess"
     ],
     "duplicatesCount": 0,
     "risks": []
   },
   "cleanedDataset": {
     "rows": 250,
-    "columns": 23,
+    "columns": 13,
     "path": "ml-experiments\\synthetic-recommendation-traces-cleaned.csv"
   },
   "evaluation": {
     "skipped": false,
-    "bestModel": "logistic_regression",
+    "bestModel": "random_forest",
     "models": {
       "dummy_most_frequent": {
         "accuracy": 0.5733333333333334,
@@ -133,184 +147,112 @@
         "crossValidationF1Std": 0.007950307506599096
       },
       "logistic_regression": {
-        "accuracy": 0.7733333333333333,
-        "precision": 0.825,
-        "recall": 0.7674418604651163,
-        "f1": 0.7951807228915663,
-        "roc_auc": 0.8248546511627907,
+        "accuracy": 0.7066666666666667,
+        "precision": 0.7837837837837838,
+        "recall": 0.6744186046511628,
+        "f1": 0.725,
+        "roc_auc": 0.7768895348837209,
+        "confusionMatrix": [
+          [
+            24,
+            8
+          ],
+          [
+            14,
+            29
+          ]
+        ],
+        "trainRows": 175,
+        "testRows": 75,
+        "crossValidationF1Mean": 0.7159081484553182,
+        "crossValidationF1Std": 0.06850603682048399
+      },
+      "random_forest": {
+        "accuracy": 0.72,
+        "precision": 0.8055555555555556,
+        "recall": 0.6744186046511628,
+        "f1": 0.7341772151898734,
+        "roc_auc": 0.7492732558139534,
         "confusionMatrix": [
           [
             25,
             7
           ],
           [
-            10,
-            33
+            14,
+            29
           ]
         ],
         "trainRows": 175,
         "testRows": 75,
-        "crossValidationF1Mean": 0.7871520636226518,
-        "crossValidationF1Std": 0.03400583634637655
-      },
-      "random_forest": {
-        "accuracy": 0.7066666666666667,
-        "precision": 0.7692307692307693,
-        "recall": 0.6976744186046512,
-        "f1": 0.7317073170731707,
-        "roc_auc": 0.7819767441860466,
-        "confusionMatrix": [
-          [
-            23,
-            9
-          ],
-          [
-            13,
-            30
-          ]
-        ],
-        "trainRows": 175,
-        "testRows": 75,
-        "crossValidationF1Mean": 0.7590572390572391,
-        "crossValidationF1Std": 0.04689963759970234
+        "crossValidationF1Mean": 0.7181632729062787,
+        "crossValidationF1Std": 0.036226579424445744
       }
     },
     "featureImportance": [
       {
-        "feature": "nextAction_REMEDIATION",
-        "importance": 1.5731669722369481
-      },
-      {
-        "feature": "recommendationContext_LEARN",
-        "importance": 1.3379074529673627
-      },
-      {
-        "feature": "nextAction_LEARN",
-        "importance": 1.2698729149491035
-      },
-      {
-        "feature": "recommendationContext_REMEDIATION",
-        "importance": 1.0346133956795192
-      },
-      {
-        "feature": "repeatedFailuresCount",
-        "importance": 0.7867356656197936
+        "feature": "averageAssessmentScore",
+        "importance": 0.21492094584417124
       },
       {
         "feature": "masteryScore",
-        "importance": 0.6513635861190149
-      },
-      {
-        "feature": "profileType_HIGH_PERFORMING",
-        "importance": 0.595344232416538
-      },
-      {
-        "feature": "completedLabsCount",
-        "importance": 0.49842559769985934
-      },
-      {
-        "feature": "lastActivityType_REMEDIATION",
-        "importance": 0.4897286906687172
-      },
-      {
-        "feature": "highMasteryProgression_True",
-        "importance": 0.4832095582869045
-      },
-      {
-        "feature": "highMasteryProgression_False",
-        "importance": 0.4826460409430088
-      },
-      {
-        "feature": "profileType_PROGRESSING",
-        "importance": 0.4565142550663701
+        "importance": 0.16918645209163388
       },
       {
         "feature": "engagementScore",
-        "importance": 0.3527707435883789
-      },
-      {
-        "feature": "lastActivityType_DIAGNOSTIC",
-        "importance": 0.31239247914158247
-      },
-      {
-        "feature": "recommendationContext_VALIDATION",
-        "importance": 0.30385757463174035
-      },
-      {
-        "feature": "nextAction_COMPLETED",
-        "importance": 0.30385757463174035
-      },
-      {
-        "feature": "historicalPerformanceScore",
-        "importance": 0.3037699809322951
-      },
-      {
-        "feature": "averageAssessmentScore",
-        "importance": 0.281644771131786
-      },
-      {
-        "feature": "tracesCount",
-        "importance": 0.2543447830536921
-      },
-      {
-        "feature": "diagnosticWeaknessScore",
-        "importance": 0.21628045790712144
-      },
-      {
-        "feature": "lastActivityType_QUIZ",
-        "importance": 0.18016278244619668
-      },
-      {
-        "feature": "persistentDifficulty_False",
-        "importance": 0.13882997735016825
-      },
-      {
-        "feature": "profileType_NEEDS_REMEDIATION",
-        "importance": 0.13826646000627202
-      },
-      {
-        "feature": "persistentDifficulty_True",
-        "importance": 0.13826646000627202
-      },
-      {
-        "feature": "knowledgeGapsCount",
-        "importance": 0.13569155983699588
-      },
-      {
-        "feature": "pedagogicalOrderScore",
-        "importance": 0.12641221575355285
-      },
-      {
-        "feature": "lockedConceptsCount",
-        "importance": 0.10882572549918065
-      },
-      {
-        "feature": "completedConceptsCount",
-        "importance": 0.08987400247260968
-      },
-      {
-        "feature": "readyConceptsCount",
-        "importance": 0.08490510085139748
-      },
-      {
-        "feature": "recommendedPathSize",
-        "importance": 0.058472105599640764
-      },
-      {
-        "feature": "lastActivityType_LAB",
-        "importance": 0.035039706094495075
-      },
-      {
-        "feature": "lastActivityType_VALIDATION",
-        "importance": 0.032776652519330936
-      },
-      {
-        "feature": "prerequisiteScore",
-        "importance": 0.013762274465840057
+        "importance": 0.13086497681812076
       },
       {
         "feature": "adaptiveScore",
-        "importance": 0.006083626734849941
+        "importance": 0.08751788661259284
+      },
+      {
+        "feature": "pedagogicalOrderScore",
+        "importance": 0.08218497732560778
+      },
+      {
+        "feature": "historicalPerformanceScore",
+        "importance": 0.06686770611000496
+      },
+      {
+        "feature": "completedLabsCount",
+        "importance": 0.06669478444633858
+      },
+      {
+        "feature": "tracesCount",
+        "importance": 0.05299638921102497
+      },
+      {
+        "feature": "diagnosticWeaknessScore",
+        "importance": 0.02778024972244883
+      },
+      {
+        "feature": "profileType_HIGH_PERFORMING",
+        "importance": 0.025882975754140877
+      },
+      {
+        "feature": "profileType_NEEDS_REMEDIATION",
+        "importance": 0.024933097433838633
+      },
+      {
+        "feature": "prerequisiteScore",
+        "importance": 0.01749315974831894
+      },
+      {
+        "feature": "recommendationType_REMEDIATION",
+        "importance": 0.013411996944865426
+      },
+      {
+        "feature": "profileType_PROGRESSING",
+        "importance": 0.008848780671342494
+      },
+      {
+        "feature": "recommendationType_NORMAL_PROGRESS",
+        "importance": 0.008163794811967521
+      },
+      {
+        "feature": "recommendationType_VALIDATION",
+        "importance": 0.0022518264535822024
       }
     ]
   }

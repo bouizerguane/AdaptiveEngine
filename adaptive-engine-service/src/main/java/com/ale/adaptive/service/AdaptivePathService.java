@@ -51,8 +51,10 @@ public class AdaptivePathService {
     private static final double HIGH_MASTERY_SCORE_THRESHOLD = 80.0;
     private static final double HIGH_ASSESSMENT_THRESHOLD = 80.0;
     private static final int HIGH_MASTERED_CONCEPTS_THRESHOLD = 2;
+    private static final int HIGH_MASTERY_MIN_ACTIVITY_COUNT = 2;
     private static final int MAX_KNOWLEDGE_GAPS_FOR_HIGH_MASTERY = 0;
     private static final double HIGH_MASTERY_READY_SCORE_PROXIMITY = 0.05;
+    private static final double HIGH_MASTERY_BONUS = 0.03;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -63,6 +65,9 @@ public class AdaptivePathService {
 
     @Value("${services.tracking.url}")
     private String trackingServiceUrl;
+
+    @Value("${ML_SERVICE_URL:${ml.service.url:http://localhost:8090}}")
+    private String mlServiceUrl;
 
     public AdaptivePathResponse buildPath(String learnerEmail, String courseId) {
         PathFreshnessDto pathFreshness = refreshStateService.persistentOrFallbackFreshness(learnerEmail, courseId);
@@ -188,6 +193,7 @@ public class AdaptivePathService {
                 .pathFreshness(pathFreshness)
                 .build();
 
+        enrichWithMlSignal(response);
         persistRecommendationTrace(response, traces, labs);
 
         if (pathFreshness != null && pathFreshness.isRefreshedAfterEvent()) {
@@ -263,6 +269,75 @@ public class AdaptivePathService {
             log.warn("[RecommendationTrace] persistence skipped learner={} course={} reason={}",
                     response.getLearnerEmail(), response.getCourseId(), ex.getMessage());
         }
+    }
+
+    private void enrichWithMlSignal(AdaptivePathResponse response) {
+        if (response == null || response.getNextConcept() == null) {
+            return;
+        }
+
+        AdaptiveConceptDto nextConcept = response.getNextConcept();
+        Map<String, Double> scoreBreakdown = nextConcept.getScoreBreakdown() == null
+                ? Map.of()
+                : nextConcept.getScoreBreakdown();
+        LearnerProfileDto learnerProfile = response.getLearnerProfile();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("adaptiveScore", nextConcept.getAdaptiveScore());
+        payload.put("prerequisiteScore", scoreBreakdown.get("prerequisiteScore"));
+        payload.put("historicalPerformanceScore", scoreBreakdown.get("historicalPerformanceScore"));
+        payload.put("pedagogicalOrderScore", scoreBreakdown.get("pedagogicalOrderScore"));
+        payload.put("engagementScore", scoreBreakdown.get("engagementScore"));
+        payload.put("diagnosticWeaknessScore", scoreBreakdown.get("diagnosticWeaknessScore"));
+        payload.put("masteryScore", learnerProfile == null ? null : learnerProfile.getMasteryScore());
+        payload.put("averageAssessmentScore", learnerProfile == null ? null : learnerProfile.getAverageAssessmentScore());
+        payload.put("completedLabsCount", learnerProfile == null ? null : learnerProfile.getCompletedLabsCount());
+        payload.put("tracesCount", learnerProfile == null ? null : learnerProfile.getTracesCount());
+        payload.put("profileType", learnerProfile == null ? null : learnerProfile.getProfileType());
+        payload.put("recommendationType", mlRecommendationType(response.getNextAction()));
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mlResponse = restTemplate.postForObject(
+                    mlPredictionUrl(),
+                    payload,
+                    Map.class
+            );
+            Double probability = mlResponse == null ? null : doubleValue(mlResponse.get("successProbability"));
+            if (probability == null) {
+                return;
+            }
+
+            probability = Math.max(0.0, Math.min(1.0, probability));
+            nextConcept.setMlSuccessProbability(round(probability));
+            if (nextConcept.getAdaptiveScore() != null) {
+                nextConcept.setMlEnhancedScore(round(0.8 * nextConcept.getAdaptiveScore() + 0.2 * probability));
+            }
+            nextConcept.setMlExplanation("ML signal estimates the probability of successful recommendation based on historical recommendation traces.");
+
+            List<String> reasons = new ArrayList<>(nextConcept.getExplanationReasons() == null
+                    ? List.of()
+                    : nextConcept.getExplanationReasons());
+            reasons.add("Signal ML expérimental : probabilité estimée de réussite calculée à partir des traces de recommandation historiques.");
+            nextConcept.setExplanationReasons(reasons);
+        } catch (RestClientException ex) {
+            log.info("[AdaptiveML] ML signal unavailable; falling back to rule-based score learner={} course={} reason={}",
+                    response.getLearnerEmail(), response.getCourseId(), ex.getMessage());
+        }
+    }
+
+    private String mlPredictionUrl() {
+        String baseUrl = firstNonBlank(mlServiceUrl, "http://localhost:8090");
+        return baseUrl.replaceAll("/+$", "") + "/api/ml/predict-success";
+    }
+
+    private String mlRecommendationType(String nextAction) {
+        return switch (firstNonBlank(nextAction, "")) {
+            case "PASS_DIAGNOSTIC" -> "DIAGNOSTIC";
+            case "REMEDIATION" -> "REMEDIATION";
+            case "COMPLETED" -> "VALIDATION";
+            default -> "NORMAL_PROGRESS";
+        };
     }
 
     private boolean hasRemediationSuccess(AdaptivePathResponse response) {
@@ -833,13 +908,13 @@ public class AdaptivePathService {
 
         List<AdaptiveConceptDto> closeReadyConcepts = normallyOrdered.stream()
                 .filter(concept -> isCloseToBestReadyScore(concept, bestScore))
+                .filter(this::hasAcceptablePrerequisiteScore)
                 .sorted(Comparator
-                        .comparing((AdaptiveConceptDto concept) -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE))
-                        .reversed()
-                        .thenComparing(AdaptiveConceptDto::getAdaptiveScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                        .comparing((AdaptiveConceptDto concept) -> controlledReadyPriorityScore(concept, conceptPositions), Comparator.reverseOrder())
+                        .thenComparing(concept -> conceptPositions.getOrDefault(concept.getConceptId(), Integer.MAX_VALUE)))
                 .toList();
         List<AdaptiveConceptDto> remainingConcepts = normallyOrdered.stream()
-                .filter(concept -> !isCloseToBestReadyScore(concept, bestScore))
+                .filter(concept -> !closeReadyConcepts.contains(concept))
                 .toList();
         List<AdaptiveConceptDto> controlledProgression = new ArrayList<>(closeReadyConcepts);
         controlledProgression.addAll(remainingConcepts);
@@ -851,22 +926,42 @@ public class AdaptivePathService {
         return score != null && bestScore - score <= HIGH_MASTERY_READY_SCORE_PROXIMITY;
     }
 
+    private double controlledReadyPriorityScore(AdaptiveConceptDto concept, Map<String, Integer> conceptPositions) {
+        double score = concept == null || concept.getAdaptiveScore() == null ? 0.0 : concept.getAdaptiveScore();
+        int position = concept == null ? 0 : conceptPositions.getOrDefault(concept.getConceptId(), 0);
+        double pedagogicalProgressionBonus = Math.min(HIGH_MASTERY_BONUS, position * 0.001);
+        return score + pedagogicalProgressionBonus;
+    }
+
+    private boolean hasAcceptablePrerequisiteScore(AdaptiveConceptDto concept) {
+        if (concept == null || concept.getScoreBreakdown() == null) {
+            return true;
+        }
+        Double prerequisiteScore = concept.getScoreBreakdown().get("prerequisiteScore");
+        return prerequisiteScore == null || prerequisiteScore >= 0.5;
+    }
+
     private boolean detectHighMastery(
             LearnerProfileDto learnerProfile,
             Set<String> failedDiagnosticConceptIds,
             Map<String, Integer> repeatedFailuresByConcept) {
+        return isHighMasteryEligible(learnerProfile)
+                && (failedDiagnosticConceptIds == null || failedDiagnosticConceptIds.isEmpty())
+                && (repeatedFailuresByConcept == null
+                || repeatedFailuresByConcept.values().stream().noneMatch(count -> count >= REPEATED_FAILURE_THRESHOLD));
+    }
+
+    private boolean isHighMasteryEligible(LearnerProfileDto learnerProfile) {
         if (learnerProfile == null) {
             return false;
         }
         int knowledgeGapsCount = learnerProfile.getKnowledgeGaps() == null
                 ? 0
                 : learnerProfile.getKnowledgeGaps().size();
-        boolean hasDiagnosticWeakness = failedDiagnosticConceptIds != null && !failedDiagnosticConceptIds.isEmpty();
-        boolean hasPersistentDifficulty = repeatedFailuresByConcept != null
-                && repeatedFailuresByConcept.values().stream().anyMatch(count -> count >= REPEATED_FAILURE_THRESHOLD);
+        int activityCount = learnerProfile.getTracesCount() + learnerProfile.getCompletedLabsCount();
         if (knowledgeGapsCount > MAX_KNOWLEDGE_GAPS_FOR_HIGH_MASTERY
-                || hasDiagnosticWeakness
-                || hasPersistentDifficulty) {
+                || activityCount < HIGH_MASTERY_MIN_ACTIVITY_COUNT
+                || "NEEDS_REMEDIATION".equals(learnerProfile.getProfileType())) {
             return false;
         }
 
@@ -875,7 +970,9 @@ public class AdaptivePathService {
         boolean highAssessmentAverage = learnerProfile.getAverageAssessmentScore() != null
                 && learnerProfile.getAverageAssessmentScore() >= HIGH_ASSESSMENT_THRESHOLD;
         boolean severalMasteredConcepts = learnerProfile.getMasteredConceptsCount() >= HIGH_MASTERED_CONCEPTS_THRESHOLD;
-        return highMasteryScore || highAssessmentAverage || severalMasteredConcepts;
+        return highMasteryScore
+                && highAssessmentAverage
+                && severalMasteredConcepts;
     }
 
     private List<AdaptiveConceptDto> mergePersistentFailureConcepts(
@@ -1106,8 +1203,8 @@ public class AdaptivePathService {
         }
         if ("READY".equals(status) && highMasteryProgression) {
             List<String> reasons = new ArrayList<>(pathStepExplanationReasons(concept, status));
-            reasons.add("Votre progression r\u00e9cente indique une bonne ma\u00eetrise des concepts pr\u00e9c\u00e9dents.");
-            reasons.add("Les prochaines activit\u00e9s recommand\u00e9es sont l\u00e9g\u00e8rement prioris\u00e9es afin de maintenir votre progression p\u00e9dagogique.");
+            reasons.add("Votre progression r\u00e9cente indique une ma\u00eetrise \u00e9lev\u00e9e des concepts pr\u00e9c\u00e9dents.");
+            reasons.add("Une progression acc\u00e9l\u00e9r\u00e9e contr\u00f4l\u00e9e est appliqu\u00e9e uniquement parmi les concepts d\u00e9j\u00e0 accessibles, sans contourner les pr\u00e9requis.");
             return reasons.stream().distinct().toList();
         }
         return pathStepExplanationReasons(concept, status);

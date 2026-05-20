@@ -1,14 +1,16 @@
 # First ML Experiment - AdaptiveEngine
 
-Ce dossier contient un pipeline ML expérimental **offline**. Il n'est pas intégré au moteur adaptatif et ne modifie pas les décisions pédagogiques existantes.
+Ce dossier contient un pipeline ML expérimental **offline** et un petit service FastAPI optionnel. Il ne remplace pas le moteur adaptatif et ne modifie pas les décisions pédagogiques existantes.
 
 ## Objectif
 
-Prédire la target :
+Prédire la target de serving :
 
 ```text
-conceptCompletedAfterRecommendation
+success
 ```
+
+Quand le dataset exporté contient l'ancien champ `conceptCompletedAfterRecommendation`, le script le convertit en cible `success` pour le modèle de serving.
 
 Question expérimentale :
 
@@ -63,6 +65,13 @@ Prérequis Python utilisés :
 - pandas
 - numpy
 - scikit-learn
+- joblib
+
+La commande d'entraînement sauvegarde aussi le meilleur pipeline dans :
+
+```text
+ml-experiments/model-serving/model.pkl
+```
 
 ## Artefacts générés
 
@@ -76,6 +85,7 @@ Prérequis Python utilisés :
 - `feature_importance.csv` : importance des variables ;
 - `first-ml-experiment-report.md` : rapport synthétique.
 - `synthetic-ml-report.md` : rapport ML sur le dataset synthétique.
+- `model-serving/model.pkl` : pipeline expérimental sérialisé pour l'API FastAPI.
 
 ## Modèles testés
 
@@ -85,7 +95,42 @@ Prérequis Python utilisés :
 
 ## Important
 
-Aucun modèle ML n'est appelé depuis `adaptive-engine-service`. Le moteur principal reste rule-based, explicable et inchangé.
+Le modèle peut être appelé depuis `adaptive-engine-service` comme signal secondaire non bloquant. Le moteur principal reste rule-based, explicable et inchangé.
+
+## Serving expérimental optionnel
+
+Le dossier `model-serving/` expose une API FastAPI minimale :
+
+```http
+POST /api/ml/predict-success
+```
+
+Lancer localement après entraînement :
+
+```bash
+cd ml-experiments/model-serving
+pip install -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 8090
+```
+
+Exemple curl :
+
+```bash
+curl -X POST http://localhost:8090/api/ml/predict-success \
+  -H "Content-Type: application/json" \
+  -d "{\"adaptiveScore\":0.82,\"prerequisiteScore\":0.9,\"historicalPerformanceScore\":0.75,\"pedagogicalOrderScore\":0.8,\"engagementScore\":0.7,\"diagnosticWeaknessScore\":0.3,\"masteryScore\":0.65,\"averageAssessmentScore\":72,\"completedLabsCount\":5,\"tracesCount\":18,\"profileType\":\"INTERMEDIATE\",\"recommendationType\":\"NORMAL_PROGRESS\"}"
+```
+
+Réponse attendue :
+
+```json
+{
+  "successProbability": 0.78,
+  "modelVersion": "local-rf-v1"
+}
+```
+
+Si le service ML est arrêté ou si `model.pkl` est absent, `adaptive-engine-service` garde automatiquement le score rule-based sans bloquer `/api/adaptive/path`.
 
 ## Limites scientifiques
 

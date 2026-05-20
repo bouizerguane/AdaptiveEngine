@@ -6,7 +6,7 @@
 - Exported rows: 260
 - Labelled ML rows after target filtering: 250
 - Exported columns: 45
-- Target distribution `conceptCompletedAfterRecommendation`: `{"1.0": 143, "0.0": 107, "nan": 10}`
+- Target distribution `success`: `{"1.0": 143, "0.0": 107, "nan": 10}`
 - Duplicate or near-duplicate rows: 0
 
 Risks:
@@ -15,13 +15,13 @@ Risks:
 ## 2. Features retained
 
 Numerical:
-masteryScore, engagementScore, adaptiveScore, prerequisiteScore, diagnosticWeaknessScore, historicalPerformanceScore, pedagogicalOrderScore, averageAssessmentScore, repeatedFailuresCount, tracesCount, completedLabsCount, knowledgeGapsCount, readyConceptsCount, lockedConceptsCount, completedConceptsCount, recommendedPathSize
+adaptiveScore, prerequisiteScore, historicalPerformanceScore, pedagogicalOrderScore, engagementScore, diagnosticWeaknessScore, masteryScore, averageAssessmentScore, completedLabsCount, tracesCount
 
 Categorical:
-profileType, recommendationContext, nextAction, lastActivityType, persistentDifficulty, highMasteryProgression
+profileType, recommendationType
 
 Outcome fields excluded to avoid leakage:
-quizScoreAfterRecommendation, conceptCompletedAfterRecommendation, remediationSucceeded, outcomeCapturedAt, conceptCompleted, labSubmittedAfterRecommendation, learnerDropped, recommendationAccepted
+quizScoreAfterRecommendation, conceptCompletedAfterRecommendation, remediationSucceeded, outcomeCapturedAt, conceptCompleted, labSubmittedAfterRecommendation, learnerDropped, recommendationAccepted, lastActivityScore, remediationSuccess
 
 ## 3. Models tested
 - Dummy Classifier, strategy most_frequent
@@ -39,47 +39,47 @@ quizScoreAfterRecommendation, conceptCompletedAfterRecommendation, remediationSu
 - Cross-validation F1: 0.728 +/- 0.008
 
 ### logistic_regression
-- Accuracy: 0.773
-- Precision: 0.825
-- Recall: 0.767
-- F1-score: 0.795
-- ROC-AUC: 0.825
-- Confusion matrix [0,1]: `[[25, 7], [10, 33]]`
-- Cross-validation F1: 0.787 +/- 0.034
+- Accuracy: 0.707
+- Precision: 0.784
+- Recall: 0.674
+- F1-score: 0.725
+- ROC-AUC: 0.777
+- Confusion matrix [0,1]: `[[24, 8], [14, 29]]`
+- Cross-validation F1: 0.716 +/- 0.069
 
 ### random_forest
-- Accuracy: 0.707
-- Precision: 0.769
-- Recall: 0.698
-- F1-score: 0.732
-- ROC-AUC: 0.782
-- Confusion matrix [0,1]: `[[23, 9], [13, 30]]`
-- Cross-validation F1: 0.759 +/- 0.047
+- Accuracy: 0.720
+- Precision: 0.806
+- Recall: 0.674
+- F1-score: 0.734
+- ROC-AUC: 0.749
+- Confusion matrix [0,1]: `[[25, 7], [14, 29]]`
+- Cross-validation F1: 0.718 +/- 0.036
 
 ## 5. Best model
-logistic_regression
+random_forest
 
 ## 6. Feature importance
-- nextAction_REMEDIATION: 1.5732
-- recommendationContext_LEARN: 1.3379
-- nextAction_LEARN: 1.2699
-- recommendationContext_REMEDIATION: 1.0346
-- repeatedFailuresCount: 0.7867
-- masteryScore: 0.6514
-- profileType_HIGH_PERFORMING: 0.5953
-- completedLabsCount: 0.4984
-- lastActivityType_REMEDIATION: 0.4897
-- highMasteryProgression_True: 0.4832
-- highMasteryProgression_False: 0.4826
-- profileType_PROGRESSING: 0.4565
-- engagementScore: 0.3528
-- lastActivityType_DIAGNOSTIC: 0.3124
-- recommendationContext_VALIDATION: 0.3039
+- averageAssessmentScore: 0.2149
+- masteryScore: 0.1692
+- engagementScore: 0.1309
+- adaptiveScore: 0.0875
+- pedagogicalOrderScore: 0.0822
+- historicalPerformanceScore: 0.0669
+- completedLabsCount: 0.0667
+- tracesCount: 0.0530
+- diagnosticWeaknessScore: 0.0278
+- profileType_HIGH_PERFORMING: 0.0259
+- profileType_NEEDS_REMEDIATION: 0.0249
+- prerequisiteScore: 0.0175
+- recommendationType_REMEDIATION: 0.0134
+- profileType_PROGRESSING: 0.0088
+- recommendationType_NORMAL_PROGRESS: 0.0082
 
 ## 7. Scientific recommendation
 This experiment is offline and exploratory. Synthetic data can validate the pipeline mechanics, but it cannot prove real predictive performance on learners.
 
 ## 8. Future integration
-No ML model is integrated into AdaptiveEngine. A future model should first be validated on real labelled outcomes, then compared against the current explainable rule-based engine before any pedagogical activation.
+The exported model is optional and secondary. It should be validated on real labelled outcomes before any stronger pedagogical activation.
 
-No ML model was added to the AdaptiveEngine runtime.
+The rule-based AdaptiveEngine remains the primary decision engine.

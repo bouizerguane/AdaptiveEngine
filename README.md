@@ -1,6 +1,6 @@
 # AdaptiveEngine
 
-AdaptiveEngine est une plateforme pédagogique adaptative organisée en microservices Spring Boot, avec une interface React/Vite. Le système actuel est un moteur adaptatif rule-based explicable : il exploite le graphe de prérequis, les traces d'apprentissage, les diagnostics, les TP et le profil apprenant. Le projet est préparé pour une future phase ML grâce à la journalisation `RecommendationTrace`, mais aucun modèle ML réel n'est intégré pour le moment.
+AdaptiveEngine est une plateforme pédagogique adaptative organisée en microservices Spring Boot, avec une interface React/Vite. Le système actuel garde un moteur adaptatif rule-based explicable comme moteur principal : il exploite le graphe de prérequis, les traces d'apprentissage, les diagnostics, les TP et le profil apprenant. Un premier service ML expérimental peut être lancé séparément pour fournir un signal secondaire non bloquant à partir des traces `RecommendationTrace`.
 
 ## 1. Architecture microservices
 
@@ -25,6 +25,7 @@ frontend-app
 | `adaptive-engine-service` | Génération du parcours adaptatif, profil apprenant, PLP, remédiation explicable | `8085` |
 | `tutoring-service` | Feedback pédagogique contextualisé | `8086` |
 | `frontend-app` | Interface React/Vite servie en Docker | `5173` |
+| `model-serving` | API FastAPI expérimentale de prédiction de réussite, optionnelle | `8090` |
 
 ## 2. Bases de données
 
@@ -73,7 +74,8 @@ RabbitMQ UI:   http://localhost:15672
   - Remediation Success ;
   - High Mastery ;
 - `RecommendationTrace` ML-ready avec protection anti-duplication ;
-- export du dataset de recommandations.
+- export du dataset de recommandations ;
+- signal ML expérimental optionnel, utilisé seulement comme aide secondaire si le service est disponible.
 
 ## 5. Moteur adaptatif
 
@@ -85,7 +87,7 @@ Le moteur actuel est :
 - learner-aware ;
 - basé sur un scoring multicritère pondéré.
 
-Il ne contient pas de TensorFlow, PyTorch, LSTM, RL, GNN ou autre modèle ML. La préparation ML repose uniquement sur la collecte de traces structurées permettant de constituer un futur dataset.
+Il ne contient pas de TensorFlow, PyTorch, LSTM, RL ou GNN. Le service FastAPI expérimental entraîne un modèle scikit-learn offline et retourne une probabilité de réussite ; cette probabilité ne remplace pas le score rule-based et le moteur retombe automatiquement sur le comportement existant si le ML est indisponible.
 
 ## 6. Endpoints utiles
 
@@ -95,6 +97,7 @@ Tous les appels applicatifs passent par la gateway :
 GET  http://localhost:8080/api/adaptive/path?courseId=...
 GET  http://localhost:8080/api/tracking/recommendation-traces/export
 POST http://localhost:8080/api/tutoring/feedback
+POST http://localhost:8090/api/ml/predict-success
 ```
 
 Routes principales :
@@ -140,6 +143,18 @@ cd frontend-app
 npm run build
 ```
 
+Entraîner puis lancer le service ML expérimental :
+
+```bash
+python ml-experiments/run_first_ml_experiment.py --source synthetic
+cd ml-experiments/model-serving
+pip install -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 8090
+```
+
+Si `adaptive-engine-service` tourne dans Docker alors que le service ML tourne sur l'hôte, définir `ML_SERVICE_URL=http://host.docker.internal:8090`.
+Avec Docker Compose, `model-serving` est lancé sur le réseau interne et `ML_SERVICE_URL` doit pointer vers `http://model-serving:8090`.
+
 ## 8. Comptes de test
 
 Les comptes de test dépendent du seed IAM présent au démarrage. Vérifier `iam-service/src/main/java/com/ale/iam/DataSeeder.java` pour la liste exacte des comptes créés dans votre dépôt courant.
@@ -157,11 +172,12 @@ Variables importantes :
 - variables RabbitMQ ;
 - `VITE_API_URL`
 - `GATEWAY_STARTUP_DELAY_SECONDS`
+- `ML_SERVICE_URL`
 
 ## 10. Limites connues
 
-- aucun modèle ML réel n'est encore intégré ;
-- le système est ML-ready via `RecommendationTrace`, mais l'entraînement et l'inférence sont à venir ;
+- le modèle ML actuel est expérimental, offline, et doit être validé sur des traces réelles avant tout usage pédagogique fort ;
+- le signal ML reste secondaire : aucune décision adaptative principale ne dépend obligatoirement de lui ;
 - Swagger/OpenAPI n'est pas généralisé sur tous les services ;
 - le monitoring avancé reste à ajouter ;
 - pas de WebSocket ni de push temps réel : le recalcul adaptatif est déclenché au retour/navigation via appels API ;

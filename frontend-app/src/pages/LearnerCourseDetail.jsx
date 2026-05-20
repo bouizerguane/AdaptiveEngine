@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, BookOpen, ClipboardList, Loader2, Lock, Sparkles } from 'lucide-react';
+import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, Loader2, Lock, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { contentApi, courseApi, evaluationApi, graphApi, labApi, labTrackingApi, masteryApi, trackingApi, tutoringApi } from '../api/apiClient';
 import { learnerApi } from '../api/learnerApi';
@@ -116,6 +116,92 @@ const pathFreshnessMessage = (pathFreshness) => {
         return 'Votre parcours a été mis à jour après le TP.';
     }
     return pathFreshness.message || 'Votre parcours a été mis à jour après votre dernière activité.';
+};
+
+const numberOrNull = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+};
+
+const buildPedagogicalReasonBadges = ({
+    adaptiveNextAction,
+    adaptiveNextConcept,
+    learnerProfile,
+    learnerMasteryScore,
+    pedagogicalStrategy,
+    pathStep,
+    mlSuccessProbability,
+}) => {
+    if (!adaptiveNextConcept) return [];
+
+    const breakdown = adaptiveNextConcept.scoreBreakdown || {};
+    const prerequisiteScore = numberOrNull(breakdown.prerequisiteScore);
+    const repeatedFailuresCount = Number(pathStep?.repeatedFailuresCount || 0);
+    const hasPersistentDifficulty = Boolean(pathStep?.persistentDifficulty) || repeatedFailuresCount >= 3;
+    const isRemediation = adaptiveNextAction === 'REMEDIATION'
+        || pedagogicalStrategy?.strategyType === 'RECOVERY'
+        || pathStep?.status === 'TO_REVIEW';
+    const highMasteryProgression = Boolean(pathStep?.highMasteryProgression);
+    const highMastery = learnerProfile?.profileType === 'HIGH_PERFORMING'
+        || (learnerMasteryScore !== null && learnerMasteryScore >= 80);
+
+    const badges = [];
+
+    if (hasPersistentDifficulty) {
+        badges.push({
+            key: 'persistent-difficulty',
+            label: 'Difficultés détectées',
+            message: 'Une révision ciblée est proposée pour renforcer vos acquis.',
+            className: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200',
+        });
+    }
+
+    if (isRemediation) {
+        badges.push({
+            key: 'remediation',
+            label: 'Remédiation recommandée',
+            message: 'Certaines difficultés récentes suggèrent une consolidation avant de poursuivre.',
+            className: 'border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-200',
+        });
+    }
+
+    if (highMasteryProgression) {
+        badges.push({
+            key: 'high-mastery-progression',
+            label: 'Progression accélérée contrôlée',
+            message: 'Votre niveau actuel permet une progression plus soutenue tout en respectant les prérequis pédagogiques.',
+            className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200',
+        });
+    }
+
+    if (prerequisiteScore !== null && prerequisiteScore >= 0.5) {
+        badges.push({
+            key: 'prerequisites',
+            label: 'Prérequis validés',
+            message: 'Le concept recommandé est accessible dans votre parcours actuel.',
+            className: 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-200',
+        });
+    }
+
+    if (highMastery) {
+        badges.push({
+            key: 'mastery',
+            label: 'Niveau de maîtrise élevé',
+            message: 'Votre profil montre une bonne maîtrise des activités déjà réalisées.',
+            className: 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200',
+        });
+    }
+
+    if (mlSuccessProbability !== null) {
+        badges.push({
+            key: 'ml',
+            label: 'Signal ML expérimental',
+            message: `Probabilité estimée de réussite : ${mlSuccessProbability}%.`,
+            className: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200',
+        });
+    }
+
+    return badges;
 };
 
 const tabs = [
@@ -420,6 +506,8 @@ export default function LearnerCourseDetail() {
     const adaptiveNextConceptName = adaptiveNextConcept?.conceptName || 'Concept inconnu';
     const adaptiveNextConceptType = adaptiveNextConcept?.type || 'INTERNAL';
     const adaptiveNextScore = adaptiveScorePercent(adaptiveNextConcept?.adaptiveScore);
+    const mlSuccessProbability = adaptiveScorePercent(adaptiveNextConcept?.mlSuccessProbability);
+    const mlEnhancedScore = adaptiveScorePercent(adaptiveNextConcept?.mlEnhancedScore);
     const adaptiveExplanationReasons = Array.isArray(adaptiveNextConcept?.explanationReasons)
         ? adaptiveNextConcept.explanationReasons
         : [];
@@ -436,6 +524,24 @@ export default function LearnerCourseDetail() {
     const recommendedLearningPath = Array.isArray(adaptivePath?.recommendedLearningPath)
         ? adaptivePath.recommendedLearningPath
         : [];
+    const adaptiveNextPathStep = adaptiveNextConceptId
+        ? recommendedLearningPath.find(step => step.conceptId === adaptiveNextConceptId)
+        : null;
+    const pedagogicalReasonBadges = buildPedagogicalReasonBadges({
+        adaptiveNextAction,
+        adaptiveNextConcept,
+        learnerProfile,
+        learnerMasteryScore,
+        pedagogicalStrategy,
+        pathStep: adaptiveNextPathStep,
+        mlSuccessProbability,
+    });
+    const hasExplainableRecommendation = Boolean(adaptiveNextConcept)
+        && (
+            Boolean(adaptivePath?.decisionExplanation)
+            || adaptiveExplanationReasons.length > 0
+            || pedagogicalReasonBadges.length > 0
+        );
     const adaptiveConceptStatuses = adaptivePath
         ? Object.fromEntries([
             ...(adaptivePath.masteredConcepts || []).map(item => [item.conceptId, { ...item, status: 'MASTERED' }]),
@@ -564,6 +670,18 @@ export default function LearnerCourseDetail() {
                                 {adaptiveNextScore !== null && (
                                     <p className="mt-1 text-sm font-semibold text-emerald-700">Score adaptatif : {adaptiveNextScore}%</p>
                                 )}
+                                {mlSuccessProbability !== null && (
+                                    <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-100">
+                                        <p className="font-bold">Signal ML</p>
+                                        <p className="mt-1">Probabilité estimée de réussite : {mlSuccessProbability}%</p>
+                                        {mlEnhancedScore !== null && (
+                                            <p className="mt-1 text-xs font-semibold">Score combiné expérimental : {mlEnhancedScore}%</p>
+                                        )}
+                                        <p className="mt-1 text-xs">
+                                            Ce score est expérimental et utilisé uniquement comme aide à la décision.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             {adaptiveNextAction === 'PASS_DIAGNOSTIC' && diagnostic?.targetId && (
                                 <Link to={`/student/quiz/${diagnostic.targetId}`} className="inline-flex w-fit items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">
@@ -593,17 +711,60 @@ export default function LearnerCourseDetail() {
                         </div>
                     </section>
 
-                    <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Pourquoi cette recommandation ?</p>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{adaptivePath?.decisionExplanation || 'La recommandation sera affichée après analyse du parcours.'}</p>
-                        {adaptiveExplanationReasons.length > 0 && (
-                            <ul className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                {adaptiveExplanationReasons.map(reason => (
-                                    <li key={reason}>- {reason}</li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                    {hasExplainableRecommendation && (
+                        <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Pourquoi cette recommandation ?</p>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        Cette synthèse traduit les signaux du moteur en repères pédagogiques simples.
+                                    </p>
+                                </div>
+                                {adaptiveNextScore !== null && (
+                                    <span className="w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                                        Score adaptatif : {adaptiveNextScore}%
+                                    </span>
+                                )}
+                            </div>
+
+                            {pedagogicalReasonBadges.length > 0 && (
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    {pedagogicalReasonBadges.map(reason => (
+                                        <div key={reason.key} className={`rounded-lg border p-3 ${reason.className}`}>
+                                            <div className="flex items-center gap-2 text-sm font-bold">
+                                                <CheckCircle2 size={16} />
+                                                <span>{reason.label}</span>
+                                            </div>
+                                            <p className="mt-2 text-sm leading-relaxed">{reason.message}</p>
+                                            {reason.key === 'ml' && (
+                                                <p className="mt-2 text-xs leading-relaxed">
+                                                    Ce signal prédictif reste expérimental : il aide à comparer les recommandations, mais ne remplace pas la logique pédagogique principale.
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {adaptivePath?.decisionExplanation && (
+                                <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                    <p className="font-bold text-slate-800 dark:text-slate-100">Explication du parcours</p>
+                                    <p className="mt-1">{adaptivePath.decisionExplanation}</p>
+                                </div>
+                            )}
+
+                            {adaptiveExplanationReasons.length > 0 && (
+                                <div className="mt-4">
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Raisons détaillées</p>
+                                    <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                        {adaptiveExplanationReasons.map(reason => (
+                                            <li key={reason}>- {reason}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </section>
+                    )}
 
                     <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

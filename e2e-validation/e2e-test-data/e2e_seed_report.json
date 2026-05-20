@@ -1,0 +1,177 @@
+{
+  "generatedAt": "2026-05-20T18:41:04.314Z",
+  "apiBaseUrl": "http://localhost:8080/api",
+  "learners": {
+    "repeatedFailure": "student.repeated.failure@test.local",
+    "remediationSuccess": "student.remediation.success@test.local",
+    "highMasteryReady": "student.high.mastery.ready@test.local",
+    "lowData": "student.low.data@test.local",
+    "mlFallback": "student.ml.fallback@test.local"
+  },
+  "course": {
+    "id": "ae-runtime-course-algo",
+    "title": "Introduction à l'Algorithmique",
+    "description": "Cours progressif pour apprendre a formaliser un probleme, manipuler des donnees simples et raisonner avec des structures de controle.",
+    "objectifs": "Ecrire des algorithmes lisibles; choisir les structures de controle adaptees; decomposer un traitement en fonctions.",
+    "prerequisTextuels": "Logique de base; lecture d'enonces; notions elementaires de calcul.",
+    "authorEmail": "bouizerguane@gmail.com",
+    "authorName": "Bouizerguane",
+    "createdAt": "2026-05-14T15:24:07.513681722",
+    "status": "PUBLISHED",
+    "posX": null,
+    "posY": null,
+    "modules": []
+  },
+  "tracesCreated": [],
+  "actions": [
+    {
+      "type": "signup-skip-existing",
+      "email": "student.repeated.failure@test.local"
+    },
+    {
+      "type": "signup-skip-existing",
+      "email": "student.remediation.success@test.local"
+    },
+    {
+      "type": "signup-skip-existing",
+      "email": "student.high.mastery.ready@test.local"
+    },
+    {
+      "type": "signup-skip-existing",
+      "email": "student.low.data@test.local"
+    },
+    {
+      "type": "signup-skip-existing",
+      "email": "student.ml.fallback@test.local"
+    },
+    {
+      "type": "enroll",
+      "email": "student.repeated.failure@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.repeated.failure@test.local",
+      "marker": "e2e-repeated-failure-diagnostic"
+    },
+    {
+      "type": "apply-diagnostic",
+      "email": "student.repeated.failure@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.repeated.failure@test.local",
+      "marker": "e2e-repeated-failure-formative-1"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.repeated.failure@test.local",
+      "marker": "e2e-repeated-failure-formative-2"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.repeated.failure@test.local",
+      "marker": "e2e-repeated-failure-formative-3"
+    },
+    {
+      "type": "enroll",
+      "email": "student.remediation.success@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.remediation.success@test.local",
+      "marker": "e2e-remediation-success-diagnostic"
+    },
+    {
+      "type": "apply-diagnostic",
+      "email": "student.remediation.success@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.remediation.success@test.local",
+      "marker": "e2e-remediation-success-failure-1"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.remediation.success@test.local",
+      "marker": "e2e-remediation-success-failure-2"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.remediation.success@test.local",
+      "marker": "e2e-remediation-success-failure-3"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.remediation.success@test.local",
+      "marker": "e2e-remediation-success-formative-pass"
+    },
+    {
+      "type": "validate-concept",
+      "email": "student.remediation.success@test.local",
+      "conceptId": "ae-runtime-concept-variables",
+      "basis": "QUIZ_DIRECT"
+    },
+    {
+      "type": "enroll",
+      "email": "student.high.mastery.ready@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.high.mastery.ready@test.local",
+      "marker": "e2e-high-mastery-diagnostic"
+    },
+    {
+      "type": "apply-diagnostic",
+      "email": "student.high.mastery.ready@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.high.mastery.ready@test.local",
+      "marker": "e2e-high-mastery-formative-1"
+    },
+    {
+      "type": "validate-concept",
+      "email": "student.high.mastery.ready@test.local",
+      "conceptId": "ae-runtime-concept-variables",
+      "basis": "QUIZ_DIRECT"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.high.mastery.ready@test.local",
+      "marker": "e2e-high-mastery-formative-2"
+    },
+    {
+      "type": "validate-concept",
+      "email": "student.high.mastery.ready@test.local",
+      "conceptId": "ae-runtime-concept-types-de-donnees",
+      "basis": "QUIZ_DIRECT"
+    },
+    {
+      "type": "trace-skip-existing",
+      "email": "student.high.mastery.ready@test.local",
+      "marker": "e2e-high-mastery-formative-3"
+    },
+    {
+      "type": "validate-concept",
+      "email": "student.high.mastery.ready@test.local",
+      "conceptId": "ae-runtime-concept-conditions",
+      "basis": "QUIZ_DIRECT"
+    },
+    {
+      "type": "enroll",
+      "email": "student.low.data@test.local",
+      "courseId": "ae-runtime-course-algo"
+    },
+    {
+      "type": "enroll",
+      "email": "student.ml.fallback@test.local",
+      "courseId": "ae-runtime-course-algo"
+    }
+  ]
+}

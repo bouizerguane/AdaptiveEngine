@@ -20,4 +20,7 @@ public class AdaptiveConceptDto {
     private Double adaptiveScore;
     private Map<String, Double> scoreBreakdown;
     private List<String> explanationReasons;
+    private Double mlSuccessProbability;
+    private Double mlEnhancedScore;
+    private String mlExplanation;
 }
