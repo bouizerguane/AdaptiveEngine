@@ -9,6 +9,8 @@ frontend-app/node_modules/
 teacher-dashboard/node_modules/
 dist/
 frontend-app/dist/
+frontend-app/playwright-report/
+frontend-app/test-results/
 
 # Java / Maven artifacts
 target/

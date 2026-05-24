@@ -3,6 +3,10 @@ package com.ale.graph.controller;
 import com.ale.graph.dto.CourseSummaryDto;
 import com.ale.graph.dto.EnrollmentRequest;
 import com.ale.graph.service.CourseEnrollmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,26 +19,33 @@ import java.util.Map;
 @RequestMapping("/api/graph/courses")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Learner Courses", description = "Learner course discovery, enrollment and learning status.")
 public class LearnerCourseController {
 
     private final CourseEnrollmentService enrollmentService;
 
     @GetMapping("/available")
+    @Operation(summary = "List available published courses", responses = {
+            @ApiResponse(responseCode = "200", description = "Available courses returned")
+    })
     public ResponseEntity<List<CourseSummaryDto>> getAvailableCourses() {
         return ResponseEntity.ok(enrollmentService.getAvailableCourses());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<CourseSummaryDto>> searchCourses(@RequestParam(required = false) String query) {
+    @Operation(summary = "Search published courses")
+    public ResponseEntity<List<CourseSummaryDto>> searchCourses(
+            @Parameter(description = "Search query") @RequestParam(required = false) String query) {
         return ResponseEntity.ok(enrollmentService.searchCourses(query));
     }
 
     @PostMapping("/{courseId}/enroll")
+    @Operation(summary = "Enroll current learner in a course")
     public ResponseEntity<?> enroll(
-            @PathVariable String courseId,
+            @Parameter(description = "Course identifier") @PathVariable String courseId,
             @RequestBody EnrollmentRequest request,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         log.info("[LearnerCourseController] enroll courseId={}, userEmail={}, userRole={}, bodyLearnerEmail={}",
                 courseId, userEmail, userRole, request == null ? null : request.getLearnerEmail());
         if (hasGatewayRole(userRole) && !isStudent(userRole)) {
@@ -60,26 +71,29 @@ public class LearnerCourseController {
     }
 
     @GetMapping("/enrolled/{learnerEmail}")
+    @Operation(summary = "List courses enrolled by a learner")
     public ResponseEntity<List<CourseSummaryDto>> getEnrolledCourses(
-            @PathVariable String learnerEmail,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(description = "Learner email") @PathVariable String learnerEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         String effectiveEmail = isAdminOrTeacher(userRole) ? learnerEmail : firstNonBlank(userEmail, learnerEmail);
         return ResponseEntity.ok(enrollmentService.getEnrolledCourses(effectiveEmail));
     }
 
     @GetMapping("/{courseId}/learning-status")
+    @Operation(summary = "Get learner concept status for a course")
     public ResponseEntity<List<Map<String, Object>>> getLearningStatus(
-            @PathVariable String courseId,
-            @RequestParam String learnerEmail,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole
+            @Parameter(description = "Course identifier") @PathVariable String courseId,
+            @Parameter(description = "Learner email") @RequestParam String learnerEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole
     ) {
         String effectiveEmail = isAdminOrTeacher(userRole) ? learnerEmail : firstNonBlank(userEmail, learnerEmail);
         return ResponseEntity.ok(enrollmentService.getLearningStatuses(effectiveEmail, courseId));
     }
 
     @GetMapping("/{courseId}/enrollments")
+    @Operation(summary = "List course enrollments")
     public ResponseEntity<?> getCourseEnrollments(
             @PathVariable String courseId,
             @RequestParam(required = false) String teacherEmail,
@@ -94,6 +108,7 @@ public class LearnerCourseController {
     }
 
     @DeleteMapping("/{courseId}/enrollments/{learnerEmail}")
+    @Operation(summary = "Remove learner enrollment from a course")
     public ResponseEntity<?> unenrollLearner(
             @PathVariable String courseId,
             @PathVariable String learnerEmail,

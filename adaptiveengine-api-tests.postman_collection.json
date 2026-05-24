@@ -1,0 +1,448 @@
+{
+  "info": {
+    "_postman_id": "c02c9848-03f2-40e7-adf3-a4f69d3466f6",
+    "name": "AdaptiveEngine API Tests",
+    "description": "Tests API automatises via API Gateway. Les identifiants locaux par defaut correspondent aux donnees E2E deja utilisees par le projet ; executer le seed E2E si ces donnees ne sont pas encore presentes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "apiPrefix",
+      "value": "/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Authentification",
+      "item": [
+        {
+          "name": "Login apprenant - JWT",
+          "auth": {
+            "type": "noauth"
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/login",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Endpoint reel : POST /api/auth/login dans iam-service, route via gateway-service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Login retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    pm.environment.unset('token');",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Reponse login JSON valide', function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  var loginBody = pm.response.json();",
+                  "  var jwtToken = loginBody.token || loginBody.accessToken || '';",
+                  "  pm.test('JWT present dans la reponse', function () {",
+                  "    pm.expect(jwtToken).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (jwtToken) {",
+                  "    pm.environment.set('token', jwtToken);",
+                  "  }",
+                  "  pm.test('JWT stocke dans environnement Postman', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  pm.test('Identite apprenant retournee', function () {",
+                  "    pm.expect(loginBody.email).to.eql(pm.environment.get('username'));",
+                  "    pm.expect(loginBody.role).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Cours",
+      "item": [
+        {
+          "name": "Lister les cours disponibles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/graph/courses/available",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "graph",
+                "courses",
+                "available"
+              ]
+            },
+            "description": "Endpoint reel du knowledge-graph-service : GET /api/graph/courses/available."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Cours disponibles retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test('JWT disponible pour la requete securisee', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Liste de cours JSON valide', function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  var coursesBody = pm.response.json();",
+                  "  pm.test('Liste de cours retournee', function () {",
+                  "    pm.expect(coursesBody).to.be.an('array');",
+                  "  });",
+                  "  pm.test('Au moins un cours disponible pour le test', function () {",
+                  "    pm.expect(coursesBody.length).to.be.above(0);",
+                  "  });",
+                  "  if (coursesBody.length > 0) {",
+                  "    var configuredCourseId = pm.environment.get('courseId');",
+                  "    var selectedCourse = coursesBody.find(function (course) { return course.id === configuredCourseId; }) || coursesBody[0];",
+                  "    pm.environment.set('courseId', selectedCourse.id);",
+                  "    pm.environment.set('courseTitle', selectedCourse.title || '');",
+                  "  }",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cours inscrits de l'apprenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/graph/courses/enrolled/{{username}}",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "graph",
+                "courses",
+                "enrolled",
+                "{{username}}"
+              ]
+            },
+            "description": "Endpoint reel pour verifier les inscriptions de l'apprenant authentifie."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Cours inscrits retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test('JWT disponible pour la requete securisee', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Liste des inscriptions valide', function () {",
+                  "    pm.response.to.be.json;",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "  });",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Parcours adaptatif",
+      "item": [
+        {
+          "name": "Generer le parcours adaptatif",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/adaptive/path?courseId={{courseId}}",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "adaptive",
+                "path"
+              ],
+              "query": [
+                {
+                  "key": "courseId",
+                  "value": "{{courseId}}"
+                }
+              ]
+            },
+            "description": "Endpoint reel : GET /api/adaptive/path?courseId=... Le learnerEmail est derive du JWT par la gateway."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Parcours adaptatif retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test('JWT disponible pour la requete securisee', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Reponse parcours JSON valide', function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  var adaptivePathBody = pm.response.json();",
+                  "  pm.test('Decision adaptative presente', function () {",
+                  "    pm.expect(adaptivePathBody.nextAction).to.be.a('string').and.not.empty;",
+                  "    pm.expect(adaptivePathBody.decisionExplanation).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  pm.test('Personalized Learning Path present', function () {",
+                  "    pm.expect(adaptivePathBody).to.have.property('recommendedLearningPath');",
+                  "    pm.expect(adaptivePathBody.recommendedLearningPath).to.be.an('array');",
+                  "  });",
+                  "  pm.test('Profil apprenant present', function () {",
+                  "    pm.expect(adaptivePathBody.learnerProfile).to.be.an('object');",
+                  "  });",
+                  "  pm.test('Recommandation coherente avec la decision', function () {",
+                  "    pm.expect(adaptivePathBody.nextRecommendation).to.be.an('object');",
+                  "    pm.expect(adaptivePathBody.nextRecommendation.action).to.eql(adaptivePathBody.nextAction);",
+                  "    if (adaptivePathBody.nextAction === 'LEARN' || adaptivePathBody.nextAction === 'REMEDIATION') {",
+                  "      pm.expect(adaptivePathBody.nextConcept).to.be.an('object');",
+                  "    }",
+                  "  });",
+                  "  pm.environment.set('nextAction', adaptivePathBody.nextAction || '');",
+                  "  pm.environment.set('courseTitle', adaptivePathBody.courseTitle || pm.environment.get('courseTitle') || '');",
+                  "  pm.environment.set('nextConceptId', adaptivePathBody.nextConcept && adaptivePathBody.nextConcept.conceptId ? adaptivePathBody.nextConcept.conceptId : '');",
+                  "  pm.environment.set('nextConceptName', adaptivePathBody.nextConcept && adaptivePathBody.nextConcept.conceptName ? adaptivePathBody.nextConcept.conceptName : '');",
+                  "  pm.environment.set('strategyType', adaptivePathBody.pedagogicalStrategy && adaptivePathBody.pedagogicalStrategy.strategyType ? adaptivePathBody.pedagogicalStrategy.strategyType : 'STANDARD');",
+                  "  pm.environment.set('profileType', adaptivePathBody.learnerProfile && adaptivePathBody.learnerProfile.profileType ? adaptivePathBody.learnerProfile.profileType : 'DATA_INSUFFICIENT');",
+                  "  pm.environment.set('masteryScore', adaptivePathBody.learnerProfile && adaptivePathBody.learnerProfile.masteryScore !== null ? String(adaptivePathBody.learnerProfile.masteryScore) : '0');",
+                  "  pm.environment.set('knowledgeGapsJson', JSON.stringify(adaptivePathBody.learnerProfile && adaptivePathBody.learnerProfile.knowledgeGaps ? adaptivePathBody.learnerProfile.knowledgeGaps : []));",
+                  "  pm.environment.set('recommendedSequenceJson', JSON.stringify(adaptivePathBody.pedagogicalStrategy && adaptivePathBody.pedagogicalStrategy.recommendedSequence ? adaptivePathBody.pedagogicalStrategy.recommendedSequence : []));",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Tracking",
+      "item": [
+        {
+          "name": "Lister les traces apprenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/traces/user/{{username}}",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "traces",
+                "user",
+                "{{username}}"
+              ]
+            },
+            "description": "Endpoint reel : GET /api/traces/user/{userId} dans tracking-service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Tracking retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test('JWT disponible pour la requete securisee', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Traces JSON valides', function () {",
+                  "    pm.response.to.be.json;",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "  });",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Tutorat et remediation",
+      "item": [
+        {
+          "name": "Generer un feedback pedagogique",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"ADAPTIVE_RECOMMENDATION\",\n  \"learnerEmail\": \"{{username}}\",\n  \"courseId\": \"{{courseId}}\",\n  \"courseTitle\": \"{{courseTitle}}\",\n  \"conceptId\": \"{{nextConceptId}}\",\n  \"conceptName\": \"{{nextConceptName}}\",\n  \"score\": null,\n  \"evaluationType\": null,\n  \"strategyType\": \"{{strategyType}}\",\n  \"nextAction\": \"{{nextAction}}\",\n  \"profileType\": \"{{profileType}}\",\n  \"masteryScore\": {{masteryScore}},\n  \"knowledgeGaps\": {{knowledgeGapsJson}},\n  \"recommendedSequence\": {{recommendedSequenceJson}},\n  \"tutoringMessageHint\": \"Feedback genere depuis le parcours adaptatif teste par Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/tutoring/feedback",
+              "host": [
+                "{{baseUrl}}{{apiPrefix}}"
+              ],
+              "path": [
+                "tutoring",
+                "feedback"
+              ]
+            },
+            "description": "Endpoint de feedback rule-based utilise pour verifier la couche de tutorat/remediation lorsque le parcours a fourni son contexte."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('Feedback tutorat retourne HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test('JWT disponible pour la requete securisee', function () {",
+                  "    pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  if (pm.response.code !== 200) {",
+                  "    return;",
+                  "  }",
+                  "  pm.test('Feedback JSON valide et explicite', function () {",
+                  "    pm.response.to.be.json;",
+                  "    var feedbackBody = pm.response.json();",
+                  "    pm.expect(feedbackBody.message).to.be.a('string').and.not.empty;",
+                  "    pm.expect(feedbackBody.explanation).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "}());"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "pm.variables.set('apiPrefix', '/api');"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
+}

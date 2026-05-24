@@ -11,6 +11,8 @@ spring:
       discovery:
         register: true
         prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
   neo4j:
     uri: bolt://localhost:7687
     authentication:
@@ -23,3 +25,9 @@ jwt:
 services:
   content:
     url: ${CONTENT_SERVICE_URL:http://content-service:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

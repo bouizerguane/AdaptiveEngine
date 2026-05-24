@@ -4,6 +4,10 @@ import com.ale.tracking.domain.LabSubmission;
 import com.ale.tracking.events.LabSubmittedEventPublisher;
 import com.ale.tracking.repository.LabSubmissionRepository;
 import com.ale.tracking.service.RecommendationTraceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +31,7 @@ import java.util.Optional;
 @RequestMapping("/api/labs")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Lab Submissions", description = "Learner lab start/completion tracking and lab statistics.")
 public class LabSubmissionController {
 
     private final LabSubmissionRepository submissionRepository;
@@ -38,9 +43,13 @@ public class LabSubmissionController {
      * Si une entrée STARTED existe déjà pour userId+labId, elle est mise à jour.
      */
     @PostMapping("/submit")
+    @Operation(summary = "Create or update a lab submission", responses = {
+            @ApiResponse(responseCode = "200", description = "Submission saved"),
+            @ApiResponse(responseCode = "400", description = "Invalid submission payload")
+    })
     public ResponseEntity<?> submit(
             @RequestBody LabSubmission submission,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         applyUserHeader(submission, userEmail);
         normalizeSubmission(submission);
         log.info("[LabSubmissionController] submit userId={}, labId={}, courseId={}, conceptId={}, targetId={}, status={}",
@@ -138,6 +147,7 @@ public class LabSubmissionController {
 
     /** Toutes les soumissions d'un apprenant. */
     @GetMapping("/user/{userId}")
+    @Operation(summary = "List lab submissions for a learner")
     public ResponseEntity<List<LabSubmission>> getByUser(
             @PathVariable String userId,
             @RequestHeader(value = "X-User-Email", required = false) String userEmail,
@@ -151,6 +161,7 @@ public class LabSubmissionController {
      * Retourne 404 si pas de soumission, 200 + données si trouvé.
      */
     @GetMapping("/{labId}/user/{userId}")
+    @Operation(summary = "Get one learner submission for a lab")
     public ResponseEntity<LabSubmission> getByLabAndUser(
             @PathVariable String labId,
             @PathVariable String userId,
@@ -167,9 +178,10 @@ public class LabSubmissionController {
      * Utilisé par le moteur adaptatif rule-based et exploitable pour de futures analyses ML.
      */
     @GetMapping("/{labId}/submissions")
+    @Operation(summary = "List real submissions for a lab")
     public ResponseEntity<?> getLabSubmissions(
             @PathVariable String labId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
             return ResponseEntity.status(403).body(Map.of("message", "Role TEACHER ou ADMIN requis."));
         }

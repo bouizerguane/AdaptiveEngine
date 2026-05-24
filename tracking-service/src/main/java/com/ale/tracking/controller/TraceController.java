@@ -4,6 +4,10 @@ import com.ale.tracking.domain.TraceApprentissage;
 import com.ale.tracking.events.QuizCompletedEventPublisher;
 import com.ale.tracking.repository.TraceRepository;
 import com.ale.tracking.service.RecommendationTraceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/traces")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Learning Traces", description = "Learning traces, quiz submissions and latest diagnostics.")
 public class TraceController {
 
     private final TraceRepository traceRepository;
@@ -28,9 +33,12 @@ public class TraceController {
      * Called by the Student Quiz Player after submission.
      */
     @PostMapping
+    @Operation(summary = "Save a learning trace", responses = {
+            @ApiResponse(responseCode = "200", description = "Trace saved")
+    })
     public ResponseEntity<TraceApprentissage> saveTrace(
             @RequestBody TraceApprentissage trace,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         applyUserHeader(trace, userEmail);
         normalizeTrace(trace);
         log.info("[TraceController] saveTrace userId={}, courseId={}, evaluationId={}, typeEvaluation={}, masterySource={}",
@@ -50,10 +58,11 @@ public class TraceController {
      * Called by the AdaptiveEngine to fetch all traces for a student.
      */
     @GetMapping("/user/{userId}")
+    @Operation(summary = "List traces for a learner")
     public ResponseEntity<List<TraceApprentissage>> getTracesByUser(
-            @PathVariable String userId,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(description = "Learner email or user id") @PathVariable String userId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         String effectiveUserId = isTeacherOrAdmin(userRole) ? userId : firstNonBlank(userEmail, userId);
         List<TraceApprentissage> traces = traceRepository.findByUserId(effectiveUserId);
         return ResponseEntity.ok(traces);
@@ -64,6 +73,7 @@ public class TraceController {
      * Fetch traces for a specific evaluation by a user (e.g., for retry limits).
      */
     @GetMapping("/user/{userId}/evaluation/{evaluationId}")
+    @Operation(summary = "List traces for one learner and one evaluation")
     public ResponseEntity<List<TraceApprentissage>> getTracesByUserAndEvaluation(
             @PathVariable String userId,
             @PathVariable String evaluationId,
@@ -75,6 +85,7 @@ public class TraceController {
     }
 
     @GetMapping("/diagnostics/latest")
+    @Operation(summary = "Get latest diagnostic trace for a learner and course")
     public ResponseEntity<?> getLatestDiagnosticTrace(
             @RequestParam(required = false) String learnerEmail,
             @RequestParam String courseId,

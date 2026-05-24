@@ -3,6 +3,10 @@ package com.ale.iam.controller;
 import com.ale.iam.domain.AppUser;
 import com.ale.iam.dto.ProfileUpdateDTO;
 import com.ale.iam.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,13 +18,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
+@Tag(name = "User Profile", description = "Authenticated user profile endpoints.")
 public class UserController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal String email) {
+    @Operation(summary = "Get current user profile", responses = {
+            @ApiResponse(responseCode = "200", description = "Current user profile returned")
+    })
+    public ResponseEntity<?> getCurrentUser(
+            @Parameter(hidden = true) @AuthenticationPrincipal String email) {
         AppUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
@@ -33,7 +42,11 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<?> updateProfile(@AuthenticationPrincipal String email,
+    @Operation(summary = "Update current user profile", responses = {
+            @ApiResponse(responseCode = "200", description = "Profile updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid password update")
+    })
+    public ResponseEntity<?> updateProfile(@Parameter(hidden = true) @AuthenticationPrincipal String email,
                                            @RequestBody ProfileUpdateDTO updateDTO) {
         AppUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));

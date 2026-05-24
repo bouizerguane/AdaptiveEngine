@@ -2,6 +2,10 @@ package com.ale.content.controller;
 
 import com.ale.content.domain.CourseContent;
 import com.ale.content.repository.CourseContentRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +29,7 @@ import java.util.UUID;
 @RequestMapping("/api/content")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Content", description = "Course content and media upload endpoints.")
 public class ContentController {
 
     private final CourseContentRepository contentRepository;
@@ -37,9 +42,14 @@ public class ContentController {
     private String iamServiceUrl;
 
     @PostMapping("/upload")
+    @Operation(summary = "Upload a media file", description = "Supports images, videos and PDF files.", responses = {
+            @ApiResponse(responseCode = "200", description = "File uploaded"),
+            @ApiResponse(responseCode = "403", description = "Teacher or admin role required"),
+            @ApiResponse(responseCode = "415", description = "Unsupported media type")
+    })
     public ResponseEntity<?> uploadMedia(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Rôle TEACHER requis."));
         }
@@ -95,9 +105,10 @@ public class ContentController {
     }
 
     @PostMapping("/save")
+    @Operation(summary = "Save rich HTML content for a concept")
     public ResponseEntity<?> saveContent(
             @RequestBody CourseContent requestData,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Rôle TEACHER requis."));
         }
@@ -119,6 +130,7 @@ public class ContentController {
     }
 
     @GetMapping("/concept/{conceptId}")
+    @Operation(summary = "Get content by concept")
     public ResponseEntity<?> getContentByConcept(@PathVariable String conceptId) {
         return contentRepository.findByConceptId(conceptId)
                 .map(ResponseEntity::ok)

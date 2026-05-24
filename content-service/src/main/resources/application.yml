@@ -15,6 +15,8 @@ spring:
       discovery:
         register: true
         prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://admin:change_me_mongo_password@localhost:27017/content_db?authSource=admin}
@@ -25,3 +27,9 @@ jwt:
 services:
   iam:
     url: ${IAM_SERVICE_URL:http://iam-service:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

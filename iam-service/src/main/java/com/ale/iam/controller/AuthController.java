@@ -4,6 +4,10 @@ import com.ale.iam.domain.AppUser;
 import com.ale.iam.domain.RoleType;
 import com.ale.iam.repository.UserRepository;
 import com.ale.iam.security.JwtUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -19,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Registration and JWT authentication endpoints.")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -26,6 +31,13 @@ public class AuthController {
     private final JwtUtils jwtUtils;
 
     @PostMapping("/signup")
+    @Operation(
+            summary = "Register a user account",
+            description = "Creates a pending user account that must be approved before login.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User registered"),
+                    @ApiResponse(responseCode = "400", description = "Email already exists", content = @Content)
+            })
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             return ResponseEntity.badRequest().body(Map.of("message", "L'email est déjà pris."));
@@ -44,6 +56,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(
+            summary = "Authenticate a user",
+            description = "Validates credentials and returns a JWT token with the user identity and role.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Authenticated"),
+                    @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content),
+                    @ApiResponse(responseCode = "403", description = "Account pending approval", content = @Content),
+                    @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+            })
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         AppUser user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
 

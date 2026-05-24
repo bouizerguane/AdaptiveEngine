@@ -2,6 +2,10 @@ package com.ale.content.controller;
 
 import com.ale.content.domain.Evaluation;
 import com.ale.content.repository.EvaluationRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +20,7 @@ import java.util.stream.Stream;
 @RequestMapping("/api/content/evaluations")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Evaluations", description = "Diagnostic, formative and course validation evaluations.")
 public class EvaluationController {
 
     private final EvaluationRepository evaluationRepository;
@@ -24,8 +29,13 @@ public class EvaluationController {
     private static final Set<String> CONCEPT_ONLY_TYPES = Set.of("FORMATIVE");
 
     @GetMapping("/{targetId}")
+    @Operation(summary = "Get evaluation by target and optional type", responses = {
+            @ApiResponse(responseCode = "200", description = "Evaluation returned"),
+            @ApiResponse(responseCode = "404", description = "Evaluation not found")
+    })
     public ResponseEntity<Evaluation> getEvaluation(
-            @PathVariable String targetId,
+            @Parameter(description = "Concept, module or course target identifier") @PathVariable String targetId,
+            @Parameter(description = "Evaluation type, for example POSITIONNEMENT, FORMATIVE or VALIDATION_COURS")
             @RequestParam(value = "typeEvaluation", required = false) String typeEvaluation) {
         if (typeEvaluation != null && !typeEvaluation.isBlank()) {
             return evaluationRepository.findByTargetIdAndTypeEvaluation(targetId, typeEvaluation)
@@ -38,6 +48,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/course/{courseId}/diagnostics")
+    @Operation(summary = "List diagnostic evaluations for a course")
     public ResponseEntity<?> getCourseDiagnostics(@PathVariable String courseId) {
         Set<String> diagnosticTypes = Set.of("DIAGNOSTIC_ENTREE", "DIAGNOSTIC_POSITIONNEMENT", "POSITIONNEMENT");
         var byCourseId = evaluationRepository.findByCourseIdAndTypeEvaluationIn(courseId, diagnosticTypes);
@@ -58,14 +69,16 @@ public class EvaluationController {
     }
 
     @GetMapping("/course/{courseId}")
+    @Operation(summary = "List all evaluations for a course")
     public ResponseEntity<?> getCourseEvaluations(@PathVariable String courseId) {
         return ResponseEntity.ok(evaluationRepository.findByCourseId(courseId));
     }
 
     @PostMapping
+    @Operation(summary = "Create or update an evaluation")
     public ResponseEntity<?> saveEvaluation(
             @RequestBody Evaluation evaluation,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         if (hasGatewayRole(userRole) && !isTeacherOrAdmin(userRole)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Rôle TEACHER requis."));
         }

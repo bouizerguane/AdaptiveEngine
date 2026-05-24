@@ -8,6 +8,10 @@ import com.ale.graph.repository.ConceptRepository;
 import com.ale.graph.repository.ModuleRepository;
 import com.ale.graph.domain.Course;
 import com.ale.graph.repository.CourseRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -25,6 +29,7 @@ import java.util.UUID;
 @RequestMapping("/api/graph")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Knowledge Graph", description = "Course graph, modules, chapters, concepts and prerequisite relations.")
 public class GraphController {
 
     private final CourseRepository courseRepository;
@@ -37,6 +42,9 @@ public class GraphController {
     // GLOBAL GRAPH
     // ==========================================
     @PutMapping("/nodes/positions")
+    @Operation(summary = "Update graph node positions", responses = {
+            @ApiResponse(responseCode = "200", description = "Node positions updated")
+    })
     public ResponseEntity<?> updateNodePositions(@RequestBody List<NodePositionDto> positions) {
         List<Map<String, Object>> posMaps = positions.stream()
                 .map(p -> Map.<String, Object>of("id", p.getId(), "x", p.getX(), "y", p.getY()))
@@ -50,24 +58,29 @@ public class GraphController {
     // ==========================================
 
     @GetMapping("/courses")
-    public Iterable<Course> getCourses(@AuthenticationPrincipal String authorEmail) {
+    @Operation(summary = "List courses", responses = {
+            @ApiResponse(responseCode = "200", description = "Courses returned")
+    })
+    public Iterable<Course> getCourses(@Parameter(hidden = true) @AuthenticationPrincipal String authorEmail) {
         return courseRepository.findAllCourses();
     }
 
     @GetMapping("/courses/teacher/{email}")
+    @Operation(summary = "List courses by teacher email")
     public Iterable<Course> getCoursesByTeacherEmail(
-            @PathVariable String email,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            @Parameter(description = "Teacher email") @PathVariable String email,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         String effectiveEmail = isAdmin(userRole) ? email : firstNonBlank(userEmail, email);
         return courseRepository.findByAuthorEmail(effectiveEmail);
     }
 
     @PostMapping("/courses")
+    @Operation(summary = "Create a course")
     public Course createCourse(
             @RequestBody Course course,
-            @AuthenticationPrincipal String authorEmail,
-            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+            @Parameter(hidden = true) @AuthenticationPrincipal String authorEmail,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         if (course.getId() == null) course.setId(UUID.randomUUID().toString());
         if (course.getCreatedAt() == null) course.setCreatedAt(LocalDateTime.now());
         if (course.getStatus() == null || course.getStatus().isBlank()) course.setStatus("PUBLISHED");
@@ -100,6 +113,7 @@ public class GraphController {
     }
 
     @PutMapping("/courses/{id}")
+    @Operation(summary = "Update a course")
     public ResponseEntity<Course> updateCourse(@PathVariable String id, @RequestBody Course updated) {
         return courseRepository.findById(id).map(course -> {
             course.setTitle(updated.getTitle());
@@ -114,12 +128,14 @@ public class GraphController {
     }
 
     @DeleteMapping("/courses/{id}")
+    @Operation(summary = "Delete a course and its graph hierarchy")
     public ResponseEntity<?> deleteCourse(@PathVariable String id) {
         courseRepository.deleteCourseCascade(id);
         return ResponseEntity.ok(Map.of("message", "Le cours et toute sa hiérarchie ont été supprimés."));
     }
 
     @GetMapping("/courses/{id}/tree")
+    @Operation(summary = "Get full course graph tree")
     public ResponseEntity<Course> getCourseTree(@PathVariable String id) {
         return courseRepository.findFullTree(id)
                 .map(ResponseEntity::ok)
@@ -127,6 +143,7 @@ public class GraphController {
     }
 
     @GetMapping("/courses/{id}/prerequisite-concepts")
+    @Operation(summary = "List external prerequisite concepts for a course")
     public ResponseEntity<List<Map<String, Object>>> getExternalPrerequisiteConcepts(@PathVariable String id) {
         String cypher = """
             MATCH (c:Course {id: $courseId})-[:CONTAINS_MODULE]->(:Module)-[:CONTAINS_CHAPITRE]->(:Chapitre)-[:CONTAINS_CONCEPT]->(co:Concept)
@@ -150,7 +167,8 @@ public class GraphController {
     // ==========================================
 
     @GetMapping("/modules")
-    public Iterable<ModuleEntity> getModules(@AuthenticationPrincipal String authorEmail) {
+    @Operation(summary = "List modules")
+    public Iterable<ModuleEntity> getModules(@Parameter(hidden = true) @AuthenticationPrincipal String authorEmail) {
         if (authorEmail != null) {
             return moduleRepository.findByAuthorEmail(authorEmail);
         }
@@ -158,10 +176,11 @@ public class GraphController {
     }
 
     @PostMapping("/modules")
+    @Operation(summary = "Create a module and attach it to a course")
     public ResponseEntity<?> createModule(@RequestBody ModuleEntity module, 
                                           @RequestParam(required = true) String courseId,
-                                          @AuthenticationPrincipal String authorEmail,
-                                          @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
+                                          @Parameter(hidden = true) @AuthenticationPrincipal String authorEmail,
+                                          @Parameter(hidden = true) @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         if (courseId == null || courseId.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "courseId est obligatoire pour créer un module."));
         }
@@ -240,11 +259,13 @@ public class GraphController {
     // CONCEPTS (GRAPHE)
     // ==========================================
     @GetMapping("/concepts")
+    @Operation(summary = "List all concepts")
     public Iterable<Concept> getAllConcepts() {
         return conceptRepository.findAll();
     }
 
     @GetMapping("/concepts/{conceptId}/context")
+    @Operation(summary = "Get concept context and owning course")
     public ResponseEntity<?> getConceptContext(
             @PathVariable String conceptId,
             @RequestParam(required = false) String currentCourseId) {
@@ -271,6 +292,7 @@ public class GraphController {
     }
 
     @PostMapping("/chapitres/{chapitreId}/concepts")
+    @Operation(summary = "Create a concept inside a chapter")
     public ResponseEntity<Concept> createConceptInChapitre(@PathVariable String chapitreId, @RequestBody Concept concept) {
         Chapitre chapitre = chapitreRepository.findById(chapitreId).orElseThrow(() -> new RuntimeException("Chapitre not found"));
         if (concept.getId() == null) concept.setId(UUID.randomUUID().toString());
@@ -311,6 +333,7 @@ public class GraphController {
     // RELATIONS (EXIGENCES)
     // ==========================================
     @PostMapping("/concepts/{sourceId}/exige/{targetId}")
+    @Operation(summary = "Create prerequisite relation between concepts")
     public ResponseEntity<?> addExigence(@PathVariable String sourceId, @PathVariable String targetId) {
         if (!conceptRepository.isDagValid(sourceId, targetId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "L'ajout de ce lien crée un cycle inattendu (DAG Invalide)."));
@@ -322,6 +345,7 @@ public class GraphController {
     }
 
     @DeleteMapping("/concepts/{sourceId}/exige/{targetId}")
+    @Operation(summary = "Remove prerequisite relation between concepts")
     public ResponseEntity<?> removeExigence(@PathVariable String sourceId, @PathVariable String targetId) {
         conceptRepository.removeExigence(sourceId, targetId);
         return ResponseEntity.ok(Map.of("message", "Lien de dépendance supprimé."));
