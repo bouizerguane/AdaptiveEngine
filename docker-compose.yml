@@ -107,6 +107,7 @@ services:
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://gateway-service:8080/actuator/health
       - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
     networks:
       - adaptive-network
@@ -130,9 +131,12 @@ services:
     build:
       context: ./iam-service
     container_name: iam-service
+    ports:
+      - "8081:8081"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://iam-service:8081/actuator/health
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-iam:5432/${POSTGRES_IAM_DB:-iam_db}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_IAM_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_IAM_PASSWORD:-change_me_iam_password}
@@ -151,9 +155,12 @@ services:
     build:
       context: ./knowledge-graph-service
     container_name: knowledge-graph-service
+    ports:
+      - "8082:8082"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://knowledge-graph-service:8082/actuator/health
       - SPRING_NEO4J_URI=bolt://neo4j-graph:7687
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=${NEO4J_USER:-neo4j}
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=${NEO4J_PASSWORD:-change_me_neo4j_password}
@@ -171,9 +178,12 @@ services:
     build:
       context: ./content-service
     container_name: content-service
+    ports:
+      - "8083:8083"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://content-service:8083/actuator/health
       - SPRING_DATA_MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-change_me_mongo_password}@mongodb-content:27017/${MONGO_DB:-content_db}?authSource=admin
       - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret_at_least_32_chars}
       - IAM_SERVICE_URL=http://iam-service:8081
@@ -211,9 +221,12 @@ services:
     build:
       context: ./tracking-service
     container_name: tracking-service
+    ports:
+      - "8084:8084"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://tracking-service:8084/actuator/health
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-tracking:5432/${POSTGRES_TRACKING_DB:-tracking_db}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_TRACKING_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_TRACKING_PASSWORD:-change_me_tracking_password}
@@ -236,9 +249,12 @@ services:
     build:
       context: ./adaptive-engine-service
     container_name: adaptive-engine-service
+    ports:
+      - "8085:8085"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://adaptive-engine-service:8085/actuator/health
       - KNOWLEDGE_GRAPH_SERVICE_URL=http://knowledge-graph-service:8082
       - TRACKING_SERVICE_URL=http://tracking-service:8084
       - SPRING_RABBITMQ_HOST=rabbitmq
@@ -273,9 +289,12 @@ services:
     build:
       context: ./tutoring-service
     container_name: tutoring-service
+    ports:
+      - "8086:8086"
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-server
       - SPRING_CLOUD_CONSUL_DISCOVERY_PREFER_IP_ADDRESS=true
+      - SPRING_CLOUD_CONSUL_DISCOVERY_HEALTH_CHECK_URL=http://tutoring-service:8086/actuator/health
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
