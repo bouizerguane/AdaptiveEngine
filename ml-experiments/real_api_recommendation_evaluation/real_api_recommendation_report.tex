@@ -1,0 +1,42 @@
+\subsection{Evaluation experimentale via les API reelles}
+
+Un scenario experimental bout en bout a ete execute via les API reelles
+d'AdaptiveEngine afin de verifier la coherence fonctionnelle des recommandations
+dans un cas controle. Le scenario cree un cours de test, un graphe de prerequis,
+des ressources, des evaluations, des travaux pratiques, puis simule un test de
+positionnement et un echec formatif sur le concept \textit{Conditions}.
+
+L'oracle pedagogique attendu est defini a partir des regles du moteur : si le
+concept \textit{Conditions} est echoue, il doit etre recommande en remediation ;
+le concept \textit{Variables}, deja maitrise, ne doit pas etre priorise comme
+lacune principale ; les concepts \textit{Boucles}, \textit{Fonctions} et
+\textit{Tableaux} ne doivent pas etre prioritaires avant la remediation de
+\textit{Conditions}.
+
+Les recommandations retournees par le moteur sont :
+\begin{verbatim}
+["ae-real-concept-conditions", "ae-real-concept-boucles", "ae-real-concept-fonctions", "ae-real-concept-tableaux", "ae-real-concept-variables"]
+\end{verbatim}
+
+Les recommandations attendues sont :
+\begin{verbatim}
+["ae-real-concept-conditions"]
+\end{verbatim}
+
+\begin{table}[H]
+\centering
+\caption{Metriques de recommandation calculees sur le scenario API reel}
+\begin{tabular}{lccc}
+\hline
+Scenario & Precision@3 & Recall@3 & nDCG@3 \\
+\hline
+Conditions echoue & 0.333 & 1.000 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}
+
+Cette evaluation reste limitee : elle valide la coherence du classement dans un
+scenario controle execute via les microservices reels, mais ne prouve pas une
+amelioration effective de l'apprentissage. Une validation pedagogique robuste
+necessiterait plusieurs apprenants, plusieurs cours et un protocole experimental
+a plus grande echelle.

@@ -1,0 +1,139 @@
+[
+  {
+    "learnerId": "controlled.variables.failure",
+    "situation": "Echec sur le premier concept du cours.",
+    "evaluatedConcept": "variables",
+    "score": 42,
+    "masteryThreshold": 60,
+    "detectedGaps": [
+      "variables"
+    ],
+    "generatedRecommendations": [
+      "variables",
+      "conditions",
+      "boucles"
+    ],
+    "expectedRecommendations": [
+      "variables"
+    ],
+    "rationale": "Le concept echoue doit etre propose en remediation avant la progression.",
+    "relevanceTop3": [
+      1,
+      0,
+      0
+    ],
+    "Precision@3": 0.333333,
+    "Recall@3": 1.0,
+    "nDCG@3": 1.0
+  },
+  {
+    "learnerId": "controlled.prerequisite.gap",
+    "situation": "Echec sur Conditions avec prerequis Variables non maitrise.",
+    "evaluatedConcept": "conditions",
+    "score": 48,
+    "masteryThreshold": 60,
+    "detectedGaps": [
+      "variables",
+      "conditions"
+    ],
+    "generatedRecommendations": [
+      "variables",
+      "conditions",
+      "boucles"
+    ],
+    "expectedRecommendations": [
+      "variables",
+      "conditions"
+    ],
+    "rationale": "Le prerequis faible doit preceder le concept echoue.",
+    "relevanceTop3": [
+      1,
+      1,
+      0
+    ],
+    "Precision@3": 0.666667,
+    "Recall@3": 1.0,
+    "nDCG@3": 1.0
+  },
+  {
+    "learnerId": "controlled.loop.remediation",
+    "situation": "Echec sur Boucles avec prerequis deja maitrises.",
+    "evaluatedConcept": "boucles",
+    "score": 51,
+    "masteryThreshold": 60,
+    "detectedGaps": [
+      "boucles"
+    ],
+    "generatedRecommendations": [
+      "boucles",
+      "fonctions",
+      "tableaux"
+    ],
+    "expectedRecommendations": [
+      "boucles"
+    ],
+    "rationale": "Le concept echoue est la cible directe de remediation.",
+    "relevanceTop3": [
+      1,
+      0,
+      0
+    ],
+    "Precision@3": 0.333333,
+    "Recall@3": 1.0,
+    "nDCG@3": 1.0
+  },
+  {
+    "learnerId": "controlled.ready.progression",
+    "situation": "Variables et Conditions maitrisees, progression normale vers Boucles.",
+    "evaluatedConcept": "conditions",
+    "score": 84,
+    "masteryThreshold": 60,
+    "detectedGaps": [],
+    "generatedRecommendations": [
+      "boucles",
+      "fonctions",
+      "tableaux"
+    ],
+    "expectedRecommendations": [
+      "boucles",
+      "fonctions"
+    ],
+    "rationale": "Le moteur doit recommander les concepts accessibles en respectant la chaine de prerequis.",
+    "relevanceTop3": [
+      1,
+      1,
+      0
+    ],
+    "Precision@3": 0.666667,
+    "Recall@3": 1.0,
+    "nDCG@3": 1.0
+  },
+  {
+    "learnerId": "controlled.advanced.locked",
+    "situation": "Fonctions echoue, Tableaux reste avance car son prerequis n'est pas maitrise.",
+    "evaluatedConcept": "fonctions",
+    "score": 55,
+    "masteryThreshold": 60,
+    "detectedGaps": [
+      "fonctions"
+    ],
+    "generatedRecommendations": [
+      "fonctions",
+      "boucles",
+      "tableaux"
+    ],
+    "expectedRecommendations": [
+      "fonctions",
+      "boucles"
+    ],
+    "rationale": "La remediation porte sur le concept echoue et son voisin pedagogique proche, sans favoriser un concept avance bloque.",
+    "relevanceTop3": [
+      1,
+      1,
+      0
+    ],
+    "Precision@3": 0.666667,
+    "Recall@3": 1.0,
+    "nDCG@3": 1.0
+  }
+]

@@ -1,0 +1,2 @@
+executedAt,baseUrl,courseId,learnerEmail,generatedRecommendations,expectedRecommendations,relevanceTopK,Precision@3,Recall@3,nDCG@3,scenarioComplete
+2026-06-07T23:26:16.481560+00:00,http://localhost:8080,ae-real-api-course-programming,kamal@gmail.com,"[""ae-real-concept-conditions"", ""ae-real-concept-boucles"", ""ae-real-concept-fonctions"", ""ae-real-concept-tableaux"", ""ae-real-concept-variables""]","[""ae-real-concept-conditions""]","[1, 0, 0]",0.333333,1.0,1.0,True

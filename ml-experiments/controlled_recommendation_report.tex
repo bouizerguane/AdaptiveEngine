@@ -1,0 +1,72 @@
+\subsection{Evaluation experimentale controlee des recommandations}
+
+Afin de repondre a la remarque relative aux metriques \textit{Precision@K},
+\textit{Recall@K} et \textit{nDCG@K}, une evaluation experimentale controlee
+a ete definie. Cette evaluation ne vise pas a demontrer une efficacite
+pedagogique generalisable, mais a verifier la coherence des recommandations
+produites par le moteur adaptatif par rapport a un oracle pedagogique construit
+a partir des regles implementees dans AdaptiveEngine.
+
+Le protocole repose sur un mini-cours compose de cinq concepts :
+\textit{Variables}, \textit{Conditions}, \textit{Boucles}, \textit{Fonctions}
+et \textit{Tableaux}. Le graphe de prerequis utilise pour cette evaluation est
+lineaire : Variables $\rightarrow$ Conditions $\rightarrow$ Boucles
+$\rightarrow$ Fonctions $\rightarrow$ Tableaux. Les recommandations attendues
+sont definies selon les regles pedagogiques suivantes : recommander le concept
+echoue, recommander un prerequis faible lorsqu'il existe, ne pas recommander un
+concept avance dont les prerequis ne sont pas maitrises, et privilegier les
+concepts proches de la lacune detectee dans le graphe de competences.
+
+Pour chaque scenario, les trois premieres recommandations sont comparees a la
+liste des recommandations attendues. Les metriques utilisees sont definies
+comme suit :
+
+\[
+Precision@K = \frac{\text{nombre de recommandations pertinentes dans le top } K}{K}
+\]
+
+\[
+Recall@K = \frac{\text{nombre de recommandations pertinentes dans le top } K}
+{\text{nombre total de recommandations pertinentes attendues}}
+\]
+
+\[
+DCG@K = \sum_{i=1}^{K} \frac{rel_i}{\log_2(i+1)}
+\]
+
+\[
+nDCG@K = \frac{DCG@K}{IDCG@K}
+\]
+
+ou $rel_i = 1$ si la recommandation a la position $i$ est pertinente, et
+$rel_i = 0$ sinon. Ces metriques sont classiques dans l'evaluation des systemes
+de recommandation et du classement d'information
+\citep{herlocker2004evaluating,jarvelin2002cumulated}.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation controlee des recommandations du moteur adaptatif}
+\begin{tabular}{p{3.2cm}p{3.5cm}ccc}
+\hline
+Scenario & Situation pedagogique & Precision@3 & Recall@3 & nDCG@3 \\
+\hline
+controlled.variables.failure & Echec sur Variables & 0.333 & 1.000 & 1.000 \\
+controlled.prerequisite.gap & Echec sur Conditions avec prerequis faible & 0.667 & 1.000 & 1.000 \\
+controlled.loop.remediation & Echec sur Boucles & 0.333 & 1.000 & 1.000 \\
+controlled.ready.progression & Progression normale vers Boucles & 0.667 & 1.000 & 1.000 \\
+controlled.advanced.locked & Remediation sur Fonctions & 0.667 & 1.000 & 1.000 \\
+\hline
+Moyenne & -- & 0.533 & 1.000 & 1.000 \\
+\hline
+\end{tabular}
+\end{table}
+
+Les resultats montrent que, dans ces scenarios controles, les recommandations
+pertinentes apparaissent bien dans les trois premieres positions. La
+\textit{Precision@3} moyenne reste limitee par le fait que certaines situations
+ne comportent qu'une seule recommandation attendue, alors que le top 3 contient
+trois elements. Le \textit{Recall@3} et le \textit{nDCG@3} indiquent que les
+elements attendus sont recuperes et places en tete du classement. Ces resultats
+doivent etre interpretes prudemment : ils valident la coherence du moteur avec
+les regles pedagogiques implementees, mais ne constituent pas une preuve
+d'amelioration effective de l'apprentissage chez des apprenants reels.

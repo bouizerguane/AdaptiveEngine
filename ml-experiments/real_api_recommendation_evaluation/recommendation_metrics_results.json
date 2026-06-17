@@ -1,0 +1,31 @@
+{
+  "executedAt": "2026-06-07T23:26:16.481560+00:00",
+  "baseUrl": "http://localhost:8080",
+  "courseId": "ae-real-api-course-programming",
+  "learnerEmail": "kamal@gmail.com",
+  "expectedRecommendations": [
+    "ae-real-concept-conditions"
+  ],
+  "generatedRecommendations": [
+    "ae-real-concept-conditions",
+    "ae-real-concept-boucles",
+    "ae-real-concept-fonctions",
+    "ae-real-concept-tableaux",
+    "ae-real-concept-variables"
+  ],
+  "k": 3,
+  "relevanceTopK": [
+    1,
+    0,
+    0
+  ],
+  "Precision@3": 0.333333,
+  "Recall@3": 1.0,
+  "nDCG@3": 1.0,
+  "scenarioComplete": true,
+  "limitations": [
+    "Scénario expérimental unique.",
+    "Ne prouve pas une efficacité pédagogique réelle.",
+    "RabbitMQ est déclenché indirectement par POST /api/traces ; la preuve UI/logs RabbitMQ doit être capturée séparément si nécessaire."
+  ]
+}

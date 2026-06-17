@@ -1,0 +1,1573 @@
+{
+  "01_login_teacher": {
+    "status": 200,
+    "durationMs": 129.75,
+    "body": {
+      "email": "bouizerguane@gmail.com",
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJib3VpemVyZ3VhbmVAZ21haWwuY29tIiwicm9sZSI6IlRFQUNIRVIiLCJpYXQiOjE3ODA4NzQ3NjcsImV4cCI6MTc4MDk2MTE2N30.FVayqc004zR8aRuH1wn816I8eVMvFes0cD1kxfZWuE0",
+      "role": "TEACHER",
+      "prenom": "mohamed",
+      "nom": "bouizerguane"
+    },
+    "ok": true
+  },
+  "02_login_learner": {
+    "status": 200,
+    "durationMs": 99.51,
+    "body": {
+      "email": "kamal@gmail.com",
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYW1hbEBnbWFpbC5jb20iLCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTc4MDg3NDc2NywiZXhwIjoxNzgwOTYxMTY3fQ.LdBqh5tKWyzOP1VwYnKFeB7L6N4RPTRG0IHaxhX9y2k",
+      "role": "STUDENT",
+      "prenom": "kamal",
+      "nom": "kamal"
+    },
+    "ok": true
+  },
+  "03_create_course": {
+    "status": 200,
+    "durationMs": 54.5,
+    "body": {
+      "id": "ae-real-api-course-programming",
+      "title": "Introduction à la programmation adaptative",
+      "description": "Cours de test reproductible pour l'évaluation contrôlée via API.",
+      "objectifs": "Valider la cohérence des recommandations adaptatives.",
+      "prerequisTextuels": "Aucun prérequis externe.",
+      "authorEmail": "bouizerguane@gmail.com",
+      "authorName": "Enseignant E2E",
+      "createdAt": "2026-06-07T23:26:07.623799084",
+      "status": "PUBLISHED",
+      "posX": null,
+      "posY": null,
+      "modules": []
+    },
+    "ok": true
+  },
+  "04_create_module_bases": {
+    "status": 200,
+    "durationMs": 62.89,
+    "body": {
+      "id": "ae-real-module-bases",
+      "title": "Bases de la programmation",
+      "description": "Variables, conditions et boucles.",
+      "authorEmail": "bouizerguane@gmail.com",
+      "orderIndex": 0,
+      "posX": null,
+      "posY": null,
+      "chapitres": []
+    },
+    "ok": true
+  },
+  "05_create_module_modularity": {
+    "status": 200,
+    "durationMs": 53.62,
+    "body": {
+      "id": "ae-real-module-modularity",
+      "title": "Modularité et structures de données",
+      "description": "Fonctions et tableaux.",
+      "authorEmail": "bouizerguane@gmail.com",
+      "orderIndex": 1,
+      "posX": null,
+      "posY": null,
+      "chapitres": []
+    },
+    "ok": true
+  },
+  "06_create_chapter_variables_conditions": {
+    "status": 200,
+    "durationMs": 787.8,
+    "body": {
+      "id": "ae-real-chapter-variables-conditions",
+      "title": "Variables et conditions",
+      "description": "Bases déclaratives et décisions.",
+      "orderIndex": 0,
+      "posX": null,
+      "posY": null,
+      "concepts": []
+    },
+    "ok": true
+  },
+  "07_create_chapter_loops": {
+    "status": 200,
+    "durationMs": 216.02,
+    "body": {
+      "id": "ae-real-chapter-loops",
+      "title": "Structures répétitives",
+      "description": "Répétitions et itérations.",
+      "orderIndex": 1,
+      "posX": null,
+      "posY": null,
+      "concepts": []
+    },
+    "ok": true
+  },
+  "08_create_chapter_functions_arrays": {
+    "status": 200,
+    "durationMs": 155.54,
+    "body": {
+      "id": "ae-real-chapter-functions-arrays",
+      "title": "Fonctions et tableaux",
+      "description": "Modularité et collections.",
+      "orderIndex": 0,
+      "posX": null,
+      "posY": null,
+      "concepts": []
+    },
+    "ok": true
+  },
+  "09_create_concept_ae-real-concept-variables": {
+    "status": 200,
+    "durationMs": 358.64,
+    "body": {
+      "id": "ae-real-concept-variables",
+      "labelPedagogique": "Variables",
+      "description": "Déclaration, affectation et utilisation des variables.",
+      "poidsCognitif": 1.0,
+      "estVerrouille": false,
+      "orderIndex": 0,
+      "posX": null,
+      "posY": null,
+      "exigences": []
+    },
+    "ok": true
+  },
+  "09_create_concept_ae-real-concept-conditions": {
+    "status": 200,
+    "durationMs": 251.44,
+    "body": {
+      "id": "ae-real-concept-conditions",
+      "labelPedagogique": "Conditions",
+      "description": "Structures conditionnelles et branchements simples.",
+      "poidsCognitif": 1.0,
+      "estVerrouille": false,
+      "orderIndex": 1,
+      "posX": null,
+      "posY": null,
+      "exigences": []
+    },
+    "ok": true
+  },
+  "09_create_concept_ae-real-concept-boucles": {
+    "status": 200,
+    "durationMs": 163.6,
+    "body": {
+      "id": "ae-real-concept-boucles",
+      "labelPedagogique": "Boucles",
+      "description": "Structures répétitives while et for.",
+      "poidsCognitif": 1.0,
+      "estVerrouille": false,
+      "orderIndex": 2,
+      "posX": null,
+      "posY": null,
+      "exigences": []
+    },
+    "ok": true
+  },
+  "09_create_concept_ae-real-concept-fonctions": {
+    "status": 200,
+    "durationMs": 108.82,
+    "body": {
+      "id": "ae-real-concept-fonctions",
+      "labelPedagogique": "Fonctions",
+      "description": "Décomposition du programme en fonctions réutilisables.",
+      "poidsCognitif": 1.0,
+      "estVerrouille": false,
+      "orderIndex": 3,
+      "posX": null,
+      "posY": null,
+      "exigences": []
+    },
+    "ok": true
+  },
+  "09_create_concept_ae-real-concept-tableaux": {
+    "status": 200,
+    "durationMs": 142.08,
+    "body": {
+      "id": "ae-real-concept-tableaux",
+      "labelPedagogique": "Tableaux",
+      "description": "Manipulation de collections indexées.",
+      "poidsCognitif": 1.0,
+      "estVerrouille": false,
+      "orderIndex": 4,
+      "posX": null,
+      "posY": null,
+      "exigences": []
+    },
+    "ok": true
+  },
+  "10_prerequisite_ae-real-concept-variables_to_ae-real-concept-conditions": {
+    "status": 200,
+    "durationMs": 57.95,
+    "body": {
+      "message": "Lien de dépendance créé avec succès."
+    },
+    "ok": true
+  },
+  "10_prerequisite_ae-real-concept-conditions_to_ae-real-concept-boucles": {
+    "status": 200,
+    "durationMs": 72.85,
+    "body": {
+      "message": "Lien de dépendance créé avec succès."
+    },
+    "ok": true
+  },
+  "10_prerequisite_ae-real-concept-boucles_to_ae-real-concept-fonctions": {
+    "status": 200,
+    "durationMs": 53.19,
+    "body": {
+      "message": "Lien de dépendance créé avec succès."
+    },
+    "ok": true
+  },
+  "10_prerequisite_ae-real-concept-fonctions_to_ae-real-concept-tableaux": {
+    "status": 200,
+    "durationMs": 37.04,
+    "body": {
+      "message": "Lien de dépendance créé avec succès."
+    },
+    "ok": true
+  },
+  "11_get_course_tree": {
+    "status": 200,
+    "durationMs": 38.3,
+    "body": {
+      "id": "ae-real-api-course-programming",
+      "title": "Introduction à la programmation adaptative",
+      "description": "Cours de test reproductible pour l'évaluation contrôlée via API.",
+      "objectifs": "Valider la cohérence des recommandations adaptatives.",
+      "prerequisTextuels": "Aucun prérequis externe.",
+      "authorEmail": "bouizerguane@gmail.com",
+      "authorName": "Enseignant E2E",
+      "createdAt": "2026-06-07T23:26:07.623799084",
+      "status": "PUBLISHED",
+      "posX": null,
+      "posY": null,
+      "modules": [
+        {
+          "id": "ae-real-module-bases",
+          "title": "Bases de la programmation",
+          "description": "Variables, conditions et boucles.",
+          "authorEmail": "bouizerguane@gmail.com",
+          "orderIndex": 0,
+          "posX": null,
+          "posY": null,
+          "chapitres": [
+            {
+              "id": "ae-real-chapter-variables-conditions",
+              "title": "Variables et conditions",
+              "description": "Bases déclaratives et décisions.",
+              "orderIndex": 0,
+              "posX": null,
+              "posY": null,
+              "concepts": [
+                {
+                  "id": "ae-real-concept-conditions",
+                  "labelPedagogique": "Conditions",
+                  "description": "Structures conditionnelles et branchements simples.",
+                  "poidsCognitif": 1.0,
+                  "estVerrouille": false,
+                  "orderIndex": 1,
+                  "posX": null,
+                  "posY": null,
+                  "exigences": [
+                    {
+                      "id": "ae-real-concept-boucles",
+                      "labelPedagogique": "Boucles",
+                      "description": "Structures répétitives while et for.",
+                      "poidsCognitif": 1.0,
+                      "estVerrouille": false,
+                      "orderIndex": 2,
+                      "posX": null,
+                      "posY": null,
+                      "exigences": [
+                        {
+                          "id": "ae-real-concept-fonctions",
+                          "labelPedagogique": "Fonctions",
+                          "description": "Décomposition du programme en fonctions réutilisables.",
+                          "poidsCognitif": 1.0,
+                          "estVerrouille": false,
+                          "orderIndex": 3,
+                          "posX": null,
+                          "posY": null,
+                          "exigences": [
+                            {
+                              "id": "ae-real-concept-tableaux",
+                              "labelPedagogique": "Tableaux",
+                              "description": "Manipulation de collections indexées.",
+                              "poidsCognitif": 1.0,
+                              "estVerrouille": false,
+                              "orderIndex": 4,
+                              "posX": null,
+                              "posY": null,
+                              "exigences": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "ae-real-concept-variables",
+                  "labelPedagogique": "Variables",
+                  "description": "Déclaration, affectation et utilisation des variables.",
+                  "poidsCognitif": 1.0,
+                  "estVerrouille": false,
+                  "orderIndex": 0,
+                  "posX": null,
+                  "posY": null,
+                  "exigences": [
+                    {
+                      "id": "ae-real-concept-conditions",
+                      "labelPedagogique": "Conditions",
+                      "description": "Structures conditionnelles et branchements simples.",
+                      "poidsCognitif": 1.0,
+                      "estVerrouille": false,
+                      "orderIndex": 1,
+                      "posX": null,
+                      "posY": null,
+                      "exigences": [
+                        {
+                          "id": "ae-real-concept-boucles",
+                          "labelPedagogique": "Boucles",
+                          "description": "Structures répétitives while et for.",
+                          "poidsCognitif": 1.0,
+                          "estVerrouille": false,
+                          "orderIndex": 2,
+                          "posX": null,
+                          "posY": null,
+                          "exigences": [
+                            {
+                              "id": "ae-real-concept-fonctions",
+                              "labelPedagogique": "Fonctions",
+                              "description": "Décomposition du programme en fonctions réutilisables.",
+                              "poidsCognitif": 1.0,
+                              "estVerrouille": false,
+                              "orderIndex": 3,
+                              "posX": null,
+                              "posY": null,
+                              "exigences": [
+                                {
+                                  "id": "ae-real-concept-tableaux",
+                                  "labelPedagogique": "Tableaux",
+                                  "description": "Manipulation de collections indexées.",
+                                  "poidsCognitif": 1.0,
+                                  "estVerrouille": false,
+                                  "orderIndex": 4,
+                                  "posX": null,
+                                  "posY": null,
+                                  "exigences": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ae-real-chapter-loops",
+              "title": "Structures répétitives",
+              "description": "Répétitions et itérations.",
+              "orderIndex": 1,
+              "posX": null,
+              "posY": null,
+              "concepts": [
+                {
+                  "id": "ae-real-concept-boucles",
+                  "labelPedagogique": "Boucles",
+                  "description": "Structures répétitives while et for.",
+                  "poidsCognitif": 1.0,
+                  "estVerrouille": false,
+                  "orderIndex": 2,
+                  "posX": null,
+                  "posY": null,
+                  "exigences": [
+                    {
+                      "id": "ae-real-concept-fonctions",
+                      "labelPedagogique": "Fonctions",
+                      "description": "Décomposition du programme en fonctions réutilisables.",
+                      "poidsCognitif": 1.0,
+                      "estVerrouille": false,
+                      "orderIndex": 3,
+                      "posX": null,
+                      "posY": null,
+                      "exigences": [
+                        {
+                          "id": "ae-real-concept-tableaux",
+                          "labelPedagogique": "Tableaux",
+                          "description": "Manipulation de collections indexées.",
+                          "poidsCognitif": 1.0,
+                          "estVerrouille": false,
+                          "orderIndex": 4,
+                          "posX": null,
+                          "posY": null,
+                          "exigences": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ae-real-module-modularity",
+          "title": "Modularité et structures de données",
+          "description": "Fonctions et tableaux.",
+          "authorEmail": "bouizerguane@gmail.com",
+          "orderIndex": 1,
+          "posX": null,
+          "posY": null,
+          "chapitres": [
+            {
+              "id": "ae-real-chapter-functions-arrays",
+              "title": "Fonctions et tableaux",
+              "description": "Modularité et collections.",
+              "orderIndex": 0,
+              "posX": null,
+              "posY": null,
+              "concepts": [
+                {
+                  "id": "ae-real-concept-fonctions",
+                  "labelPedagogique": "Fonctions",
+                  "description": "Décomposition du programme en fonctions réutilisables.",
+                  "poidsCognitif": 1.0,
+                  "estVerrouille": false,
+                  "orderIndex": 3,
+                  "posX": null,
+                  "posY": null,
+                  "exigences": [
+                    {
+                      "id": "ae-real-concept-tableaux",
+                      "labelPedagogique": "Tableaux",
+                      "description": "Manipulation de collections indexées.",
+                      "poidsCognitif": 1.0,
+                      "estVerrouille": false,
+                      "orderIndex": 4,
+                      "posX": null,
+                      "posY": null,
+                      "exigences": []
+                    }
+                  ]
+                },
+                {
+                  "id": "ae-real-concept-tableaux",
+                  "labelPedagogique": "Tableaux",
+                  "description": "Manipulation de collections indexées.",
+                  "poidsCognitif": 1.0,
+                  "estVerrouille": false,
+                  "orderIndex": 4,
+                  "posX": null,
+                  "posY": null,
+                  "exigences": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "ok": true
+  },
+  "12_save_resource_ae-real-concept-variables": {
+    "status": 200,
+    "durationMs": 80.14,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3aba7",
+      "conceptId": "ae-real-concept-variables",
+      "htmlContent": "<h2>Variables</h2><p>Ressource pédagogique de remédiation et d'apprentissage pour Variables.</p>",
+      "lastUpdated": "2026-06-07T23:26:10.265726088"
+    },
+    "ok": true
+  },
+  "13_save_formative_eval_ae-real-concept-variables": {
+    "status": 200,
+    "durationMs": 27.26,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3aba8",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-variables",
+      "targetType": "CONCEPT",
+      "typeEvaluation": "FORMATIVE",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 3,
+      "tempsImparti": 20,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-variables",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question formative sur Variables ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": "Relisez la ressource sur Variables."
+        }
+      ]
+    },
+    "ok": true
+  },
+  "14_save_lab_ae-real-concept-variables": {
+    "status": 200,
+    "durationMs": 43.21,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3aba9",
+      "targetId": "ae-real-concept-variables",
+      "courseId": "ae-real-api-course-programming",
+      "title": "TP - Variables",
+      "difficulty": "EASY",
+      "estimatedTime": 30,
+      "requireGithub": true,
+      "steps": [
+        {
+          "id": "step-ae-real-concept-variables-1",
+          "title": "Mise en pratique",
+          "content": "<p>Implémenter un exercice simple sur Variables.</p>",
+          "orderIndex": 0
+        }
+      ]
+    },
+    "ok": true
+  },
+  "12_save_resource_ae-real-concept-conditions": {
+    "status": 200,
+    "durationMs": 41.45,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abaa",
+      "conceptId": "ae-real-concept-conditions",
+      "htmlContent": "<h2>Conditions</h2><p>Ressource pédagogique de remédiation et d'apprentissage pour Conditions.</p>",
+      "lastUpdated": "2026-06-07T23:26:10.400834624"
+    },
+    "ok": true
+  },
+  "13_save_formative_eval_ae-real-concept-conditions": {
+    "status": 200,
+    "durationMs": 35.39,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abab",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-conditions",
+      "targetType": "CONCEPT",
+      "typeEvaluation": "FORMATIVE",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 3,
+      "tempsImparti": 20,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-conditions",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question formative sur Conditions ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": "Relisez la ressource sur Conditions."
+        }
+      ]
+    },
+    "ok": true
+  },
+  "14_save_lab_ae-real-concept-conditions": {
+    "status": 200,
+    "durationMs": 23.07,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abac",
+      "targetId": "ae-real-concept-conditions",
+      "courseId": "ae-real-api-course-programming",
+      "title": "TP - Conditions",
+      "difficulty": "EASY",
+      "estimatedTime": 30,
+      "requireGithub": true,
+      "steps": [
+        {
+          "id": "step-ae-real-concept-conditions-1",
+          "title": "Mise en pratique",
+          "content": "<p>Implémenter un exercice simple sur Conditions.</p>",
+          "orderIndex": 0
+        }
+      ]
+    },
+    "ok": true
+  },
+  "12_save_resource_ae-real-concept-boucles": {
+    "status": 200,
+    "durationMs": 38.25,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abad",
+      "conceptId": "ae-real-concept-boucles",
+      "htmlContent": "<h2>Boucles</h2><p>Ressource pédagogique de remédiation et d'apprentissage pour Boucles.</p>",
+      "lastUpdated": "2026-06-07T23:26:10.497781444"
+    },
+    "ok": true
+  },
+  "13_save_formative_eval_ae-real-concept-boucles": {
+    "status": 200,
+    "durationMs": 45.81,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abae",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-boucles",
+      "targetType": "CONCEPT",
+      "typeEvaluation": "FORMATIVE",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 3,
+      "tempsImparti": 20,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-boucles",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question formative sur Boucles ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": "Relisez la ressource sur Boucles."
+        }
+      ]
+    },
+    "ok": true
+  },
+  "14_save_lab_ae-real-concept-boucles": {
+    "status": 200,
+    "durationMs": 31.19,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abaf",
+      "targetId": "ae-real-concept-boucles",
+      "courseId": "ae-real-api-course-programming",
+      "title": "TP - Boucles",
+      "difficulty": "EASY",
+      "estimatedTime": 30,
+      "requireGithub": true,
+      "steps": [
+        {
+          "id": "step-ae-real-concept-boucles-1",
+          "title": "Mise en pratique",
+          "content": "<p>Implémenter un exercice simple sur Boucles.</p>",
+          "orderIndex": 0
+        }
+      ]
+    },
+    "ok": true
+  },
+  "12_save_resource_ae-real-concept-fonctions": {
+    "status": 200,
+    "durationMs": 35.95,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb0",
+      "conceptId": "ae-real-concept-fonctions",
+      "htmlContent": "<h2>Fonctions</h2><p>Ressource pédagogique de remédiation et d'apprentissage pour Fonctions.</p>",
+      "lastUpdated": "2026-06-07T23:26:10.610195608"
+    },
+    "ok": true
+  },
+  "13_save_formative_eval_ae-real-concept-fonctions": {
+    "status": 200,
+    "durationMs": 23.17,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb1",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-fonctions",
+      "targetType": "CONCEPT",
+      "typeEvaluation": "FORMATIVE",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 3,
+      "tempsImparti": 20,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-fonctions",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question formative sur Fonctions ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": "Relisez la ressource sur Fonctions."
+        }
+      ]
+    },
+    "ok": true
+  },
+  "14_save_lab_ae-real-concept-fonctions": {
+    "status": 200,
+    "durationMs": 27.83,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb2",
+      "targetId": "ae-real-concept-fonctions",
+      "courseId": "ae-real-api-course-programming",
+      "title": "TP - Fonctions",
+      "difficulty": "EASY",
+      "estimatedTime": 30,
+      "requireGithub": true,
+      "steps": [
+        {
+          "id": "step-ae-real-concept-fonctions-1",
+          "title": "Mise en pratique",
+          "content": "<p>Implémenter un exercice simple sur Fonctions.</p>",
+          "orderIndex": 0
+        }
+      ]
+    },
+    "ok": true
+  },
+  "12_save_resource_ae-real-concept-tableaux": {
+    "status": 200,
+    "durationMs": 20.78,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb3",
+      "conceptId": "ae-real-concept-tableaux",
+      "htmlContent": "<h2>Tableaux</h2><p>Ressource pédagogique de remédiation et d'apprentissage pour Tableaux.</p>",
+      "lastUpdated": "2026-06-07T23:26:10.683452671"
+    },
+    "ok": true
+  },
+  "13_save_formative_eval_ae-real-concept-tableaux": {
+    "status": 200,
+    "durationMs": 25.09,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb4",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-tableaux",
+      "targetType": "CONCEPT",
+      "typeEvaluation": "FORMATIVE",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 3,
+      "tempsImparti": 20,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-tableaux",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question formative sur Tableaux ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": "Relisez la ressource sur Tableaux."
+        }
+      ]
+    },
+    "ok": true
+  },
+  "14_save_lab_ae-real-concept-tableaux": {
+    "status": 200,
+    "durationMs": 25.44,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb5",
+      "targetId": "ae-real-concept-tableaux",
+      "courseId": "ae-real-api-course-programming",
+      "title": "TP - Tableaux",
+      "difficulty": "EASY",
+      "estimatedTime": 30,
+      "requireGithub": true,
+      "steps": [
+        {
+          "id": "step-ae-real-concept-tableaux-1",
+          "title": "Mise en pratique",
+          "content": "<p>Implémenter un exercice simple sur Tableaux.</p>",
+          "orderIndex": 0
+        }
+      ]
+    },
+    "ok": true
+  },
+  "15_save_positioning_eval": {
+    "status": 200,
+    "durationMs": 25.55,
+    "body": {
+      "id": "6a25fb4f8483ef2b1da3abb6",
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-api-course-programming",
+      "targetType": "COURSE",
+      "typeEvaluation": "DIAGNOSTIC_POSITIONNEMENT",
+      "seuilReussite": 60.0,
+      "nbrTentativesMax": 1,
+      "tempsImparti": 30,
+      "allowBacktrack": true,
+      "shuffleQuestions": false,
+      "showImmediateFeedback": false,
+      "retryDelayHours": 0,
+      "remediationResourceId": null,
+      "coefficient": 0.0,
+      "nbQuestionsATirer": 0,
+      "equilibrerDifficulte": false,
+      "seuilDeSaut": 80.0,
+      "questions": [
+        {
+          "conceptId": "ae-real-concept-variables",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question de positionnement sur Variables ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": null
+        },
+        {
+          "conceptId": "ae-real-concept-conditions",
+          "externalPrerequisiteLabel": null,
+          "generalQuestion": null,
+          "text": "Question de positionnement sur Conditions ?",
+          "type": "QCM",
+          "options": [
+            "Réponse correcte",
+            "Réponse incorrecte A",
+            "Réponse incorrecte B"
+          ],
+          "correctAnswer": "Réponse correcte",
+          "difficulty": "MEDIUM",
+          "hintText": null
+        }
+      ]
+    },
+    "ok": true
+  },
+  "16_enroll_learner": {
+    "status": 200,
+    "durationMs": 37.65,
+    "body": {
+      "message": "Inscription au cours enregistrée."
+    },
+    "ok": true
+  },
+  "17_apply_diagnostic_graph": {
+    "status": 200,
+    "durationMs": 41.22,
+    "body": {
+      "masteredConcepts": [
+        "ae-real-concept-variables"
+      ],
+      "nextRecommendation": {
+        "courseId": "ae-real-api-course-programming",
+        "conceptId": "ae-real-concept-conditions",
+        "label": "Conditions",
+        "description": "Structures conditionnelles et branchements simples.",
+        "moduleTitle": "Bases de la programmation",
+        "chapitreTitle": "Variables et conditions",
+        "reason": "Ce concept est proposé car ses prérequis sont satisfaits et il n'est pas encore maîtrisé.",
+        "remediation": "En cas d'échec, relisez le contenu du concept puis repassez le quiz."
+      },
+      "failedConcepts": [
+        "ae-real-concept-conditions"
+      ]
+    },
+    "ok": true
+  },
+  "18_save_diagnostic_trace": {
+    "status": 200,
+    "durationMs": 433.79,
+    "body": {
+      "idTrace": 367,
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-api-course-programming",
+      "targetType": "COURSE",
+      "studentEmail": "kamal@gmail.com",
+      "learnerEmail": "kamal@gmail.com",
+      "userId": "kamal@gmail.com",
+      "evaluationId": "ae-real-eval-positioning",
+      "typeEvaluation": "DIAGNOSTIC_POSITIONNEMENT",
+      "scoreObtenu": 62.5,
+      "tempsConsultation": 480,
+      "horodatage": "2026-06-07T23:26:10.891668908",
+      "feedbackGenere": null,
+      "tabSwitchesCount": 0,
+      "masterySource": "DIAGNOSTIC_POSITIONNEMENT",
+      "conceptResults": "{\"concepts\": [{\"conceptId\": \"ae-real-concept-variables\", \"mastered\": true, \"score\": 80}, {\"conceptId\": \"ae-real-concept-conditions\", \"mastered\": false, \"score\": 45}], \"externalPrerequisites\": []}"
+    },
+    "ok": true
+  },
+  "19_adaptive_path_after_positioning": {
+    "status": 200,
+    "durationMs": 765.68,
+    "body": {
+      "learnerEmail": "kamal@gmail.com",
+      "courseId": "ae-real-api-course-programming",
+      "courseTitle": "Introduction à la programmation adaptative",
+      "diagnosticPassed": true,
+      "masteredConcepts": [
+        {
+          "conceptId": "ae-real-concept-variables",
+          "conceptName": "Variables",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Variables et conditions",
+          "status": "MASTERED",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        }
+      ],
+      "learnableConcepts": [
+        {
+          "conceptId": "ae-real-concept-conditions",
+          "conceptName": "Conditions",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Variables et conditions",
+          "status": "LEARNABLE",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": 0.75,
+          "scoreBreakdown": {
+            "prerequisiteScore": 1.0,
+            "diagnosticWeaknessScore": 0.3,
+            "historicalPerformanceScore": 0.7,
+            "pedagogicalOrderScore": 1.0,
+            "engagementScore": 0.7
+          },
+          "explanationReasons": [
+            "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+            "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+            "L'historique récent montre une progression suffisante pour aborder cette étape.",
+            "Signal ML expérimental : probabilité estimée de réussite calculée à partir des traces de recommandation historiques."
+          ],
+          "mlSuccessProbability": 0.48,
+          "mlEnhancedScore": 0.7,
+          "mlExplanation": "ML signal estimates the probability of successful recommendation based on historical recommendation traces."
+        }
+      ],
+      "blockedConcepts": [
+        {
+          "conceptId": "ae-real-concept-boucles",
+          "conceptName": "Boucles",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Structures répétitives",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-conditions"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        },
+        {
+          "conceptId": "ae-real-concept-fonctions",
+          "conceptName": "Fonctions",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Modularité et structures de données",
+          "chapitreTitle": "Fonctions et tableaux",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-boucles"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        },
+        {
+          "conceptId": "ae-real-concept-tableaux",
+          "conceptName": "Tableaux",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Modularité et structures de données",
+          "chapitreTitle": "Fonctions et tableaux",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-fonctions"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        }
+      ],
+      "conceptsToReview": [],
+      "recommendedLearningPath": [
+        {
+          "order": 1,
+          "conceptId": "ae-real-concept-conditions",
+          "conceptName": "Conditions",
+          "status": "READY",
+          "adaptiveScore": 0.75,
+          "explanationReasons": [
+            "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+            "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+            "L'historique récent montre une progression suffisante pour aborder cette étape."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 2,
+          "conceptId": "ae-real-concept-boucles",
+          "conceptName": "Boucles",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 3,
+          "conceptId": "ae-real-concept-fonctions",
+          "conceptName": "Fonctions",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 4,
+          "conceptId": "ae-real-concept-tableaux",
+          "conceptName": "Tableaux",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 5,
+          "conceptId": "ae-real-concept-variables",
+          "conceptName": "Variables",
+          "status": "COMPLETED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Variables' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        }
+      ],
+      "nextAction": "LEARN",
+      "nextConcept": {
+        "conceptId": "ae-real-concept-conditions",
+        "conceptName": "Conditions",
+        "courseId": "ae-real-api-course-programming",
+        "type": "INTERNAL",
+        "moduleTitle": "Bases de la programmation",
+        "chapitreTitle": "Variables et conditions",
+        "status": "LEARNABLE",
+        "missingPrerequisiteIds": [],
+        "adaptiveScore": 0.75,
+        "scoreBreakdown": {
+          "prerequisiteScore": 1.0,
+          "diagnosticWeaknessScore": 0.3,
+          "historicalPerformanceScore": 0.7,
+          "pedagogicalOrderScore": 1.0,
+          "engagementScore": 0.7
+        },
+        "explanationReasons": [
+          "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+          "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+          "L'historique récent montre une progression suffisante pour aborder cette étape.",
+          "Signal ML expérimental : probabilité estimée de réussite calculée à partir des traces de recommandation historiques."
+        ],
+        "mlSuccessProbability": 0.48,
+        "mlEnhancedScore": 0.7,
+        "mlExplanation": "ML signal estimates the probability of successful recommendation based on historical recommendation traces."
+      },
+      "learningPhase": "LEARNING",
+      "nextRecommendation": {
+        "action": "LEARN",
+        "learningPhase": "LEARNING",
+        "conceptId": "ae-real-concept-conditions",
+        "conceptName": "Conditions",
+        "courseId": "ae-real-api-course-programming",
+        "type": "INTERNAL",
+        "reason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu."
+      },
+      "recommendationReason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu.",
+      "latestDiagnostic": {
+        "idTrace": 367,
+        "courseId": "ae-real-api-course-programming",
+        "targetId": "ae-real-api-course-programming",
+        "targetType": "COURSE",
+        "studentEmail": "kamal@gmail.com",
+        "learnerEmail": "kamal@gmail.com",
+        "userId": "kamal@gmail.com",
+        "evaluationId": "ae-real-eval-positioning",
+        "typeEvaluation": "DIAGNOSTIC_POSITIONNEMENT",
+        "scoreObtenu": 62.5,
+        "tempsConsultation": 480,
+        "horodatage": "2026-06-07T23:26:10.891669",
+        "feedbackGenere": null,
+        "tabSwitchesCount": 0,
+        "masterySource": "DIAGNOSTIC_POSITIONNEMENT",
+        "conceptResults": "{\"concepts\": [{\"conceptId\": \"ae-real-concept-variables\", \"mastered\": true, \"score\": 80}, {\"conceptId\": \"ae-real-concept-conditions\", \"mastered\": false, \"score\": 45}], \"externalPrerequisites\": []}"
+      },
+      "traceCount": 1,
+      "submittedLabCount": 0,
+      "decisionExplanation": "Le concept 'Conditions' est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.",
+      "scoringVersion": "RULE_BASED_EXPLAINABLE",
+      "learnerProfile": {
+        "learnerEmail": "kamal@gmail.com",
+        "masteryScore": null,
+        "knowledgeGaps": [],
+        "masteredConceptsCount": 1,
+        "weakConceptsCount": 0,
+        "tracesCount": 1,
+        "completedLabsCount": 0,
+        "averageAssessmentScore": 62.5,
+        "totalLearningTime": 480,
+        "profileType": "PROGRESSING",
+        "profileExplanation": "Le profil indique une progression active."
+      },
+      "pedagogicalStrategy": {
+        "strategyType": "STANDARD",
+        "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
+        "recommendedSequence": [
+          "RESOURCE",
+          "LAB",
+          "FORMATIVE"
+        ],
+        "constraints": [
+          "Respecter la decision principale du moteur: LEARN.",
+          "Appliquer la stratégie au concept recommandé: Conditions."
+        ],
+        "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
+      },
+      "pathFreshness": {
+        "refreshedAfterEvent": true,
+        "lastEventType": "quiz.completed",
+        "lastEventAt": "2026-06-07T23:26:10.927379",
+        "refreshReason": "QUIZ_COMPLETED",
+        "message": "Le parcours a été actualisé après votre dernière évaluation."
+      }
+    },
+    "ok": true
+  },
+  "20_save_conditions_formative_failure": {
+    "status": 200,
+    "durationMs": 51.77,
+    "body": {
+      "idTrace": 368,
+      "courseId": "ae-real-api-course-programming",
+      "targetId": "ae-real-concept-conditions",
+      "targetType": "CONCEPT",
+      "studentEmail": "kamal@gmail.com",
+      "learnerEmail": "kamal@gmail.com",
+      "userId": "kamal@gmail.com",
+      "evaluationId": "ae-real-eval-conditions-formative",
+      "typeEvaluation": "FORMATIVE",
+      "scoreObtenu": 45.0,
+      "tempsConsultation": 360,
+      "horodatage": "2026-06-07T23:26:14.070666438",
+      "feedbackGenere": null,
+      "tabSwitchesCount": 0,
+      "masterySource": "FORMATIVE",
+      "conceptResults": "{\"concepts\": [{\"conceptId\": \"ae-real-concept-conditions\", \"mastered\": false, \"score\": 45}], \"externalPrerequisites\": []}"
+    },
+    "ok": true
+  },
+  "21_adaptive_path_after_conditions_failure": {
+    "status": 200,
+    "durationMs": 333.36,
+    "body": {
+      "learnerEmail": "kamal@gmail.com",
+      "courseId": "ae-real-api-course-programming",
+      "courseTitle": "Introduction à la programmation adaptative",
+      "diagnosticPassed": true,
+      "masteredConcepts": [
+        {
+          "conceptId": "ae-real-concept-variables",
+          "conceptName": "Variables",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Variables et conditions",
+          "status": "MASTERED",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        }
+      ],
+      "learnableConcepts": [
+        {
+          "conceptId": "ae-real-concept-conditions",
+          "conceptName": "Conditions",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Variables et conditions",
+          "status": "LEARNABLE",
+          "missingPrerequisiteIds": [],
+          "adaptiveScore": 0.71,
+          "scoreBreakdown": {
+            "prerequisiteScore": 1.0,
+            "diagnosticWeaknessScore": 0.3,
+            "historicalPerformanceScore": 0.4,
+            "pedagogicalOrderScore": 1.0,
+            "engagementScore": 0.7
+          },
+          "explanationReasons": [
+            "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+            "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+            "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+            "Signal ML expérimental : probabilité estimée de réussite calculée à partir des traces de recommandation historiques."
+          ],
+          "mlSuccessProbability": 0.45,
+          "mlEnhancedScore": 0.66,
+          "mlExplanation": "ML signal estimates the probability of successful recommendation based on historical recommendation traces."
+        }
+      ],
+      "blockedConcepts": [
+        {
+          "conceptId": "ae-real-concept-boucles",
+          "conceptName": "Boucles",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Bases de la programmation",
+          "chapitreTitle": "Structures répétitives",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-conditions"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        },
+        {
+          "conceptId": "ae-real-concept-fonctions",
+          "conceptName": "Fonctions",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Modularité et structures de données",
+          "chapitreTitle": "Fonctions et tableaux",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-boucles"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        },
+        {
+          "conceptId": "ae-real-concept-tableaux",
+          "conceptName": "Tableaux",
+          "courseId": "ae-real-api-course-programming",
+          "type": "INTERNAL",
+          "moduleTitle": "Modularité et structures de données",
+          "chapitreTitle": "Fonctions et tableaux",
+          "status": "BLOCKED",
+          "missingPrerequisiteIds": [
+            "ae-real-concept-fonctions"
+          ],
+          "adaptiveScore": null,
+          "scoreBreakdown": null,
+          "explanationReasons": null,
+          "mlSuccessProbability": null,
+          "mlEnhancedScore": null,
+          "mlExplanation": null
+        }
+      ],
+      "conceptsToReview": [],
+      "recommendedLearningPath": [
+        {
+          "order": 1,
+          "conceptId": "ae-real-concept-conditions",
+          "conceptName": "Conditions",
+          "status": "TO_REVIEW",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Conditions' est prioritaire car 3 difficultés successives ont été observées dans vos activités récentes.",
+            "Une remédiation renforcée est proposée afin de consolider ce concept avant de poursuivre le parcours."
+          ],
+          "repeatedFailuresCount": 3,
+          "persistentDifficulty": true,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 2,
+          "conceptId": "ae-real-concept-boucles",
+          "conceptName": "Boucles",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Boucles' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 3,
+          "conceptId": "ae-real-concept-fonctions",
+          "conceptName": "Fonctions",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Fonctions' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 4,
+          "conceptId": "ae-real-concept-tableaux",
+          "conceptName": "Tableaux",
+          "status": "LOCKED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Tableaux' est verrouillé car certains prérequis ne sont pas encore maîtrisés."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        },
+        {
+          "order": 5,
+          "conceptId": "ae-real-concept-variables",
+          "conceptName": "Variables",
+          "status": "COMPLETED",
+          "adaptiveScore": null,
+          "explanationReasons": [
+            "Le concept 'Variables' est déjà maîtrisé et n’est pas prioritaire dans le parcours actuel."
+          ],
+          "repeatedFailuresCount": null,
+          "persistentDifficulty": null,
+          "remediationSuccess": null,
+          "highMasteryProgression": null
+        }
+      ],
+      "nextAction": "LEARN",
+      "nextConcept": {
+        "conceptId": "ae-real-concept-conditions",
+        "conceptName": "Conditions",
+        "courseId": "ae-real-api-course-programming",
+        "type": "INTERNAL",
+        "moduleTitle": "Bases de la programmation",
+        "chapitreTitle": "Variables et conditions",
+        "status": "LEARNABLE",
+        "missingPrerequisiteIds": [],
+        "adaptiveScore": 0.71,
+        "scoreBreakdown": {
+          "prerequisiteScore": 1.0,
+          "diagnosticWeaknessScore": 0.3,
+          "historicalPerformanceScore": 0.4,
+          "pedagogicalOrderScore": 1.0,
+          "engagementScore": 0.7
+        },
+        "explanationReasons": [
+          "Le concept 'Conditions' est accessible car les prérequis requis sont satisfaits.",
+          "Ce choix respecte l'ordre pédagogique prévu dans le cours.",
+          "Cette recommandation tient compte des difficultés observées dans les activités précédentes.",
+          "Signal ML expérimental : probabilité estimée de réussite calculée à partir des traces de recommandation historiques."
+        ],
+        "mlSuccessProbability": 0.45,
+        "mlEnhancedScore": 0.66,
+        "mlExplanation": "ML signal estimates the probability of successful recommendation based on historical recommendation traces."
+      },
+      "learningPhase": "LEARNING",
+      "nextRecommendation": {
+        "action": "LEARN",
+        "learningPhase": "LEARNING",
+        "conceptId": "ae-real-concept-conditions",
+        "conceptName": "Conditions",
+        "courseId": "ae-real-api-course-programming",
+        "type": "INTERNAL",
+        "reason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu."
+      },
+      "recommendationReason": "Le concept 'Conditions' est recommandé pour poursuivre le parcours pédagogique selon l'ordre d'apprentissage prévu.",
+      "latestDiagnostic": {
+        "idTrace": 367,
+        "courseId": "ae-real-api-course-programming",
+        "targetId": "ae-real-api-course-programming",
+        "targetType": "COURSE",
+        "studentEmail": "kamal@gmail.com",
+        "learnerEmail": "kamal@gmail.com",
+        "userId": "kamal@gmail.com",
+        "evaluationId": "ae-real-eval-positioning",
+        "typeEvaluation": "DIAGNOSTIC_POSITIONNEMENT",
+        "scoreObtenu": 62.5,
+        "tempsConsultation": 480,
+        "horodatage": "2026-06-07T23:26:10.891669",
+        "feedbackGenere": null,
+        "tabSwitchesCount": 0,
+        "masterySource": "DIAGNOSTIC_POSITIONNEMENT",
+        "conceptResults": "{\"concepts\": [{\"conceptId\": \"ae-real-concept-variables\", \"mastered\": true, \"score\": 80}, {\"conceptId\": \"ae-real-concept-conditions\", \"mastered\": false, \"score\": 45}], \"externalPrerequisites\": []}"
+      },
+      "traceCount": 2,
+      "submittedLabCount": 0,
+      "decisionExplanation": "Le concept 'Conditions' est le candidat accessible le plus pertinent selon les critères actuels du parcours adaptatif.",
+      "scoringVersion": "RULE_BASED_EXPLAINABLE",
+      "learnerProfile": {
+        "learnerEmail": "kamal@gmail.com",
+        "masteryScore": 45.0,
+        "knowledgeGaps": [],
+        "masteredConceptsCount": 1,
+        "weakConceptsCount": 0,
+        "tracesCount": 2,
+        "completedLabsCount": 0,
+        "averageAssessmentScore": 53.75,
+        "totalLearningTime": 840,
+        "profileType": "PROGRESSING",
+        "profileExplanation": "Le profil indique une progression active."
+      },
+      "pedagogicalStrategy": {
+        "strategyType": "STANDARD",
+        "strategyExplanation": "Le système applique une progression standard basée sur le parcours recommandé.",
+        "recommendedSequence": [
+          "RESOURCE",
+          "LAB",
+          "FORMATIVE"
+        ],
+        "constraints": [
+          "Respecter la decision principale du moteur: LEARN.",
+          "Appliquer la stratégie au concept recommandé: Conditions."
+        ],
+        "tutoringMessageHint": "Accompagner l'apprenant dans la séquence normale ressource-TP-évaluation."
+      },
+      "pathFreshness": {
+        "refreshedAfterEvent": true,
+        "lastEventType": "quiz.completed",
+        "lastEventAt": "2026-06-07T23:26:14.097295",
+        "refreshReason": "QUIZ_COMPLETED",
+        "message": "Le parcours a été actualisé après votre dernière évaluation."
+      }
+    },
+    "ok": true
+  },
+  "22_tutoring_feedback": {
+    "status": 200,
+    "durationMs": 39.99,
+    "body": {
+      "eventType": "ADAPTIVE_RECOMMENDATION",
+      "message": "Le parcours peut suivre la séquence pédagogique standard : ressource, pratique, puis évaluation formative.",
+      "actions": [
+        "Consulter la ressource",
+        "Réaliser le TP",
+        "Passer l'évaluation formative"
+      ],
+      "feedbackType": "STANDARD_GUIDANCE",
+      "recommendedActions": [
+        "Consulter la ressource",
+        "Réaliser le TP",
+        "Passer l'évaluation formative"
+      ],
+      "learningSequence": [
+        "RESOURCE",
+        "LAB",
+        "FORMATIVE"
+      ],
+      "motivationalMessage": "Continuez la progression selon l'ordre d'apprentissage prévu.",
+      "explanation": "Une approche standard accompagne le parcours recommandé sans remédiation spécifique. Contexte utilisé: profil=PROGRESSING; action=LEARN; évaluation=FORMATIVE; score=45.0."
+    },
+    "ok": true
+  }
+}
